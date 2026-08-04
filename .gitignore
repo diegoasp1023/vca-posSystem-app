@@ -1,0 +1,52 @@
+# ===== Entornos y secretos =====
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+
+# ===== Node (frontend/backend) =====
+node_modules/
+dist/
+build/
+.next/
+coverage/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===== Python (si backend es Django/FastAPI) =====
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# ===== Keycloak =====
+keycloak/realm-export/*-prod.json      # nunca versionar export de prod con datos reales
+keycloak/providers/*.jar
+keycloak/**/*.log
+keycloak_data/                          # volumen local de docker si mapeas a carpeta
+
+# ===== Docker / infra =====
+infra/volumes/
+infra/**/*.override.yml
+*.pid
+
+# ===== Bases de datos locales =====
+*.sqlite3
+db_data/
+pgdata/
+
+# ===== Editores / SO =====
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ===== Terraform (si usas infra as code) =====
+*.tfstate
+*.tfstate.backup
+.terraform/
