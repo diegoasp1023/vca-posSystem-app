@@ -1,20 +1,18 @@
-import { Header } from './components/Header'
-import { Hero } from './components/Hero'
-import { MenuSection } from './components/MenuSection'
-import { LocationSection } from './components/LocationSection'
-import { Footer } from './components/Footer'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Layout } from './components/Layout'
+import { Home } from './pages/Home'
+import { MenuPage } from './pages/MenuPage'
 
 function App() {
   return (
-    <div className="min-h-screen bg-white">
-      <Header />
-      <main>
-        <Hero />
-        <MenuSection />
-        <LocationSection />
-      </main>
-      <Footer />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route index element={<Home />} />
+          <Route path="menu" element={<MenuPage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   )
 }
 

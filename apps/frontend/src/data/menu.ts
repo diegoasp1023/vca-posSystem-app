@@ -1,9 +1,12 @@
+type Localized<T> = { es: T; en: T }
+
 export interface Product {
   id: string
-  name: string
-  description: string
+  name: Localized<string>
+  description: Localized<string>
+  weight: string
   price: number
-  category: 'bebida' | 'comida'
+  presentations: Localized<string[]>
 }
 
 // Placeholder data. Once the backend exposes a products endpoint, this
@@ -11,45 +14,59 @@ export interface Product {
 // Product[] don't need to change.
 export const menuItems: Product[] = [
   {
-    id: 'espresso',
-    name: 'Espresso',
-    description: 'Café solo, extracción clásica de origen colombiano.',
-    price: 6000,
-    category: 'bebida',
+    id: 'lavado',
+    name: { es: 'Café Lavado', en: 'Washed Coffee' },
+    description: {
+      es: 'Proceso lavado, notas dulces y acidez brillante.',
+      en: 'Washed process, sweet notes and bright acidity.',
+    },
+    weight: '500gr',
+    price: 47000,
+    presentations: {
+      es: ['Molido', 'En grano'],
+      en: ['Ground', 'Whole bean'],
+    },
   },
   {
-    id: 'cappuccino',
-    name: 'Cappuccino',
-    description: 'Espresso con leche vaporizada y espuma cremosa.',
-    price: 9000,
-    category: 'bebida',
+    id: 'natural',
+    name: { es: 'Café Natural', en: 'Natural Coffee' },
+    description: {
+      es: 'Secado natural, cuerpo intenso y notas frutales.',
+      en: 'Natural drying, full body and fruity notes.',
+    },
+    weight: '340gr',
+    price: 42000,
+    presentations: {
+      es: ['Molido', 'En grano'],
+      en: ['Ground', 'Whole bean'],
+    },
   },
   {
-    id: 'latte-art',
-    name: 'Latte',
-    description: 'Espresso suave con leche vaporizada, ideal para latte art.',
-    price: 9500,
-    category: 'bebida',
+    id: 'honey',
+    name: { es: 'Café Honey', en: 'Honey Coffee' },
+    description: {
+      es: 'Proceso honey, dulzor equilibrado y final limpio.',
+      en: 'Honey process, balanced sweetness and clean finish.',
+    },
+    weight: '340gr',
+    price: 45000,
+    presentations: {
+      es: ['Molido', 'En grano'],
+      en: ['Ground', 'Whole bean'],
+    },
   },
   {
-    id: 'cold-brew',
-    name: 'Cold Brew',
-    description: 'Extracción en frío, notas dulces y baja acidez.',
-    price: 10000,
-    category: 'bebida',
-  },
-  {
-    id: 'croissant',
-    name: 'Croissant',
-    description: 'Croissant de mantequilla horneado en el local.',
-    price: 8000,
-    category: 'comida',
-  },
-  {
-    id: 'torta-chocolate',
-    name: 'Torta de chocolate',
-    description: 'Porción de torta húmeda de chocolate.',
-    price: 12000,
-    category: 'comida',
+    id: 'descafeinado',
+    name: { es: 'Descafeinado', en: 'Decaf' },
+    description: {
+      es: 'Todo el sabor, sin cafeína.',
+      en: 'All the flavor, without the caffeine.',
+    },
+    weight: '340gr',
+    price: 46000,
+    presentations: {
+      es: ['Molido', 'En grano'],
+      en: ['Ground', 'Whole bean'],
+    },
   },
 ]
