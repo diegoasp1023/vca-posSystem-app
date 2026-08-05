@@ -1,7 +1,19 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.models.product import Product
 from app.schemas.common import LocalizedText
+
+
+class ProductWrite(BaseModel):
+    name_es: str = Field(min_length=1, max_length=120)
+    name_en: str = Field(min_length=1, max_length=120)
+    description_es: str = Field(min_length=1, max_length=500)
+    description_en: str = Field(min_length=1, max_length=500)
+    weight_grams: int = Field(gt=0)
+    price_cop: int = Field(gt=0)
+    image_url: str | None = None
+    is_active: bool = True
+    presentation_ids: list[int] = []
 
 
 class ProductOut(BaseModel):

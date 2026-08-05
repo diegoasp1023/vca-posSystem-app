@@ -5,6 +5,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
+from app.core.auth import AuthenticatedUser, require_admin
 from app.core.database import Base, get_db
 from app.main import app
 from app.models.course import Course, CourseContentModule, CourseCost, CourseObjective
@@ -41,6 +42,17 @@ async def client(db_session) -> AsyncGenerator[AsyncClient]:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest.fixture
+async def admin_client(db_session) -> AsyncGenerator[AsyncClient]:
+    app.dependency_overrides[require_admin] = lambda: AuthenticatedUser(
+        subject="test-admin", username="admin@test.local", roles=["Administrador"]
+    )
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+    del app.dependency_overrides[require_admin]
 
 
 async def make_product(session, **overrides) -> Product:
