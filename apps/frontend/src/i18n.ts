@@ -5,13 +5,16 @@ const resources = {
   es: {
     translation: {
       header: {
+        home: 'Inicio',
         menu: 'Menú',
+        about: 'Nosotros',
+        contact: 'Contacto',
         location: 'Ubicación',
         login: 'Ingresa',
       },
       hero: {
         tagline:
-          'Café de especialidad, 100% vegano — porque ser valientes también es cuidar a los animales. Cada taza, hecha con calma, para quienes se atreven a disfrutar sin dejar a nadie atrás.',
+          'Café de especialidad, 100% vegano. Porque la valentía de cambiar el mundo empieza con decisiones conscientes. Cada taza, servida con la calma y el respeto que todos merecemos.',
         cta: 'Ver el menú',
       },
       menu: {
@@ -27,6 +30,19 @@ const resources = {
           sunday: 'Domingo',
         },
       },
+      courses: {
+        heading: 'Nuestros cursos y talleres',
+        moreInfo: 'Más información',
+      },
+      coursePage: {
+        objectives: 'Objetivos',
+        content: 'Contenido del curso',
+        duration: 'Duración',
+        cost: 'Costo',
+        methods: 'Métodos de pago',
+        back: 'Volver al inicio',
+        notFound: 'No encontramos este curso.',
+      },
       footer: {
         text: 'Hecho con ♥ · Valiente Café',
       },
@@ -35,18 +51,31 @@ const resources = {
         comingSoon: 'Muy pronto vas a poder ver acá todo nuestro menú.',
         back: 'Volver al inicio',
       },
+      aboutPage: {
+        heading: 'Nosotros',
+        comingSoon: 'Muy pronto vas a poder conocer más sobre nosotros acá.',
+        back: 'Volver al inicio',
+      },
+      contactPage: {
+        heading: 'Contacto',
+        comingSoon: 'Muy pronto vas a poder contactarnos acá.',
+        back: 'Volver al inicio',
+      },
     },
   },
   en: {
     translation: {
       header: {
+        home: 'Home',
         menu: 'Menu',
+        about: 'About',
+        contact: 'Contact',
         location: 'Location',
         login: 'Log in',
       },
       hero: {
         tagline:
-          'Specialty coffee, 100% vegan — because being brave also means caring for animals. Every cup, made unhurried, for those who dare to enjoy it without leaving anyone behind.',
+          'Specialty coffee, 100% vegan. Courage to change the world starts with conscious choices. Every cup, crafted with the patience and respect we all deserve.',
         cta: 'See the menu',
       },
       menu: {
@@ -62,12 +91,35 @@ const resources = {
           sunday: 'Sunday',
         },
       },
+      courses: {
+        heading: 'Our Courses & Workshops',
+        moreInfo: 'Learn more',
+      },
+      coursePage: {
+        objectives: 'Objectives',
+        content: 'Course content',
+        duration: 'Duration',
+        cost: 'Cost',
+        methods: 'Payment methods',
+        back: 'Back to home',
+        notFound: "We couldn't find this course.",
+      },
       footer: {
         text: 'Made with ♥ · Valiente Café',
       },
       menuPage: {
         heading: 'Full menu',
         comingSoon: "Our full menu will be available here soon.",
+        back: 'Back to home',
+      },
+      aboutPage: {
+        heading: 'About us',
+        comingSoon: "You'll be able to learn more about us here soon.",
+        back: 'Back to home',
+      },
+      contactPage: {
+        heading: 'Contact',
+        comingSoon: "You'll be able to reach us here soon.",
         back: 'Back to home',
       },
     },

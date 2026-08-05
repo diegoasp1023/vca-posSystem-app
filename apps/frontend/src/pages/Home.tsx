@@ -1,5 +1,6 @@
 import { Hero } from '../components/Hero'
 import { MenuSection } from '../components/MenuSection'
+import { CoursesSection } from '../components/CoursesSection'
 import { LocationSection } from '../components/LocationSection'
 
 export function Home() {
@@ -7,6 +8,7 @@ export function Home() {
     <>
       <Hero />
       <MenuSection />
+      <CoursesSection />
       <LocationSection />
     </>
   )

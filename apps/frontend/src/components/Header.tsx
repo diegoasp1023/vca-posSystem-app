@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import foxLogo from '../assets/fox-logo.svg'
 
@@ -11,14 +12,23 @@ export function Header() {
   return (
     <header className="sticky top-0 z-10 border-b border-cream bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <a href="/">
+        <Link to="/">
           <img src={foxLogo} alt="Valiente Café" className="h-12 w-12" />
-        </a>
+        </Link>
 
         <nav className="hidden gap-8 text-sm font-medium text-lavender-dark sm:flex">
-          <a href="/#menu" className="hover:text-coral-dark">
+          <Link to="/" className="hover:text-coral-dark">
+            {t('header.home')}
+          </Link>
+          <Link to="/menu" className="hover:text-coral-dark">
             {t('header.menu')}
-          </a>
+          </Link>
+          <Link to="/nosotros" className="hover:text-coral-dark">
+            {t('header.about')}
+          </Link>
+          <Link to="/contacto" className="hover:text-coral-dark">
+            {t('header.contact')}
+          </Link>
           <a href="/#ubicacion" className="hover:text-coral-dark">
             {t('header.location')}
           </a>
