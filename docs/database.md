@@ -37,9 +37,20 @@ Postgres ejecuta automáticamente los scripts en
    para esto).
 2. Crea la base `APP_DB_NAME` con el usuario `APP_DB_USERNAME` como owner.
 3. Crea la base `KC_DB_NAME` con el usuario `KC_DB_USERNAME` como owner.
+4. Deja al usuario de cada base como owner del schema `public` de esa base
+   (necesario desde Postgres 15+, que ya no da `CREATE` sobre `public` por
+   defecto — sin este paso, Keycloak/el backend fallan al crear sus tablas
+   con `permission denied for schema public`).
+
+`APP_DB_USERNAME` y `KC_DB_USERNAME` pueden ser el mismo usuario si así lo
+prefieres (el script no falla si ya existe), aunque lo recomendado es usar
+usuarios distintos para mantener las credenciales de Keycloak separadas de
+las de la aplicación.
 
 Si el volumen ya tiene datos, este script **no vuelve a correr** (comportamiento
-estándar de `/docker-entrypoint-initdb.d`).
+estándar de `/docker-entrypoint-initdb.d`). Si cambias `APP_DB_*`/`KC_DB_*`
+después del primer arranque, hay que resetear el volumen
+(`docker compose ... down -v`) para que se vuelva a ejecutar.
 
 ### Requisitos
 
