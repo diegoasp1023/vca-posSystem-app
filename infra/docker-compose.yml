@@ -1,34 +1,24 @@
 services:
-  app-db:
+  postgres:
     image: postgres:16.14
-    container_name: app-db-${APP_ENV}
+    container_name: postgres-${APP_ENV}
     profiles:
       - dev
     environment:
-      POSTGRES_DB: ${APP_DB_NAME}
-      POSTGRES_USER: ${APP_DB_USERNAME}
-      POSTGRES_PASSWORD: ${APP_DB_PASSWORD}
+      POSTGRES_USER: ${DB_ROOT_USER}
+      POSTGRES_PASSWORD: ${DB_ROOT_PASSWORD}
+      POSTGRES_DB: postgres
+      APP_DB_NAME: ${APP_DB_NAME}
+      APP_DB_USERNAME: ${APP_DB_USERNAME}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+      KC_DB_NAME: ${KC_DB_NAME}
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
     ports:
-      - "${APP_DB_PORT}:5432"
+      - "${DB_PORT}:5432"
     volumes:
-      - app-db-data:/var/lib/postgresql/data
-    restart: unless-stopped
-    networks:
-      - vca-net
-
-  keycloak-db:
-    image: postgres:16.14
-    container_name: keycloak-db-${APP_ENV}
-    profiles:
-      - dev
-    environment:
-      POSTGRES_DB: ${KC_DB_NAME}
-      POSTGRES_USER: ${KC_DB_USERNAME}
-      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
-    ports:
-      - "${KC_DB_PORT}:5432"
-    volumes:
-      - keycloak-db-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
     restart: unless-stopped
     networks:
       - vca-net
@@ -59,5 +49,4 @@ networks:
     driver: bridge
 
 volumes:
-  app-db-data:
-  keycloak-db-data:
+  postgres-data:
