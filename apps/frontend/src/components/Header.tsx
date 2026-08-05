@@ -12,16 +12,12 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-10 border-b border-cream bg-white/90 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center px-6 py-2">
-        <SocialIcons />
-      </div>
-
-      <div className="mx-auto flex max-w-5xl items-center justify-between border-t border-cream px-6 py-4">
-        <Link to="/">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-6 py-4">
+        <Link to="/" className="shrink-0">
           <img src={foxLogo} alt="Valiente Café" className="h-12 w-12" />
         </Link>
 
-        <nav className="hidden gap-8 text-sm font-medium text-lavender-dark sm:flex">
+        <nav className="hidden gap-8 text-sm font-medium text-lavender-dark md:flex">
           <Link to="/" className="hover:text-coral-dark">
             {t('header.home')}
           </Link>
@@ -36,7 +32,11 @@ export function Header() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-4">
+          <SocialIcons className="hidden sm:flex" />
+
+          <span className="hidden h-6 w-px bg-cream sm:block" />
+
           <button
             type="button"
             onClick={toggleLanguage}

@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { location } from '../data/location'
+import { MapEmbed } from './MapEmbed'
 
 export function LocationSection() {
   const { t } = useTranslation()
@@ -28,12 +29,7 @@ export function LocationSection() {
           </ul>
         </div>
 
-        <div
-          className="flex min-h-48 items-center justify-center rounded-2xl border border-dashed border-lavender bg-white text-sm text-gray-400"
-          aria-hidden="true"
-        >
-          {t('location.mapPlaceholder')}
-        </div>
+        <MapEmbed className="min-h-48 rounded-2xl" />
       </div>
     </section>
   )

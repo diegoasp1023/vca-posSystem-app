@@ -1,62 +1,32 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faInstagram,
+  faFacebookF,
+  faWhatsapp,
+} from '@fortawesome/free-brands-svg-icons'
 import { socialLinks } from '../data/social'
 
-const iconClass = 'h-5 w-5'
-
-function InstagramIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={iconClass}>
-      <path d="M12 2.2c3.2 0 3.58.01 4.85.07 1.17.05 1.97.24 2.43.4a4.9 4.9 0 0 1 1.77 1.15 4.9 4.9 0 0 1 1.15 1.77c.16.46.35 1.26.4 2.43.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.24 1.97-.4 2.43a4.9 4.9 0 0 1-1.15 1.77 4.9 4.9 0 0 1-1.77 1.15c-.46.16-1.26.35-2.43.4-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.97-.24-2.43-.4a4.9 4.9 0 0 1-1.77-1.15 4.9 4.9 0 0 1-1.15-1.77c-.16-.46-.35-1.26-.4-2.43C2.21 15.58 2.2 15.2 2.2 12s.01-3.58.07-4.85c.05-1.17.24-1.97.4-2.43a4.9 4.9 0 0 1 1.15-1.77A4.9 4.9 0 0 1 5.59 1.8c.46-.16 1.26-.35 2.43-.4C9.29 1.34 9.67 1.33 12 1.33Zm0 1.8c-3.16 0-3.52.01-4.77.07-1.15.05-1.6.22-1.98.36-.5.19-.85.42-1.22.79-.37.37-.6.72-.79 1.22-.14.38-.31.83-.36 1.98-.06 1.25-.07 1.61-.07 4.77s.01 3.52.07 4.77c.05 1.15.22 1.6.36 1.98.19.5.42.85.79 1.22.37.37.72.6 1.22.79.38.14.83.31 1.98.36 1.25.06 1.61.07 4.77.07s3.52-.01 4.77-.07c1.15-.05 1.6-.22 1.98-.36.5-.19.85-.42 1.22-.79.37-.37.6-.72.79-1.22.14-.38.31-.83.36-1.98.06-1.25.07-1.61.07-4.77s-.01-3.52-.07-4.77c-.05-1.15-.22-1.6-.36-1.98a3.1 3.1 0 0 0-.79-1.22 3.1 3.1 0 0 0-1.22-.79c-.38-.14-.83-.31-1.98-.36-1.25-.06-1.61-.07-4.77-.07Zm0 3.65a4.35 4.35 0 1 1 0 8.7 4.35 4.35 0 0 1 0-8.7Zm0 1.8a2.55 2.55 0 1 0 0 5.1 2.55 2.55 0 0 0 0-5.1Zm4.54-2.01a1.02 1.02 0 1 1 0 2.04 1.02 1.02 0 0 1 0-2.04Z" />
-    </svg>
-  )
-}
-
-function FacebookIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={iconClass}>
-      <path d="M13.5 22v-8.4h2.82l.42-3.27h-3.24V8.24c0-.95.26-1.6 1.63-1.6h1.74V3.72A23.4 23.4 0 0 0 14.36 3.6c-2.5 0-4.21 1.53-4.21 4.33v2.4H7.32v3.27h2.83V22h3.35Z" />
-    </svg>
-  )
-}
-
-function WhatsappIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={iconClass}>
-      <path d="M17.47 14.38c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48a9 9 0 0 1-1.66-2.06c-.17-.3-.02-.46.13-.61.14-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.6-.91-2.2-.24-.57-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37s-1.04 1.02-1.04 2.48 1.07 2.87 1.22 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.12-.27-.2-.57-.35Z" />
-      <path d="M12.02 2.2A9.8 9.8 0 0 0 3.6 16.9L2.2 21.8l5.03-1.32a9.8 9.8 0 1 0 4.79-18.28Zm0 17.87a8.07 8.07 0 0 1-4.12-1.13l-.3-.18-3 .78.8-2.92-.19-.3a8.08 8.08 0 1 1 6.81 3.75Z" />
-    </svg>
-  )
-}
+const links = [
+  { href: socialLinks.instagram, icon: faInstagram, label: 'Instagram' },
+  { href: socialLinks.facebook, icon: faFacebookF, label: 'Facebook' },
+  { href: socialLinks.whatsapp, icon: faWhatsapp, label: 'WhatsApp' },
+]
 
 export function SocialIcons({ className = '' }: { className?: string }) {
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <a
-        href={socialLinks.instagram}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Instagram"
-        className="text-coral transition hover:text-coral-dark"
-      >
-        <InstagramIcon />
-      </a>
-      <a
-        href={socialLinks.facebook}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Facebook"
-        className="text-coral transition hover:text-coral-dark"
-      >
-        <FacebookIcon />
-      </a>
-      <a
-        href={socialLinks.whatsapp}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="WhatsApp"
-        className="text-coral transition hover:text-coral-dark"
-      >
-        <WhatsappIcon />
-      </a>
+    <div className={`flex items-center gap-2 ${className}`}>
+      {links.map(({ href, icon, label }) => (
+        <a
+          key={label}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={label}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-cream text-coral-dark transition hover:bg-coral hover:text-white"
+        >
+          <FontAwesomeIcon icon={icon} className="h-4 w-4" />
+        </a>
+      ))}
     </div>
   )
 }

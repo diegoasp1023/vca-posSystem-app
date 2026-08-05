@@ -24,10 +24,10 @@ const resources = {
       },
       location: {
         heading: 'Ubicación y horario',
-        mapPlaceholder: 'Mapa próximamente',
         hours: {
-          weekdays: 'Lunes a sábado',
-          sunday: 'Domingo',
+          weekdays: 'Lunes a viernes',
+          saturday: 'Sábados',
+          sundayHolidays: 'Domingos y festivos',
         },
       },
       courses: {
@@ -86,10 +86,10 @@ const resources = {
       },
       location: {
         heading: 'Location & hours',
-        mapPlaceholder: 'Map coming soon',
         hours: {
-          weekdays: 'Monday to Saturday',
-          sunday: 'Sunday',
+          weekdays: 'Monday to Friday',
+          saturday: 'Saturdays',
+          sundayHolidays: 'Sundays & holidays',
         },
       },
       courses: {
