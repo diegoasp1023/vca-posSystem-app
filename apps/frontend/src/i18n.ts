@@ -9,13 +9,13 @@ const resources = {
         menu: 'Menú',
         about: 'Nosotros',
         contact: 'Contacto',
-        location: 'Ubicación',
         login: 'Ingresa',
       },
       hero: {
         tagline:
           'Café de especialidad, 100% vegano. Porque la valentía de cambiar el mundo empieza con decisiones conscientes. Cada taza, servida con la calma y el respeto que todos merecemos.',
         cta: 'Ver el menú',
+        contactCta: 'Contáctanos',
       },
       menu: {
         heading: 'Nuestros cafés de especialidad',
@@ -58,8 +58,9 @@ const resources = {
       },
       contactPage: {
         heading: 'Contacto',
-        comingSoon: 'Muy pronto vas a poder contactarnos acá.',
-        back: 'Volver al inicio',
+        address: 'Dirección',
+        hours: 'Horario',
+        cta: 'Escríbenos por WhatsApp',
       },
     },
   },
@@ -70,13 +71,13 @@ const resources = {
         menu: 'Menu',
         about: 'About',
         contact: 'Contact',
-        location: 'Location',
         login: 'Log in',
       },
       hero: {
         tagline:
           'Specialty coffee, 100% vegan. Courage to change the world starts with conscious choices. Every cup, crafted with the patience and respect we all deserve.',
         cta: 'See the menu',
+        contactCta: 'Contact us',
       },
       menu: {
         heading: 'Our specialty coffees',
@@ -119,8 +120,9 @@ const resources = {
       },
       contactPage: {
         heading: 'Contact',
-        comingSoon: "You'll be able to reach us here soon.",
-        back: 'Back to home',
+        address: 'Address',
+        hours: 'Hours',
+        cta: 'Message us on WhatsApp',
       },
     },
   },

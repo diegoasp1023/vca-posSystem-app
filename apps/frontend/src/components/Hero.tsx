@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import foxLogo from '../assets/fox-logo.svg'
+import { socialLinks } from '../data/social'
 
 export function Hero() {
   const { t } = useTranslation()
@@ -17,12 +18,22 @@ export function Hero() {
           Valiente Café
         </h1>
         <p className="mt-6 text-lg text-gray-600">{t('hero.tagline')}</p>
-        <Link
-          to="/menu"
-          className="mt-10 inline-block rounded-full bg-coral px-8 py-3 font-semibold text-white transition hover:bg-coral-dark"
-        >
-          {t('hero.cta')}
-        </Link>
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+          <Link
+            to="/menu"
+            className="inline-block rounded-full bg-coral px-8 py-3 font-semibold text-white transition hover:bg-coral-dark"
+          >
+            {t('hero.cta')}
+          </Link>
+          <a
+            href={socialLinks.whatsapp}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block rounded-full border border-coral px-8 py-3 font-semibold text-coral-dark transition hover:bg-coral hover:text-white"
+          >
+            {t('hero.contactCta')}
+          </a>
+        </div>
       </div>
     </section>
   )

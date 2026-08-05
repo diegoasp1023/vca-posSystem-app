@@ -4,10 +4,9 @@ export interface LocationInfo {
   hours: { key: 'weekdays' | 'sunday'; time: string }[]
 }
 
-// Placeholder data — replace with the real address/hours before launch.
 export const location: LocationInfo = {
-  address: 'Calle Falsa 123',
-  city: 'Bogotá D.C.',
+  address: 'Cl. 26d #4-15',
+  city: 'Bogotá',
   hours: [
     { key: 'weekdays', time: '10:00 AM - 8:00 PM' },
     { key: 'sunday', time: '10:00 AM - 6:00 PM' },

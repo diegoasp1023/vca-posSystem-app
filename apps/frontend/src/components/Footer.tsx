@@ -1,11 +1,13 @@
 import { useTranslation } from 'react-i18next'
+import { SocialIcons } from './SocialIcons'
 
 export function Footer() {
   const { t } = useTranslation()
 
   return (
     <footer className="border-t border-cream px-6 py-8 text-center text-sm text-gray-500">
-      <p>
+      <SocialIcons className="justify-center" />
+      <p className="mt-4">
         {t('footer.text')} © {new Date().getFullYear()}
       </p>
     </footer>
