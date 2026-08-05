@@ -14,7 +14,7 @@ const resources = {
       hero: {
         tagline:
           'Café de especialidad, 100% vegano. Porque la valentía de cambiar el mundo empieza con decisiones conscientes. Cada taza, servida con la calma y el respeto que todos merecemos.',
-        cta: 'Ver el menú',
+        cta: 'Ver nuestros cafés',
         contactCta: 'Contáctanos',
       },
       menu: {
@@ -61,7 +61,9 @@ const resources = {
         text: 'Hecho con ♥ · Valiente Café',
       },
       menuPage: {
-        heading: 'Menú completo',
+        heading: 'Menú',
+        comingSoon: 'Muy pronto vas a poder ver acá el menú del local.',
+        back: 'Volver al inicio',
       },
       aboutPage: {
         heading: 'Nosotros',
@@ -88,7 +90,7 @@ const resources = {
       hero: {
         tagline:
           'Specialty coffee, 100% vegan. Courage to change the world starts with conscious choices. Every cup, crafted with the patience and respect we all deserve.',
-        cta: 'See the menu',
+        cta: 'See our coffees',
         contactCta: 'Contact us',
       },
       menu: {
@@ -134,7 +136,9 @@ const resources = {
         text: 'Made with ♥ · Valiente Café',
       },
       menuPage: {
-        heading: 'Full menu',
+        heading: 'Menu',
+        comingSoon: "Our in-house menu will be available here soon.",
+        back: 'Back to home',
       },
       aboutPage: {
         heading: 'About us',
