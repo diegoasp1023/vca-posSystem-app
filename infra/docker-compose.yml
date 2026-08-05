@@ -1,4 +1,21 @@
 services:
+  app-db:
+    image: postgres:16.14
+    container_name: app-db-${APP_ENV}
+    profiles:
+      - dev
+    environment:
+      POSTGRES_DB: ${APP_DB_NAME}
+      POSTGRES_USER: ${APP_DB_USERNAME}
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD}
+    ports:
+      - "${APP_DB_PORT}:5432"
+    volumes:
+      - app-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - vca-net
+
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak-${APP_ENV}
@@ -23,3 +40,6 @@ services:
 networks:
   vca-net:
     driver: bridge
+
+volumes:
+  app-db-data:
