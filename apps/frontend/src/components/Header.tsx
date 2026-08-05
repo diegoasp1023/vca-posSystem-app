@@ -1,10 +1,10 @@
+import foxLogo from '../assets/fox-logo.svg'
+
 export function Header() {
   return (
     <header className="sticky top-0 z-10 border-b border-cream bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <span className="font-serif text-xl text-coral-dark">
-          valiente café
-        </span>
+        <img src={foxLogo} alt="Valiente Café" className="h-12 w-12" />
 
         <nav className="hidden gap-8 text-sm font-medium text-lavender-dark sm:flex">
           <a href="#menu" className="hover:text-coral-dark">
