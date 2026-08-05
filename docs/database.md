@@ -60,12 +60,14 @@ después del primer arranque, hay que resetear el volumen
   - `APP_ENV=dev`
   - `DB_ROOT_USER` / `DB_ROOT_PASSWORD` (superusuario, solo para el init)
   - `DB_PORT=5432` (único puerto expuesto al host)
-  - `APP_DB_HOST=postgres`, `APP_DB_NAME=vca_pos_dev`, `APP_DB_USERNAME`, `APP_DB_PASSWORD`
+  - `APP_DB_HOST=localhost`, `APP_DB_NAME=vca_pos_dev`, `APP_DB_USERNAME`, `APP_DB_PASSWORD`
   - `KC_DB_HOST=postgres`, `KC_DB_NAME=keycloak_dev`, `KC_DB_USERNAME`, `KC_DB_PASSWORD`
 
-`APP_DB_HOST` y `KC_DB_HOST` valen `postgres` porque backend/Keycloak se
-conectan al servicio por su nombre en la red `vca-net` (DNS interno de
-Docker), no por `localhost`.
+`KC_DB_HOST` vale `postgres` porque Keycloak corre en Docker y se conecta al
+servicio por su nombre en la red `vca-net` (DNS interno de Docker). `APP_DB_HOST`
+en cambio vale `localhost`: el backend (`apps/backend`) corre local en dev, no
+en Docker (ver `apps/backend/README.md`), así que llega a Postgres por el
+puerto expuesto al host (`DB_PORT`), no por la red interna.
 
 ### Levantar la base de datos
 
