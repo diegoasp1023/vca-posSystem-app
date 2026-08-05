@@ -3,15 +3,32 @@
 Landing pública de Valiente Café. React + Vite + TypeScript + Tailwind CSS.
 
 Sitio con routing (`react-router-dom`): Home, `/menu`, `/nosotros`,
-`/contacto`, `/cursos/:slug`. Los cafés y cursos/talleres se traen del
-backend (`apps/backend`, ver [`src/lib/api.ts`](src/lib/api.ts)) — ya no son
-data estática. `/menu` y la sección de cursos del home están paginados (6 y
-4 por página respectivamente). `src/data/location.ts` y `src/data/social.ts`
-siguen siendo placeholders locales (dirección, WhatsApp, redes).
+`/contacto`, `/cursos/:slug`. La sección "Nuestros cafés de especialidad"
+del home es el catálogo completo paginado (6 por página); `/menu` es un
+placeholder aparte para el futuro menú del local (bebidas/comida in-house,
+no los cafés en bolsa). La sección de cursos del home está paginada (4 por
+página). Todo viene del backend (`apps/backend`, ver
+[`src/lib/api.ts`](src/lib/api.ts)) — ya no es data estática.
+`src/data/location.ts` y `src/data/social.ts` siguen siendo placeholders
+locales (dirección, WhatsApp, redes).
 
-El botón "Ingresa" en el header todavía no tiene funcionalidad — quedará
-conectado al login de Keycloak (client `vca-pos-frontend`, público + PKCE)
-cuando se implemente esa parte del sistema.
+## Login y panel de administración
+
+El botón "Ingresa" del header dispara el login real vía `keycloak-js`
+(client `vca-pos-frontend`, público + PKCE). Tras loguearse, redirige a
+`/admin`:
+
+- Cualquier usuario autenticado ve "Bienvenido, {usuario}".
+- Con el rol de realm `Administrador`, además ve dos accesos: "Gestión de
+  Cafés de especialidad" (`/admin/cafes`) y "Gestión de Cursos y Talleres"
+  (`/admin/cursos`) — tablas con crear/editar/eliminar contra los endpoints
+  protegidos del backend.
+- El rol `Gerente` solo ve la bienvenida, sin esos menús.
+
+El token vive en memoria (el propio `keycloak-js`), nunca en `localStorage`.
+Antes de usar el login en dev, hay que correr
+`apps/backend/scripts/setup_keycloak.py` (ver `apps/backend/README.md`) para
+crear el realm/clients/roles.
 
 ## Desarrollo (dev)
 
@@ -34,6 +51,9 @@ docker-compose y el backend) — para el frontend, crea
 
 ```
 VITE_API_BASE_URL=http://localhost:8000
+VITE_KEYCLOAK_URL=http://localhost:8080
+VITE_KEYCLOAK_REALM=vca-pos
+VITE_KEYCLOAK_CLIENT_ID=vca-pos-frontend
 ```
 
 ## Staging / Prod
