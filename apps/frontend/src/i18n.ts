@@ -35,6 +35,11 @@ const resources = {
         moreInfo: 'Más información',
       },
       coursePage: {
+        enroll: '¿Cómo inscribirte?',
+        enrollText:
+          'Escríbenos por WhatsApp y te ayudamos a reservar tu cupo.',
+        enrollCta: 'Inscribirme por WhatsApp',
+        enrollMessage: 'Hola, quiero inscribirme al curso "{{course}}"',
         objectives: 'Objetivos',
         content: 'Contenido del curso',
         duration: 'Duración',
@@ -97,6 +102,10 @@ const resources = {
         moreInfo: 'Learn more',
       },
       coursePage: {
+        enroll: 'How to enroll',
+        enrollText: "Message us on WhatsApp and we'll help you save your spot.",
+        enrollCta: 'Enroll via WhatsApp',
+        enrollMessage: 'Hi, I want to enroll in the "{{course}}" course',
         objectives: 'Objectives',
         content: 'Course content',
         duration: 'Duration',

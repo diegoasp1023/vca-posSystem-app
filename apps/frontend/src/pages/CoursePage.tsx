@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { courses } from '../data/courses'
+import { socialLinks } from '../data/social'
 
 export function CoursePage() {
   const { t, i18n } = useTranslation()
@@ -35,6 +36,23 @@ export function CoursePage() {
           {course.title[lang]}
         </h1>
         <p className="mt-3 text-lg text-gray-600">{course.tagline[lang]}</p>
+
+        <div className="mt-8 rounded-2xl bg-cream p-6 text-center">
+          <h2 className="font-serif text-xl text-lavender-dark">
+            {t('coursePage.enroll')}
+          </h2>
+          <p className="mt-2 text-gray-700">{t('coursePage.enrollText')}</p>
+          <a
+            href={`${socialLinks.whatsapp}${encodeURIComponent(
+              t('coursePage.enrollMessage', { course: course.title[lang] }),
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-block rounded-full bg-coral px-8 py-3 font-semibold text-white transition hover:bg-coral-dark"
+          >
+            {t('coursePage.enrollCta')}
+          </a>
+        </div>
 
         <section className="mt-10">
           <h2 className="font-serif text-2xl text-coral-dark">
