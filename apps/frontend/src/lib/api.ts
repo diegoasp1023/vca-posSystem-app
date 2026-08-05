@@ -1,0 +1,60 @@
+export interface LocalizedText {
+  es: string
+  en: string
+}
+
+export interface Page<T> {
+  items: T[]
+  page: number
+  page_size: number
+  total: number
+  total_pages: number
+}
+
+export interface Product {
+  id: number
+  name: LocalizedText
+  description: LocalizedText
+  weight_grams: number
+  price_cop: number
+  image_url: string | null
+  presentations: LocalizedText[]
+}
+
+export interface CourseSummary {
+  id: number
+  slug: string
+  title: LocalizedText
+  tagline: LocalizedText
+  image_url: string
+}
+
+export interface CourseDetail extends CourseSummary {
+  objectives: LocalizedText[]
+  content: { module: LocalizedText; duration: string }[]
+  duration: LocalizedText
+  cost: LocalizedText[]
+  methods: LocalizedText[]
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string
+
+async function apiGet<T>(path: string): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`)
+  if (!response.ok) {
+    throw new Error(`API request to ${path} failed with ${response.status}`)
+  }
+  return response.json() as Promise<T>
+}
+
+export function fetchProducts(page: number): Promise<Page<Product>> {
+  return apiGet(`/api/products?page=${page}`)
+}
+
+export function fetchCourses(page: number): Promise<Page<CourseSummary>> {
+  return apiGet(`/api/courses?page=${page}`)
+}
+
+export function fetchCourseBySlug(slug: string): Promise<CourseDetail> {
+  return apiGet(`/api/courses/${slug}`)
+}

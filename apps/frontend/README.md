@@ -2,11 +2,12 @@
 
 Landing pública de Valiente Café. React + Vite + TypeScript + Tailwind CSS.
 
-Por ahora es una sola página estática (sin routing, sin autenticación): Hero,
-Menú y Ubicación/Horario. Los datos de `src/data/menu.ts` y
-`src/data/location.ts` son placeholders — `menu.ts` está tipado (`Product[]`)
-pensando en reemplazarse por un fetch al backend más adelante sin tener que
-tocar los componentes que lo consumen.
+Sitio con routing (`react-router-dom`): Home, `/menu`, `/nosotros`,
+`/contacto`, `/cursos/:slug`. Los cafés y cursos/talleres se traen del
+backend (`apps/backend`, ver [`src/lib/api.ts`](src/lib/api.ts)) — ya no son
+data estática. `/menu` y la sección de cursos del home están paginados (6 y
+4 por página respectivamente). `src/data/location.ts` y `src/data/social.ts`
+siguen siendo placeholders locales (dirección, WhatsApp, redes).
 
 El botón "Ingresa" en el header todavía no tiene funcionalidad — quedará
 conectado al login de Keycloak (client `vca-pos-frontend`, público + PKCE)
@@ -25,10 +26,15 @@ npm run build    # build de producción (tsc + vite build)
 npm run lint      # oxlint
 ```
 
-No requiere ninguna variable de entorno para verse — toda la data actual
-(menú, ubicación) es estática (`src/data/`). Cuando se conecte al backend o
-a Keycloak, las variables `VITE_*` que se agreguen irán documentadas acá y
-en `.env.example`.
+Necesita el backend corriendo para mostrar cafés/cursos reales (ver
+`apps/backend/README.md`, `uv run fastapi dev app/main.py`). Vite no lee el
+`.env.dev`/`.env.dev.local` de la raíz del repo (esos son para
+docker-compose y el backend) — para el frontend, crea
+`apps/frontend/.env.local` (gitignored, patrón `*.local`) con:
+
+```
+VITE_API_BASE_URL=http://localhost:8000
+```
 
 ## Staging / Prod
 
@@ -43,11 +49,11 @@ docker compose -f infra/docker-compose.yml --env-file .env.staging --profile sta
 docker compose -f infra/docker-compose.yml --env-file .env.prod --profile prod up -d frontend
 ```
 
-Variable de entorno necesaria: `FRONTEND_PORT` (puerto del host mapeado al
-80 de nginx dentro del contenedor). Ver `.env.example`.
+Variables de entorno necesarias (ver `.env.example`):
+- `FRONTEND_PORT` — puerto del host mapeado al 80 de nginx dentro del contenedor.
+- `VITE_API_BASE_URL` — URL del backend de ese ambiente, pasada como build ARG a `Dockerfile` (`infra/docker-compose.yml`, `frontend.build.args`).
 
 **Importante:** las variables `VITE_*` se compilan dentro del build de Vite
-(no son runtime como las de Keycloak) — si en el futuro se agregan (ej.
-`VITE_API_BASE_URL`, `VITE_KEYCLOAK_*`), cada ambiente necesita su propia
+(no son runtime como las de Keycloak) — cada ambiente necesita su propia
 imagen construida con sus propios valores; no se puede promover la misma
 imagen de staging a prod sin rebuildear.

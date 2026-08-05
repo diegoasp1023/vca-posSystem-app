@@ -1,18 +1,55 @@
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { courses } from '../data/courses'
+import { fetchCourseBySlug, type CourseDetail } from '../lib/api'
 import { socialLinks } from '../data/social'
 
 export function CoursePage() {
   const { t, i18n } = useTranslation()
   const lang = i18n.language === 'en' ? 'en' : 'es'
   const { slug } = useParams<{ slug: string }>()
-  const course = courses.find((c) => c.slug === slug)
 
-  if (!course) {
+  const [course, setCourse] = useState<CourseDetail | null>(null)
+  const [status, setStatus] = useState<'loading' | 'error' | 'not-found' | 'ready'>(
+    'loading',
+  )
+
+  useEffect(() => {
+    if (!slug) return
+    let cancelled = false
+
+    setStatus('loading')
+    fetchCourseBySlug(slug)
+      .then((result) => {
+        if (!cancelled) {
+          setCourse(result)
+          setStatus('ready')
+        }
+      })
+      .catch((error: Error) => {
+        if (cancelled) return
+        setStatus(error.message.includes('404') ? 'not-found' : 'error')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [slug])
+
+  if (status === 'loading') {
     return (
       <section className="px-6 py-24 text-center">
-        <p className="text-gray-600">{t('coursePage.notFound')}</p>
+        <p className="text-gray-500">{t('common.loading')}</p>
+      </section>
+    )
+  }
+
+  if (status === 'error' || status === 'not-found' || !course) {
+    return (
+      <section className="px-6 py-24 text-center">
+        <p className="text-gray-600">
+          {status === 'error' ? t('common.error') : t('coursePage.notFound')}
+        </p>
         <Link
           to="/"
           className="mt-6 inline-block rounded-full bg-coral px-8 py-3 font-semibold text-white transition hover:bg-coral-dark"
@@ -26,7 +63,7 @@ export function CoursePage() {
   return (
     <article>
       <img
-        src={course.image}
+        src={course.image_url}
         alt={course.title[lang]}
         className="h-72 w-full object-cover sm:h-96"
       />
@@ -59,8 +96,8 @@ export function CoursePage() {
             {t('coursePage.objectives')}
           </h2>
           <ul className="mt-3 list-disc space-y-1 pl-5 text-gray-700">
-            {course.objectives[lang].map((objective) => (
-              <li key={objective}>{objective}</li>
+            {course.objectives.map((objective) => (
+              <li key={objective[lang]}>{objective[lang]}</li>
             ))}
           </ul>
         </section>
@@ -70,12 +107,12 @@ export function CoursePage() {
             {t('coursePage.content')}
           </h2>
           <ul className="mt-3 divide-y divide-cream rounded-2xl border border-cream">
-            {course.content[lang].map((item) => (
+            {course.content.map((item) => (
               <li
-                key={item.module}
+                key={item.module[lang]}
                 className="flex items-center justify-between px-4 py-3 text-gray-700"
               >
-                <span>{item.module}</span>
+                <span>{item.module[lang]}</span>
                 <span className="font-semibold text-lavender-dark">
                   {item.duration}
                 </span>
@@ -96,8 +133,8 @@ export function CoursePage() {
             {t('coursePage.cost')}
           </h2>
           <ul className="mt-3 list-disc space-y-1 pl-5 text-gray-700">
-            {course.cost[lang].map((line) => (
-              <li key={line}>{line}</li>
+            {course.cost.map((line) => (
+              <li key={line[lang]}>{line[lang]}</li>
             ))}
           </ul>
         </section>
@@ -107,8 +144,8 @@ export function CoursePage() {
             {t('coursePage.methods')}
           </h2>
           <ul className="mt-3 list-disc space-y-1 pl-5 text-gray-700">
-            {course.methods[lang].map((method) => (
-              <li key={method}>{method}</li>
+            {course.methods.map((method) => (
+              <li key={method[lang]}>{method[lang]}</li>
             ))}
           </ul>
         </section>

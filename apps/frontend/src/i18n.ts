@@ -34,6 +34,15 @@ const resources = {
         heading: 'Nuestros cursos y talleres',
         moreInfo: 'Más información',
       },
+      pagination: {
+        previous: 'Anterior',
+        next: 'Siguiente',
+        pageOf: 'Página {{page}} de {{totalPages}}',
+      },
+      common: {
+        loading: 'Cargando...',
+        error: 'No pudimos cargar la información. Intenta de nuevo más tarde.',
+      },
       coursePage: {
         enroll: '¿Cómo inscribirte?',
         enrollText:
@@ -53,8 +62,6 @@ const resources = {
       },
       menuPage: {
         heading: 'Menú completo',
-        comingSoon: 'Muy pronto vas a poder ver acá todo nuestro menú.',
-        back: 'Volver al inicio',
       },
       aboutPage: {
         heading: 'Nosotros',
@@ -101,6 +108,15 @@ const resources = {
         heading: 'Our Courses & Workshops',
         moreInfo: 'Learn more',
       },
+      pagination: {
+        previous: 'Previous',
+        next: 'Next',
+        pageOf: 'Page {{page}} of {{totalPages}}',
+      },
+      common: {
+        loading: 'Loading...',
+        error: "We couldn't load this. Please try again later.",
+      },
       coursePage: {
         enroll: 'How to enroll',
         enrollText: "Message us on WhatsApp and we'll help you save your spot.",
@@ -119,8 +135,6 @@ const resources = {
       },
       menuPage: {
         heading: 'Full menu',
-        comingSoon: "Our full menu will be available here soon.",
-        back: 'Back to home',
       },
       aboutPage: {
         heading: 'About us',
