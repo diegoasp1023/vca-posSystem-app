@@ -19,7 +19,7 @@ const resources = {
       },
       menu: {
         heading: 'Nuestros cafés de especialidad',
-        note: 'Pídelo en la presentación que prefieras: molido, en grano, o como más te guste disfrutarlo.',
+        note: 'Pídelo en la presentación que prefieras.',
         presentations: 'Presentaciones',
       },
       location: {
@@ -81,7 +81,7 @@ const resources = {
       },
       menu: {
         heading: 'Our specialty coffees',
-        note: 'Order it however you like: ground, whole bean, or your favorite way to enjoy it.',
+        note: 'Order it in the format of your choice.',
         presentations: 'Available as',
       },
       location: {
