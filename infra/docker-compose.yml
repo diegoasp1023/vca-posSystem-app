@@ -16,6 +16,23 @@ services:
     networks:
       - vca-net
 
+  keycloak-db:
+    image: postgres:16.14
+    container_name: keycloak-db-${APP_ENV}
+    profiles:
+      - dev
+    environment:
+      POSTGRES_DB: ${KC_DB_NAME}
+      POSTGRES_USER: ${KC_DB_USERNAME}
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+    ports:
+      - "${KC_DB_PORT}:5432"
+    volumes:
+      - keycloak-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - vca-net
+
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak-${APP_ENV}
@@ -43,3 +60,4 @@ networks:
 
 volumes:
   app-db-data:
+  keycloak-db-data:
