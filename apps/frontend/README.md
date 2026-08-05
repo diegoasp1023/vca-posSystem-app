@@ -14,9 +14,11 @@ cuando se implemente esa parte del sistema.
 
 ## Desarrollo (dev)
 
-En dev el frontend **no corre en Docker** — se levanta local con Node:
+En dev el frontend **no corre en Docker** — se levanta local con Node.
+Los comandos se corren parados en `apps/frontend`, no en la raíz del repo:
 
 ```bash
+cd apps/frontend
 npm install
 npm run dev      # servidor de desarrollo (HMR)
 npm run build    # build de producción (tsc + vite build)
