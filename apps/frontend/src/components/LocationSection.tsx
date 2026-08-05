@@ -1,0 +1,35 @@
+import { location } from '../data/location'
+
+export function LocationSection() {
+  return (
+    <section id="ubicacion" className="bg-cream px-6 py-20">
+      <div className="mx-auto grid max-w-5xl gap-10 sm:grid-cols-2">
+        <div>
+          <h2 className="font-serif text-3xl text-lavender-dark">
+            Ubicación y horario
+          </h2>
+          <p className="mt-4 text-gray-700">
+            {location.address}
+            <br />
+            {location.city}
+          </p>
+          <ul className="mt-6 space-y-1 text-gray-700">
+            {location.hours.map((entry) => (
+              <li key={entry.days}>
+                <span className="font-semibold">{entry.days}:</span>{' '}
+                {entry.time}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div
+          className="flex min-h-48 items-center justify-center rounded-2xl border border-dashed border-lavender bg-white text-sm text-gray-400"
+          aria-hidden="true"
+        >
+          Mapa próximamente
+        </div>
+      </div>
+    </section>
+  )
+}
