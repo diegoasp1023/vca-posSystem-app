@@ -44,6 +44,19 @@ services:
     networks:
       - vca-net
 
+  frontend:
+    build:
+      context: ../apps/frontend
+    container_name: frontend-${APP_ENV}
+    profiles:
+      - staging
+      - prod
+    ports:
+      - "${FRONTEND_PORT}:80"
+    restart: unless-stopped
+    networks:
+      - vca-net
+
 networks:
   vca-net:
     driver: bridge
