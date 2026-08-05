@@ -13,9 +13,14 @@ interface AuthState {
   authenticated: boolean
   username: string | null
   roles: string[]
+  /** Same-tab redirect to Keycloak login. Used by ProtectedRoute when /admin
+   * itself is opened without a session (e.g. a direct link/bookmark). */
   login: () => void
   logout: () => void
   getToken: () => Promise<string | undefined>
+  /** Opens /admin in a NEW tab from the marketing site — logs in first
+   * (also in that new tab) if there's no session yet. */
+  openAdmin: () => void
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -62,6 +67,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return keycloak.token
   }, [])
 
+  const openAdmin = useCallback(() => {
+    const adminUrl = `${window.location.origin}/admin`
+
+    if (keycloak.authenticated) {
+      window.open(adminUrl, '_blank')
+      return
+    }
+
+    // Open the tab synchronously (within the click handler) so popup
+    // blockers allow it, then navigate it once we have the real login URL
+    // (createLoginUrl is async — it hashes the PKCE code_verifier).
+    const newTab = window.open('', '_blank')
+    keycloak.createLoginUrl({ redirectUri: adminUrl }).then((url) => {
+      if (newTab) newTab.location.href = url
+    })
+  }, [])
+
   const value: AuthState = {
     initialized,
     authenticated,
@@ -70,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     getToken,
+    openAdmin,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

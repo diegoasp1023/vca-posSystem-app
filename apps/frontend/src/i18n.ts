@@ -78,6 +78,9 @@ const resources = {
         cta: 'Escríbenos por WhatsApp',
       },
       admin: {
+        panelTitle: 'Panel — Valiente Café',
+        logout: 'Salir',
+        backToPanel: '← Volver al panel',
         welcome: 'Bienvenido, {{username}}',
         noAccess: 'No tenés menús de administración asignados todavía.',
         manageProducts: 'Gestión de Cafés de especialidad',
@@ -185,6 +188,9 @@ const resources = {
         cta: 'Message us on WhatsApp',
       },
       admin: {
+        panelTitle: 'Dashboard — Valiente Café',
+        logout: 'Log out',
+        backToPanel: '← Back to dashboard',
         welcome: 'Welcome, {{username}}',
         noAccess: "You don't have any admin menus assigned yet.",
         manageProducts: 'Manage Specialty Coffees',

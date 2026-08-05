@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   createProduct,
@@ -104,7 +105,14 @@ export function AdminProductsPage() {
   return (
     <section className="px-6 py-16">
       <div className="mx-auto max-w-4xl">
-        <div className="flex items-center justify-between">
+        <Link
+          to="/admin"
+          className="text-sm font-semibold text-lavender-dark hover:underline"
+        >
+          {t('admin.backToPanel')}
+        </Link>
+
+        <div className="mt-4 flex items-center justify-between">
           <h1 className="font-serif text-3xl text-lavender-dark">
             {t('admin.manageProducts')}
           </h1>

@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 
 export function Header() {
   const { t, i18n } = useTranslation()
-  const { initialized, authenticated, login } = useAuth()
+  const { initialized, authenticated, openAdmin } = useAuth()
 
   const toggleLanguage = () => {
     i18n.changeLanguage(i18n.language === 'en' ? 'es' : 'en')
@@ -48,23 +48,14 @@ export function Header() {
             {i18n.language === 'en' ? 'ES' : 'EN'}
           </button>
 
-          {authenticated ? (
-            <Link
-              to="/admin"
-              className="rounded-full bg-coral px-5 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
-            >
-              {t('header.admin')}
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={login}
-              disabled={!initialized}
-              className="rounded-full bg-coral px-5 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark disabled:opacity-50"
-            >
-              {t('header.login')}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={openAdmin}
+            disabled={!initialized}
+            className="rounded-full bg-coral px-5 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark disabled:opacity-50"
+          >
+            {authenticated ? t('header.admin') : t('header.login')}
+          </button>
         </div>
       </div>
     </header>

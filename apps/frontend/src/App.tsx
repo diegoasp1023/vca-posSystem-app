@@ -8,6 +8,7 @@ import { ContactPage } from './pages/ContactPage'
 import { CoursePage } from './pages/CoursePage'
 import { ProtectedRoute } from './pages/admin/ProtectedRoute'
 import { RequireAdmin } from './pages/admin/RequireAdmin'
+import { AdminLayout } from './pages/admin/AdminLayout'
 import { AdminHomePage } from './pages/admin/AdminHomePage'
 import { AdminProductsPage } from './pages/admin/AdminProductsPage'
 import { AdminCoursesPage } from './pages/admin/AdminCoursesPage'
@@ -23,8 +24,11 @@ function App() {
             <Route path="nosotros" element={<AboutPage />} />
             <Route path="contacto" element={<ContactPage />} />
             <Route path="cursos/:slug" element={<CoursePage />} />
+          </Route>
 
-            <Route path="admin" element={<ProtectedRoute />}>
+          {/* Admin panel: its own layout, no public header/nav/social icons. */}
+          <Route path="admin" element={<ProtectedRoute />}>
+            <Route element={<AdminLayout />}>
               <Route index element={<AdminHomePage />} />
               <Route element={<RequireAdmin />}>
                 <Route path="cafes" element={<AdminProductsPage />} />
