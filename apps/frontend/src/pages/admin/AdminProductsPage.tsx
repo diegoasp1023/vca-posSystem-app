@@ -153,7 +153,7 @@ export function AdminProductsPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm">
                 <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.nameEs')}
+                  {t('admin.fields.nameEs')} *
                 </span>
                 <input
                   required
@@ -165,7 +165,7 @@ export function AdminProductsPage() {
               </label>
               <label className="block text-sm">
                 <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.nameEn')}
+                  {t('admin.fields.nameEn')} *
                 </span>
                 <input
                   required
@@ -177,7 +177,7 @@ export function AdminProductsPage() {
               </label>
               <label className="block text-sm sm:col-span-2">
                 <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.descriptionEs')}
+                  {t('admin.fields.descriptionEs')} *
                 </span>
                 <textarea
                   required
@@ -191,7 +191,7 @@ export function AdminProductsPage() {
               </label>
               <label className="block text-sm sm:col-span-2">
                 <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.descriptionEn')}
+                  {t('admin.fields.descriptionEn')} *
                 </span>
                 <textarea
                   required
@@ -205,7 +205,7 @@ export function AdminProductsPage() {
               </label>
               <label className="block text-sm">
                 <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.weight')}
+                  {t('admin.fields.weight')} *
                 </span>
                 <input
                   required
@@ -221,7 +221,7 @@ export function AdminProductsPage() {
               </label>
               <label className="block text-sm">
                 <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.price')}
+                  {t('admin.fields.price')} *
                 </span>
                 <input
                   required

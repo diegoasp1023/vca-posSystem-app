@@ -149,66 +149,106 @@ export function AdminCoursesPage() {
             className="mt-6 space-y-6 rounded-2xl border border-cream bg-white p-6"
           >
             <div className="grid gap-4 sm:grid-cols-2">
-              <input
-                required
-                placeholder={t('admin.fields.slug')}
-                value={form.slug}
-                onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                className="rounded-lg border border-cream px-3 py-2"
-              />
-              <input
-                required
-                placeholder={t('admin.fields.imageUrl')}
-                value={form.image_url}
-                onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-                className="rounded-lg border border-cream px-3 py-2"
-              />
-              <input
-                required
-                placeholder={t('admin.fields.titleEs')}
-                value={form.title_es}
-                onChange={(e) => setForm({ ...form, title_es: e.target.value })}
-                className="rounded-lg border border-cream px-3 py-2"
-              />
-              <input
-                required
-                placeholder={t('admin.fields.titleEn')}
-                value={form.title_en}
-                onChange={(e) => setForm({ ...form, title_en: e.target.value })}
-                className="rounded-lg border border-cream px-3 py-2"
-              />
-              <input
-                required
-                placeholder={t('admin.fields.taglineEs')}
-                value={form.tagline_es}
-                onChange={(e) => setForm({ ...form, tagline_es: e.target.value })}
-                className="rounded-lg border border-cream px-3 py-2"
-              />
-              <input
-                required
-                placeholder={t('admin.fields.taglineEn')}
-                value={form.tagline_en}
-                onChange={(e) => setForm({ ...form, tagline_en: e.target.value })}
-                className="rounded-lg border border-cream px-3 py-2"
-              />
-              <textarea
-                required
-                placeholder={t('admin.fields.durationEs')}
-                value={form.duration_text_es}
-                onChange={(e) =>
-                  setForm({ ...form, duration_text_es: e.target.value })
-                }
-                className="rounded-lg border border-cream px-3 py-2 sm:col-span-2"
-              />
-              <textarea
-                required
-                placeholder={t('admin.fields.durationEn')}
-                value={form.duration_text_en}
-                onChange={(e) =>
-                  setForm({ ...form, duration_text_en: e.target.value })
-                }
-                className="rounded-lg border border-cream px-3 py-2 sm:col-span-2"
-              />
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.slug')} *
+                </span>
+                <input
+                  required
+                  placeholder={t('admin.fields.slug')}
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.imageUrl')} *
+                </span>
+                <input
+                  required
+                  placeholder={t('admin.fields.imageUrl')}
+                  value={form.image_url}
+                  onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.titleEs')} *
+                </span>
+                <input
+                  required
+                  placeholder={t('admin.fields.titleEs')}
+                  value={form.title_es}
+                  onChange={(e) => setForm({ ...form, title_es: e.target.value })}
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.titleEn')} *
+                </span>
+                <input
+                  required
+                  placeholder={t('admin.fields.titleEn')}
+                  value={form.title_en}
+                  onChange={(e) => setForm({ ...form, title_en: e.target.value })}
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.taglineEs')} *
+                </span>
+                <input
+                  required
+                  placeholder={t('admin.fields.taglineEs')}
+                  value={form.tagline_es}
+                  onChange={(e) => setForm({ ...form, tagline_es: e.target.value })}
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.taglineEn')} *
+                </span>
+                <input
+                  required
+                  placeholder={t('admin.fields.taglineEn')}
+                  value={form.tagline_en}
+                  onChange={(e) => setForm({ ...form, tagline_en: e.target.value })}
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm sm:col-span-2">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.durationEs')} *
+                </span>
+                <textarea
+                  required
+                  placeholder={t('admin.fields.durationEs')}
+                  value={form.duration_text_es}
+                  onChange={(e) =>
+                    setForm({ ...form, duration_text_es: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm sm:col-span-2">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.durationEn')} *
+                </span>
+                <textarea
+                  required
+                  placeholder={t('admin.fields.durationEn')}
+                  value={form.duration_text_en}
+                  onChange={(e) =>
+                    setForm({ ...form, duration_text_en: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
             </div>
 
             <ListEditor
@@ -218,13 +258,13 @@ export function AdminCoursesPage() {
               renderRow={(row, onChange) => (
                 <>
                   <input
-                    placeholder="ES"
+                    placeholder="Español"
                     value={row.es}
                     onChange={(e) => onChange({ ...row, es: e.target.value })}
                     className="rounded-lg border border-cream px-3 py-2"
                   />
                   <input
-                    placeholder="EN"
+                    placeholder="English"
                     value={row.en}
                     onChange={(e) => onChange({ ...row, en: e.target.value })}
                     className="rounded-lg border border-cream px-3 py-2"
@@ -241,13 +281,13 @@ export function AdminCoursesPage() {
               renderRow={(row, onChange) => (
                 <>
                   <input
-                    placeholder="Módulo (ES)"
+                    placeholder="Módulo (Español)"
                     value={row.module_es}
                     onChange={(e) => onChange({ ...row, module_es: e.target.value })}
                     className="rounded-lg border border-cream px-3 py-2"
                   />
                   <input
-                    placeholder="Module (EN)"
+                    placeholder="Módulo (English)"
                     value={row.module_en}
                     onChange={(e) => onChange({ ...row, module_en: e.target.value })}
                     className="rounded-lg border border-cream px-3 py-2"
@@ -272,13 +312,13 @@ export function AdminCoursesPage() {
               renderRow={(row, onChange) => (
                 <>
                   <input
-                    placeholder="ES"
+                    placeholder="Español"
                     value={row.es}
                     onChange={(e) => onChange({ ...row, es: e.target.value })}
                     className="rounded-lg border border-cream px-3 py-2"
                   />
                   <input
-                    placeholder="EN"
+                    placeholder="English"
                     value={row.en}
                     onChange={(e) => onChange({ ...row, en: e.target.value })}
                     className="rounded-lg border border-cream px-3 py-2"
