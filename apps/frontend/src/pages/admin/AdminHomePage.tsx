@@ -38,6 +38,17 @@ export function AdminHomePage() {
                 {t('admin.manageCoursesDesc')}
               </p>
             </Link>
+            <Link
+              to="/admin/personal"
+              className="rounded-2xl border border-cream bg-white p-8 text-left shadow-sm transition hover:shadow-md"
+            >
+              <h2 className="text-lg font-semibold text-lavender-dark">
+                {t('admin.manageEmployees')}
+              </h2>
+              <p className="mt-2 text-sm text-gray-600">
+                {t('admin.manageEmployeesDesc')}
+              </p>
+            </Link>
           </div>
         ) : (
           <p className="mt-6 text-gray-600">{t('admin.noAccess')}</p>
