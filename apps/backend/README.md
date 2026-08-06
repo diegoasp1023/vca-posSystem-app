@@ -4,8 +4,11 @@ API en FastAPI para el sistema POS de Valiente Café. Fase actual: endpoints
 públicos de solo lectura para los cafés de especialidad y los cursos/talleres
 (paginados), que reemplazan la data estática que antes vivía en el frontend.
 
-No implementa autenticación/autorización propia — eso lo valida Keycloak
-(JWT), sin manejo de contraseñas ni sesiones en este servicio.
+No implementa autenticación/autorización propia — valida el JWT que emite
+Keycloak contra sus llaves públicas (JWKS), sin manejar contraseñas ni
+sesiones en este servicio. Los endpoints de escritura (`POST`/`PUT`/`DELETE`
+de `/api/products` y `/api/courses`, más `GET .../admin`) requieren un JWT
+válido con el rol de realm `Administrador`.
 
 ## Stack
 
@@ -38,6 +41,31 @@ uv run fastapi dev app/main.py   # servidor de desarrollo, http://localhost:8000
 Documentación interactiva (Swagger) en `http://localhost:8000/docs` una vez
 corriendo.
 
+## Keycloak (realm, clients, roles)
+
+`CLAUDE.md` establece que la configuración de Keycloak se hace manualmente
+vía consola admin, sin `--import-realm` en el contenedor. Para no repetir
+esos pasos a mano en cada ambiente, `scripts/setup_keycloak.py` los hace vía
+la API REST de administración de Keycloak — corre una sola vez contra un
+Keycloak ya levantado, es idempotente (se puede re-correr sin duplicar
+nada), y **no** toca `docker-compose.yml` ni activa import automático.
+
+Crea:
+- Realm `vca-pos`
+- Client `vca-pos-frontend` (público, PKCE S256, redirect URI de dev `http://localhost:5173/*`)
+- Client `vca-pos-backend` (confidential, reservado — no se usa todavía)
+- Roles de realm `Administrador` y `Gerente`
+- Opcionalmente, un usuario de prueba con rol `Administrador`
+
+```bash
+# Con Keycloak corriendo (docker compose ... --profile dev up -d keycloak)
+uv run python scripts/setup_keycloak.py --with-test-user
+```
+
+La contraseña del usuario de prueba se imprime una sola vez en la salida del
+script — no queda guardada en ningún archivo. Para re-crearlo, borralo desde
+la consola admin de Keycloak y volvé a correr el script.
+
 ## Migraciones
 
 Cada cambio al modelo de datos (`app/models/`) necesita una migración de
@@ -57,14 +85,25 @@ uv run pytest
 Corren contra SQLite en memoria (no contra la Postgres de dev), así que no
 requieren la base de datos levantada.
 
-## Endpoints (fase actual)
+## Endpoints
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/api/products` | Cafés de especialidad, paginados de a 6 (`?page=`) |
-| GET | `/api/courses` | Cursos y talleres, paginados de a 4 (`?page=`) |
-| GET | `/api/courses/{slug}` | Detalle de un curso |
-| GET | `/api/health` | Healthcheck |
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| GET | `/api/products` | Público | Cafés activos, paginados de a 6 (`?page=`) |
+| GET | `/api/products/admin` | Administrador | Todos los cafés (incluye inactivos), paginados |
+| POST | `/api/products` | Administrador | Crear café |
+| PUT | `/api/products/{id}` | Administrador | Editar café |
+| DELETE | `/api/products/{id}` | Administrador | Eliminar café |
+| GET | `/api/courses` | Público | Cursos activos, paginados de a 4 (`?page=`) |
+| GET | `/api/courses/{slug}` | Público | Detalle de un curso activo |
+| GET | `/api/courses/admin` | Administrador | Todos los cursos (incluye inactivos), paginados |
+| GET | `/api/courses/admin/{id}` | Administrador | Detalle de un curso por id (incluye inactivos) |
+| POST | `/api/courses` | Administrador | Crear curso |
+| PUT | `/api/courses/{id}` | Administrador | Editar curso (reemplaza objetivos/contenido/costos) |
+| DELETE | `/api/courses/{id}` | Administrador | Eliminar curso |
+| GET | `/api/presentations` | Público | Catálogo de presentaciones (Molido/En grano) |
+| GET | `/api/payment-methods` | Público | Catálogo de métodos de pago |
+| GET | `/api/health` | Público | Healthcheck |
 
 Cada item viene con sus campos de texto en `{es, en}` (igual forma que ya
 usaba el frontend en `Localized<T>`), para que el toggle de idioma siga

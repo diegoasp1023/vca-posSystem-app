@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.models.course import Course
 from app.schemas.common import LocalizedText
@@ -7,6 +7,33 @@ from app.schemas.common import LocalizedText
 class CourseContentItem(BaseModel):
     module: LocalizedText
     duration: str
+
+
+class LocalizedTextWrite(BaseModel):
+    es: str = Field(min_length=1)
+    en: str = Field(min_length=1)
+
+
+class CourseContentItemWrite(BaseModel):
+    module_es: str = Field(min_length=1, max_length=200)
+    module_en: str = Field(min_length=1, max_length=200)
+    duration_label: str = Field(min_length=1, max_length=50)
+
+
+class CourseWrite(BaseModel):
+    slug: str = Field(min_length=1, max_length=150, pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")
+    title_es: str = Field(min_length=1, max_length=150)
+    title_en: str = Field(min_length=1, max_length=150)
+    tagline_es: str = Field(min_length=1, max_length=300)
+    tagline_en: str = Field(min_length=1, max_length=300)
+    duration_text_es: str = Field(min_length=1, max_length=500)
+    duration_text_en: str = Field(min_length=1, max_length=500)
+    image_url: str = Field(min_length=1, max_length=500)
+    is_active: bool = True
+    objectives: list[LocalizedTextWrite] = []
+    content: list[CourseContentItemWrite] = []
+    cost: list[LocalizedTextWrite] = []
+    payment_method_ids: list[int] = []
 
 
 class CourseSummaryOut(BaseModel):

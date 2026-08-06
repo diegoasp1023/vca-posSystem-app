@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 export function ComingSoonPage({
   translationKey,
 }: {
-  translationKey: 'aboutPage'
+  translationKey: 'menuPage' | 'aboutPage'
 }) {
   const { t } = useTranslation()
 

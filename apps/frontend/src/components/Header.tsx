@@ -2,9 +2,11 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import foxLogo from '../assets/fox-logo.svg'
 import { SocialIcons } from './SocialIcons'
+import { useAuth } from '../context/AuthContext'
 
 export function Header() {
   const { t, i18n } = useTranslation()
+  const { initialized, authenticated, openAdmin } = useAuth()
 
   const toggleLanguage = () => {
     i18n.changeLanguage(i18n.language === 'en' ? 'es' : 'en')
@@ -46,12 +48,13 @@ export function Header() {
             {i18n.language === 'en' ? 'ES' : 'EN'}
           </button>
 
-          {/* TODO: wire up to Keycloak login (public + PKCE client) once auth is implemented. */}
           <button
             type="button"
-            className="rounded-full bg-coral px-5 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
+            onClick={openAdmin}
+            disabled={!initialized}
+            className="rounded-full bg-coral px-5 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark disabled:opacity-50"
           >
-            {t('header.login')}
+            {authenticated ? t('header.admin') : t('header.login')}
           </button>
         </div>
       </div>

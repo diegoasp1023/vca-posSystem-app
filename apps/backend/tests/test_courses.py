@@ -37,3 +37,66 @@ async def test_inactive_course_not_found(db_session, client):
     response = await client.get("/api/courses/inactivo")
 
     assert response.status_code == 404
+
+
+COURSE_PAYLOAD = {
+    "slug": "curso-nuevo",
+    "title_es": "Curso Nuevo",
+    "title_en": "New Course",
+    "tagline_es": "Tagline",
+    "tagline_en": "Tagline",
+    "duration_text_es": "2 horas",
+    "duration_text_en": "2 hours",
+    "image_url": "/images/courses/nuevo.jpg",
+    "objectives": [{"es": "Objetivo", "en": "Objective"}],
+    "content": [{"module_es": "Modulo 1", "module_en": "Module 1", "duration_label": "1h"}],
+    "cost": [{"es": "$100.000", "en": "$100,000"}],
+    "payment_method_ids": [],
+}
+
+
+async def test_create_course_requires_auth(client):
+    response = await client.post("/api/courses", json=COURSE_PAYLOAD)
+
+    assert response.status_code == 401
+
+
+async def test_create_course_as_admin(admin_client):
+    response = await admin_client.post("/api/courses", json=COURSE_PAYLOAD)
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["slug"] == "curso-nuevo"
+    assert body["objectives"] == [{"es": "Objetivo", "en": "Objective"}]
+
+
+async def test_create_course_rejects_duplicate_slug(db_session, admin_client):
+    await make_course(db_session, slug="curso-nuevo")
+
+    response = await admin_client.post("/api/courses", json=COURSE_PAYLOAD)
+
+    assert response.status_code == 400
+
+
+async def test_update_course_replaces_children(db_session, admin_client):
+    course = await make_course(db_session)
+
+    payload = {**COURSE_PAYLOAD, "slug": "curso-test", "objectives": [
+        {"es": "Nuevo objetivo", "en": "New objective"}
+    ]}
+    response = await admin_client.put(f"/api/courses/{course.id}", json=payload)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["objectives"]) == 1
+    assert body["objectives"][0]["es"] == "Nuevo objetivo"
+
+
+async def test_delete_course_as_admin(db_session, admin_client):
+    course = await make_course(db_session)
+
+    response = await admin_client.delete(f"/api/courses/{course.id}")
+    assert response.status_code == 204
+
+    listing = (await admin_client.get("/api/courses/admin?page=1")).json()
+    assert listing["total"] == 0

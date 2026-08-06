@@ -18,12 +18,26 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:5173"]
 
+    kc_hostname: str = "localhost"
+    kc_port: int = 8080
+    kc_realm: str = "vca-pos"
+    keycloak_admin_user: str = "admin"
+    keycloak_admin_password: str = "changeme"
+
     @property
     def database_url(self) -> str:
         return (
             f"postgresql+asyncpg://{self.app_db_username}:{self.app_db_password}"
             f"@{self.app_db_host}:{self.db_port}/{self.app_db_name}"
         )
+
+    @property
+    def kc_issuer(self) -> str:
+        return f"http://{self.kc_hostname}:{self.kc_port}/realms/{self.kc_realm}"
+
+    @property
+    def kc_jwks_uri(self) -> str:
+        return f"{self.kc_issuer}/protocol/openid-connect/certs"
 
 
 settings = Settings()
