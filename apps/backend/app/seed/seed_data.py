@@ -35,6 +35,8 @@ PAYMENT_METHODS = [
 PRESENTATIONS = [
     {"name_es": "Molido", "name_en": "Ground"},
     {"name_es": "En grano", "name_en": "Whole bean"},
+    {"name_es": "Soluble (instantáneo)", "name_en": "Instant"},
+    {"name_es": "Cápsulas o monodosis", "name_en": "Capsules or pods"},
 ]
 
 PRODUCTS = [
