@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import {
@@ -107,16 +113,9 @@ export function BonosTab({
     reload()
   }
 
-  const toggleParticipant = (employeeId: number) => {
-    setTipParticipants((current) => {
-      const next = new Set(current)
-      if (next.has(employeeId)) {
-        next.delete(employeeId)
-      } else {
-        next.add(employeeId)
-      }
-      return next
-    })
+  const handleParticipantsChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const selected = Array.from(e.target.selectedOptions, (option) => Number(option.value))
+    setTipParticipants(new Set(selected))
   }
 
   const submitTips = async (e: FormEvent) => {
@@ -184,25 +183,27 @@ export function BonosTab({
                 />
               </label>
 
-              <p className="mt-4 text-sm font-semibold text-lavender-dark">
-                {t('admin.tipParticipants')}
+              <label className="mt-4 block max-w-xs text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.tipParticipants')}
+                </span>
+                <select
+                  multiple
+                  disabled={!isOpen}
+                  value={[...tipParticipants].map(String)}
+                  onChange={handleParticipantsChange}
+                  className="h-40 w-full rounded-lg border border-cream px-3 py-2 disabled:bg-cream"
+                >
+                  {employees.map((employee) => (
+                    <option key={employee.employee_id} value={employee.employee_id}>
+                      {employee.nombre} {employee.apellido}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="mt-2 text-sm text-gray-600">
+                {t('admin.selectedCount', { count: tipParticipants.size })}
               </p>
-              <div className="mt-2 flex flex-wrap gap-3">
-                {employees.map((employee) => (
-                  <label
-                    key={employee.employee_id}
-                    className="flex items-center gap-2 text-sm text-gray-700"
-                  >
-                    <input
-                      type="checkbox"
-                      disabled={!isOpen}
-                      checked={tipParticipants.has(employee.employee_id)}
-                      onChange={() => toggleParticipant(employee.employee_id)}
-                    />
-                    {employee.nombre} {employee.apellido}
-                  </label>
-                ))}
-              </div>
 
               <p className="mt-4 text-sm text-gray-600">
                 {t('admin.perPersonPreview')}:{' '}

@@ -72,7 +72,7 @@ async def list_employees(
 async def create_employee(
     body: EmployeeWrite, db: AsyncSession = Depends(get_db)
 ) -> EmployeeOut:
-    employee = Employee(**body.model_dump())
+    employee = Employee(**body.model_dump(), fecha_activacion=body.fecha_ingreso)
     db.add(employee)
     try:
         await db.commit()
@@ -131,6 +131,7 @@ async def reactivate_employee(
         raise HTTPException(status_code=404, detail="Employee not found")
 
     employee.is_active = True
+    employee.fecha_activacion = date.today()
     employee.fecha_baja = None
     await db.commit()
     await db.refresh(employee)

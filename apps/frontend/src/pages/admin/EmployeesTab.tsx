@@ -596,12 +596,9 @@ function EmployeeDetailsModal({
           ],
         ] as [string, string][])),
     [t('admin.fields.hireDate'), formatDate(employee.fecha_ingreso)],
-    ...(employee.fecha_baja
-      ? ([[t('admin.fechaBaja'), formatDate(employee.fecha_baja)]] as [
-          string,
-          string,
-        ][])
-      : []),
+    employee.is_active
+      ? [t('admin.fechaActivacion'), formatDate(employee.fecha_activacion)]
+      : [t('admin.fechaBaja'), formatDate(employee.fecha_baja ?? employee.fecha_activacion)],
   ]
 
   const bankingRows: [string, string][] = [

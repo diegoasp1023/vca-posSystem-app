@@ -26,7 +26,7 @@ const HALF_HOUR_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   return `${hours}:${minutes}`
 })
 
-export function NominaTab({
+export function TurnosTab({
   year,
   month,
   onYearChange,
@@ -43,41 +43,31 @@ export function NominaTab({
   const [view, setView] = useState<'lista' | 'calendario'>('lista')
   const [employeeId, setEmployeeId] = useState<number | null>(null)
 
-  const [items, setItems] = useState<NominaItem[]>([])
+  const [hourlyEmployees, setHourlyEmployees] = useState<
+    { id: number; nombre: string; apellido: string }[]
+  >([])
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
 
   const { period, close } = usePayrollPeriod(year, month)
-  const {
-    page: itemsPage,
-    setPage: setItemsPage,
-    pageSize: itemsPageSize,
-    setPageSize: setItemsPageSize,
-    totalPages: itemsTotalPages,
-    pageItems: pagedItems,
-  } = usePagedList(items)
 
-  const reloadNomina = useCallback(() => {
+  const reloadEmployees = useCallback(() => {
     setStatus('loading')
     getToken()
       .then((token) => fetchNomina(token, year, month))
-      .then((result) => {
-        setItems(result)
-        const hourly = result.filter((i) => i.tipo_contrato === 'por_horas')
+      .then((result: NominaItem[]) => {
+        const hourly = result
+          .filter((i) => i.tipo_contrato === 'por_horas')
+          .map((i) => ({ id: i.employee_id, nombre: i.nombre, apellido: i.apellido }))
+        setHourlyEmployees(hourly)
         setEmployeeId((current) =>
-          hourly.some((e) => e.employee_id === current)
-            ? current
-            : (hourly[0]?.employee_id ?? null),
+          hourly.some((e) => e.id === current) ? current : (hourly[0]?.id ?? null),
         )
         setStatus('ready')
       })
       .catch(() => setStatus('error'))
   }, [year, month, getToken])
 
-  useEffect(reloadNomina, [reloadNomina])
-
-  const hourlyEmployees = items
-    .filter((i) => i.tipo_contrato === 'por_horas')
-    .map((i) => ({ id: i.employee_id, nombre: i.nombre, apellido: i.apellido }))
+  useEffect(reloadEmployees, [reloadEmployees])
 
   const isOpen = period?.estado === 'abierto'
 
@@ -99,55 +89,13 @@ export function NominaTab({
       {status === 'error' && (
         <p className="mt-10 text-gray-500">{t('common.error')}</p>
       )}
-      {status === 'ready' && (
-        <>
-          <table className="mt-8 w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-cream text-lavender">
-                <th className="py-2">{t('admin.fields.firstName')}</th>
-                <th className="py-2">{t('admin.fields.lastName')}</th>
-                <th className="py-2">{t('admin.fields.contractType')}</th>
-                <th className="py-2">{t('admin.amount')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pagedItems.map((item) => (
-                <tr key={item.employee_id} className="border-b border-cream">
-                  <td className="py-3">{item.nombre}</td>
-                  <td className="py-3">{item.apellido}</td>
-                  <td className="py-3">
-                    {t(`admin.contractTypes.${item.tipo_contrato}`)}
-                  </td>
-                  <td className="py-3">${item.monto_cop.toLocaleString('es-CO')}</td>
-                </tr>
-              ))}
-              {items.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="py-6 text-center text-gray-500">
-                    {t('admin.noEligibleEmployees')}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          {items.length > 0 && (
-            <TableFooterPagination
-              page={itemsPage}
-              totalPages={itemsTotalPages}
-              pageSize={itemsPageSize}
-              onPageChange={setItemsPage}
-              onPageSizeChange={setItemsPageSize}
-            />
-          )}
-        </>
+      {status === 'ready' && hourlyEmployees.length === 0 && (
+        <p className="mt-10 text-gray-500">{t('admin.noHourlyEmployees')}</p>
       )}
 
-      {hourlyEmployees.length > 0 && (
-        <div className="mt-10">
+      {status === 'ready' && hourlyEmployees.length > 0 && (
+        <div className="mt-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <h2 className="font-serif text-xl text-lavender-dark">
-              {t('admin.manageShifts')}
-            </h2>
             <div className="flex gap-2 rounded-full border border-cream p-1">
               <ViewButton active={view === 'lista'} onClick={() => setView('lista')}>
                 {t('admin.listView')}
@@ -169,7 +117,7 @@ export function NominaTab({
               year={year}
               month={month}
               isOpen={isOpen}
-              onShiftsChanged={reloadNomina}
+              onShiftsChanged={reloadEmployees}
             />
           ) : (
             <ShiftsCalendar hourlyEmployees={hourlyEmployees} year={year} month={month} />

@@ -150,6 +150,7 @@ export interface Employee extends EmployeeWrite {
   id: number
   fecha_registro: string
   is_active: boolean
+  fecha_activacion: string
   fecha_baja: string | null
 }
 

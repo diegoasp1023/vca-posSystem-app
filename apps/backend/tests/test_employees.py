@@ -1,3 +1,5 @@
+from datetime import date
+
 from tests.conftest import make_employee
 
 EMPLOYEE_PAYLOAD = {
@@ -99,6 +101,22 @@ async def test_deactivate_and_reactivate_employee(db_session, admin_client):
     assert reactivate.status_code == 200
     assert reactivate.json()["is_active"] is True
     assert reactivate.json()["fecha_baja"] is None
+
+
+async def test_create_employee_sets_fecha_activacion_to_hire_date(admin_client):
+    response = await admin_client.post("/api/employees", json=EMPLOYEE_PAYLOAD)
+
+    assert response.status_code == 201
+    assert response.json()["fecha_activacion"] == EMPLOYEE_PAYLOAD["fecha_ingreso"]
+
+
+async def test_reactivate_updates_fecha_activacion_to_today(db_session, admin_client):
+    employee = await make_employee(db_session, is_active=False, fecha_baja=date(2024, 6, 1))
+
+    reactivate = await admin_client.post(f"/api/employees/{employee.id}/reactivate")
+
+    assert reactivate.status_code == 200
+    assert reactivate.json()["fecha_activacion"] == date.today().isoformat()
 
 
 async def test_admin_listing_includes_deactivated_employees(db_session, admin_client):

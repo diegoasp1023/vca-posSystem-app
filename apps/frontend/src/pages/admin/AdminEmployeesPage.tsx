@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { BonosTab } from './BonosTab'
 import { EmployeesTab } from './EmployeesTab'
-import { NominaTab } from './NominaTab'
+import { TurnosTab } from './TurnosTab'
 import { ResumenTab } from './ResumenTab'
 
-type Tab = 'empleados' | 'nomina' | 'resumen' | 'bonos'
+type Tab = 'empleados' | 'turnos' | 'bonos' | 'resumen'
 
 export function AdminEmployeesPage() {
   const { t } = useTranslation()
@@ -35,26 +35,26 @@ export function AdminEmployeesPage() {
           <TabButton active={tab === 'empleados'} onClick={() => setTab('empleados')}>
             {t('admin.employeesTab')}
           </TabButton>
-          <TabButton active={tab === 'nomina'} onClick={() => setTab('nomina')}>
+          <TabButton active={tab === 'turnos'} onClick={() => setTab('turnos')}>
             {t('admin.nominaTab')}
-          </TabButton>
-          <TabButton active={tab === 'resumen'} onClick={() => setTab('resumen')}>
-            {t('admin.resumenTab')}
           </TabButton>
           <TabButton active={tab === 'bonos'} onClick={() => setTab('bonos')}>
             {t('admin.bonosTab')}
           </TabButton>
+          <TabButton active={tab === 'resumen'} onClick={() => setTab('resumen')}>
+            {t('admin.resumenTab')}
+          </TabButton>
         </div>
 
         {tab === 'empleados' && <EmployeesTab />}
-        {tab === 'nomina' && (
-          <NominaTab year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} />
-        )}
-        {tab === 'resumen' && (
-          <ResumenTab year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} />
+        {tab === 'turnos' && (
+          <TurnosTab year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} />
         )}
         {tab === 'bonos' && (
           <BonosTab year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} />
+        )}
+        {tab === 'resumen' && (
+          <ResumenTab year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} />
         )}
       </div>
     </section>

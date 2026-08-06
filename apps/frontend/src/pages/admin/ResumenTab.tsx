@@ -10,6 +10,29 @@ import {
   usePayrollPeriod,
 } from './PayrollShared'
 
+function exportSummaryToCsv(summary: PayrollSummary) {
+  const header = ['Nombre', 'Apellido', 'Pago base', 'Bonos', 'Propina', 'Total']
+  const rows = summary.items.map((item) => [
+    item.nombre,
+    item.apellido,
+    item.pago_base_cop,
+    item.bonos_cop,
+    item.propina_cop,
+    item.total_cop,
+  ])
+  const csv = [header, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+
+  const blob = new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `nomina-${summary.year}-${String(summary.month).padStart(2, '0')}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 export function ResumenTab({
   year,
   month,
@@ -70,7 +93,17 @@ export function ResumenTab({
       )}
       {status === 'ready' && summary && (
         <>
-          <table className="mt-8 w-full text-left text-sm">
+          <div className="mt-6 flex justify-end">
+            <button
+              type="button"
+              onClick={() => exportSummaryToCsv(summary)}
+              disabled={summary.items.length === 0}
+              className="rounded-full border border-lavender px-5 py-2 text-sm font-semibold text-lavender-dark transition hover:bg-cream disabled:opacity-50"
+            >
+              {t('admin.exportCsv')}
+            </button>
+          </div>
+          <table className="mt-4 w-full text-left text-sm">
             <thead>
               <tr className="border-b border-cream text-lavender">
                 <th className="py-2">{t('admin.fields.firstName')}</th>

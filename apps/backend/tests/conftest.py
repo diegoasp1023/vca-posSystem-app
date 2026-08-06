@@ -104,6 +104,7 @@ async def make_employee(session, **overrides) -> Employee:
         "numero_cuenta": "123456",
         "fecha_ingreso": date(2024, 1, 1),
         "is_active": True,
+        "fecha_activacion": date(2024, 1, 1),
     }
     defaults.update(overrides)
     employee = Employee(**defaults)
