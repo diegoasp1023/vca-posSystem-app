@@ -78,7 +78,7 @@ const resources = {
         cta: 'Escríbenos por WhatsApp',
       },
       admin: {
-        panelTitle: 'Panel — Valiente Café',
+        panelTitle: 'Valiente Café',
         logout: 'Salir',
         backToPanel: '← Volver al panel',
         welcome: 'Bienvenido, {{username}}',
@@ -190,7 +190,7 @@ const resources = {
         cta: 'Message us on WhatsApp',
       },
       admin: {
-        panelTitle: 'Dashboard — Valiente Café',
+        panelTitle: 'Valiente Café',
         logout: 'Log out',
         backToPanel: '← Back to dashboard',
         welcome: 'Welcome, {{username}}',
