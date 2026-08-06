@@ -186,3 +186,49 @@ export function reactivateEmployee(token: string | undefined, id: number) {
     method: 'POST',
   })
 }
+
+export interface ShiftWrite {
+  employee_id: number
+  fecha: string
+  hora_inicio: string
+  hora_fin: string
+}
+
+export interface Shift extends ShiftWrite {
+  id: number
+  tarifa_hora_cop: number
+  horas: number
+  monto_cop: number
+}
+
+export interface MonthlyShiftSummary {
+  employee_id: number
+  year: number
+  month: number
+  shifts: Shift[]
+  total_horas: number
+  total_cop: number
+}
+
+export function fetchMonthlyShifts(
+  token: string | undefined,
+  employeeId: number,
+  year: number,
+  month: number,
+) {
+  return adminFetch<MonthlyShiftSummary>(
+    `/api/shifts?employee_id=${employeeId}&year=${year}&month=${month}`,
+    token,
+  )
+}
+
+export function createShift(token: string | undefined, body: ShiftWrite) {
+  return adminFetch<Shift>('/api/shifts', token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function deleteShift(token: string | undefined, id: number) {
+  return adminFetch<void>(`/api/shifts/${id}`, token, { method: 'DELETE' })
+}

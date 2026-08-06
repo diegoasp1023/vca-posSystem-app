@@ -8,6 +8,7 @@ from app.models.course import (
 )
 from app.models.employee import Employee
 from app.models.product import Presentation, Product, product_presentations
+from app.models.shift import Shift
 
 __all__ = [
     "Course",
@@ -16,6 +17,7 @@ __all__ = [
     "CourseObjective",
     "Employee",
     "PaymentMethod",
+    "Shift",
     "course_payment_methods",
     "Presentation",
     "Product",
