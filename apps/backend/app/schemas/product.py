@@ -13,7 +13,7 @@ class ProductWrite(BaseModel):
     price_cop: int = Field(gt=0)
     image_url: str | None = None
     is_active: bool = True
-    presentation_ids: list[int] = []
+    presentation_ids: list[int] = Field(min_length=1)
 
 
 class ProductOut(BaseModel):

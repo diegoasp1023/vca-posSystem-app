@@ -85,6 +85,10 @@ export function AdminProductsPage() {
 
   const submit = async () => {
     setFormError(null)
+    if (form.presentation_ids.length === 0) {
+      setFormError(t('admin.presentationRequired'))
+      return
+    }
     try {
       const token = await getToken()
       if (editingId === 'new') {
@@ -235,7 +239,7 @@ export function AdminProductsPage() {
 
             <div>
               <p className="text-sm font-semibold text-lavender-dark">
-                {t('menu.presentations')}
+                {t('menu.presentations')} *
               </p>
               <div className="mt-2 flex flex-wrap gap-3">
                 {presentations.map((presentation) => (

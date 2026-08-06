@@ -95,6 +95,7 @@ const resources = {
         cancel: 'Cancelar',
         confirmDelete: '¿Seguro que querés eliminar esto?',
         saveError: 'No pudimos guardar los cambios. Revisá los datos e intentá de nuevo.',
+        presentationRequired: 'Seleccioná al menos una presentación.',
         fields: {
           nameEs: 'Nombre (ES)',
           nameEn: 'Nombre (EN)',
@@ -206,6 +207,7 @@ const resources = {
         cancel: 'Cancel',
         confirmDelete: 'Are you sure you want to delete this?',
         saveError: "We couldn't save your changes. Check the fields and try again.",
+        presentationRequired: 'Select at least one presentation.',
         fields: {
           nameEs: 'Name (ES)',
           nameEn: 'Name (EN)',
