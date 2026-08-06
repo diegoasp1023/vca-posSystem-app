@@ -37,6 +37,7 @@ export function AdminProductsPage() {
   const [editingId, setEditingId] = useState<number | 'new' | null>(null)
   const [form, setForm] = useState<ProductWrite>(EMPTY_FORM)
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
+  const [formError, setFormError] = useState<string | null>(null)
 
   const reload = useCallback(() => {
     setStatus('loading')
@@ -57,10 +58,16 @@ export function AdminProductsPage() {
 
   const startCreate = () => {
     setForm(EMPTY_FORM)
+    setFormError(null)
     setEditingId('new')
   }
 
   const startEdit = (product: Product) => {
+    const presentationIds = presentations
+      .filter((presentation) =>
+        product.presentations.some((p) => p.es === presentation.name.es),
+      )
+      .map((presentation) => presentation.id)
     setForm({
       name_es: product.name.es,
       name_en: product.name.en,
@@ -70,20 +77,26 @@ export function AdminProductsPage() {
       price_cop: product.price_cop,
       image_url: product.image_url,
       is_active: true,
-      presentation_ids: [],
+      presentation_ids: presentationIds,
     })
+    setFormError(null)
     setEditingId(product.id)
   }
 
   const submit = async () => {
-    const token = await getToken()
-    if (editingId === 'new') {
-      await createProduct(token, form)
-    } else if (editingId !== null) {
-      await updateProduct(token, editingId, form)
+    setFormError(null)
+    try {
+      const token = await getToken()
+      if (editingId === 'new') {
+        await createProduct(token, form)
+      } else if (editingId !== null) {
+        await updateProduct(token, editingId, form)
+      }
+      setEditingId(null)
+      reload()
+    } catch {
+      setFormError(t('admin.saveError'))
     }
-    setEditingId(null)
-    reload()
   }
 
   const remove = async (id: number) => {
@@ -134,60 +147,90 @@ export function AdminProductsPage() {
             className="mt-6 space-y-4 rounded-2xl border border-cream bg-white p-6"
           >
             <div className="grid gap-4 sm:grid-cols-2">
-              <input
-                required
-                placeholder={t('admin.fields.nameEs')}
-                value={form.name_es}
-                onChange={(e) => setForm({ ...form, name_es: e.target.value })}
-                className="rounded-lg border border-cream px-3 py-2"
-              />
-              <input
-                required
-                placeholder={t('admin.fields.nameEn')}
-                value={form.name_en}
-                onChange={(e) => setForm({ ...form, name_en: e.target.value })}
-                className="rounded-lg border border-cream px-3 py-2"
-              />
-              <textarea
-                required
-                placeholder={t('admin.fields.descriptionEs')}
-                value={form.description_es}
-                onChange={(e) =>
-                  setForm({ ...form, description_es: e.target.value })
-                }
-                className="rounded-lg border border-cream px-3 py-2 sm:col-span-2"
-              />
-              <textarea
-                required
-                placeholder={t('admin.fields.descriptionEn')}
-                value={form.description_en}
-                onChange={(e) =>
-                  setForm({ ...form, description_en: e.target.value })
-                }
-                className="rounded-lg border border-cream px-3 py-2 sm:col-span-2"
-              />
-              <input
-                required
-                type="number"
-                min={1}
-                placeholder={t('admin.fields.weight')}
-                value={form.weight_grams}
-                onChange={(e) =>
-                  setForm({ ...form, weight_grams: Number(e.target.value) })
-                }
-                className="rounded-lg border border-cream px-3 py-2"
-              />
-              <input
-                required
-                type="number"
-                min={1}
-                placeholder={t('admin.fields.price')}
-                value={form.price_cop}
-                onChange={(e) =>
-                  setForm({ ...form, price_cop: Number(e.target.value) })
-                }
-                className="rounded-lg border border-cream px-3 py-2"
-              />
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.nameEs')}
+                </span>
+                <input
+                  required
+                  placeholder={t('admin.fields.nameEs')}
+                  value={form.name_es}
+                  onChange={(e) => setForm({ ...form, name_es: e.target.value })}
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.nameEn')}
+                </span>
+                <input
+                  required
+                  placeholder={t('admin.fields.nameEn')}
+                  value={form.name_en}
+                  onChange={(e) => setForm({ ...form, name_en: e.target.value })}
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm sm:col-span-2">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.descriptionEs')}
+                </span>
+                <textarea
+                  required
+                  placeholder={t('admin.fields.descriptionEs')}
+                  value={form.description_es}
+                  onChange={(e) =>
+                    setForm({ ...form, description_es: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm sm:col-span-2">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.descriptionEn')}
+                </span>
+                <textarea
+                  required
+                  placeholder={t('admin.fields.descriptionEn')}
+                  value={form.description_en}
+                  onChange={(e) =>
+                    setForm({ ...form, description_en: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.weight')}
+                </span>
+                <input
+                  required
+                  type="number"
+                  min={1}
+                  placeholder={t('admin.fields.weight')}
+                  value={form.weight_grams}
+                  onChange={(e) =>
+                    setForm({ ...form, weight_grams: Number(e.target.value) })
+                  }
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.price')}
+                </span>
+                <input
+                  required
+                  type="number"
+                  min={1}
+                  placeholder={t('admin.fields.price')}
+                  value={form.price_cop}
+                  onChange={(e) =>
+                    setForm({ ...form, price_cop: Number(e.target.value) })
+                  }
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
             </div>
 
             <div>
@@ -211,6 +254,10 @@ export function AdminProductsPage() {
               </div>
             </div>
 
+            {formError && (
+              <p className="text-sm font-semibold text-coral-dark">{formError}</p>
+            )}
+
             <div className="flex gap-3">
               <button
                 type="submit"
@@ -220,7 +267,10 @@ export function AdminProductsPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setEditingId(null)}
+                onClick={() => {
+                  setFormError(null)
+                  setEditingId(null)
+                }}
                 className="rounded-full border border-lavender px-6 py-2 text-sm font-semibold text-lavender-dark"
               >
                 {t('admin.cancel')}
