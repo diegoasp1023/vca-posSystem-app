@@ -3,22 +3,14 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-PeriodState = Literal["abierto", "cerrado", "aprobado"]
-
-
-class PayrollSettingsOut(BaseModel):
-    dia_cierre: int
-
-
-class PayrollSettingsWrite(BaseModel):
-    dia_cierre: int = Field(ge=1, le=28)
+PeriodState = Literal["abierto", "cerrado"]
 
 
 class PayrollPeriodOut(BaseModel):
     year: int
     month: int
     estado: PeriodState
-    aprobado_en: datetime | None
+    cerrado_en: datetime | None
 
 
 class NominaItemOut(BaseModel):

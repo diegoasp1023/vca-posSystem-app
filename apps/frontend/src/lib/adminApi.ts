@@ -251,17 +251,13 @@ export function deleteShift(token: string | undefined, id: number) {
   return adminFetch<void>(`/api/shifts/${id}`, token, { method: 'DELETE' })
 }
 
-export type PeriodState = 'abierto' | 'cerrado' | 'aprobado'
-
-export interface PayrollSettings {
-  dia_cierre: number
-}
+export type PeriodState = 'abierto' | 'cerrado'
 
 export interface PayrollPeriod {
   year: number
   month: number
   estado: PeriodState
-  aprobado_en: string | null
+  cerrado_en: string | null
 }
 
 export interface NominaItem {
@@ -310,17 +306,6 @@ export interface PayrollSummary {
   total_general_cop: number
 }
 
-export function fetchPayrollSettings(token: string | undefined) {
-  return adminFetch<PayrollSettings>('/api/payroll/settings', token)
-}
-
-export function updatePayrollSettings(token: string | undefined, diaCierre: number) {
-  return adminFetch<PayrollSettings>('/api/payroll/settings', token, {
-    method: 'PUT',
-    body: JSON.stringify({ dia_cierre: diaCierre }),
-  })
-}
-
 export function fetchPayrollPeriod(
   token: string | undefined,
   year: number,
@@ -332,13 +317,13 @@ export function fetchPayrollPeriod(
   )
 }
 
-export function approvePayrollPeriod(
+export function closePayrollPeriod(
   token: string | undefined,
   year: number,
   month: number,
 ) {
   return adminFetch<PayrollPeriod>(
-    `/api/payroll/period/approve?year=${year}&month=${month}`,
+    `/api/payroll/period/close?year=${year}&month=${month}`,
     token,
     { method: 'POST' },
   )

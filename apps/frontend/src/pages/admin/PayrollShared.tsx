@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import {
-  approvePayrollPeriod,
+  closePayrollPeriod,
   fetchPayrollPeriod,
   type PayrollPeriod,
 } from '../../lib/adminApi'
+import { Pagination } from '../../components/Pagination'
 
 export const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
 
@@ -21,13 +22,13 @@ export function usePayrollPeriod(year: number, month: number) {
 
   useEffect(reload, [reload])
 
-  const approve = useCallback(async () => {
+  const close = useCallback(async () => {
     const token = await getToken()
-    const updated = await approvePayrollPeriod(token, year, month)
+    const updated = await closePayrollPeriod(token, year, month)
     setPeriod(updated)
   }, [year, month, getToken])
 
-  return { period, reloadPeriod: reload, approve }
+  return { period, reloadPeriod: reload, close }
 }
 
 export function MonthYearPicker({
@@ -85,18 +86,30 @@ export function MonthYearPicker({
 
 export function PeriodBanner({
   period,
-  onApprove,
+  onClose,
 }: {
   period: PayrollPeriod | null
-  onApprove: () => void
+  onClose: () => void
 }) {
   const { t } = useTranslation()
   if (!period) return null
 
   const styles: Record<string, string> = {
     abierto: 'bg-green-100 text-green-700',
-    cerrado: 'bg-amber-100 text-amber-700',
-    aprobado: 'bg-gray-200 text-gray-600',
+    cerrado: 'bg-gray-200 text-gray-600',
+  }
+
+  const handleClose = () => {
+    if (
+      window.confirm(
+        t('admin.confirmClosePeriod', {
+          month: t(`admin.months.${period.month}`),
+          year: period.year,
+        }),
+      )
+    ) {
+      onClose()
+    }
   }
 
   return (
@@ -104,15 +117,80 @@ export function PeriodBanner({
       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${styles[period.estado]}`}>
         {t(`admin.periodState.${period.estado}`)}
       </span>
-      {period.estado === 'cerrado' && (
+      {period.estado === 'abierto' && (
         <button
           type="button"
-          onClick={onApprove}
+          onClick={handleClose}
           className="rounded-full bg-coral px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-coral-dark"
         >
-          {t('admin.approvePeriod')}
+          {t('admin.closePeriod')}
         </button>
       )}
+    </div>
+  )
+}
+
+export function usePagedList<T>(items: T[], initialPageSize: 10 | 20 | 50 = 10) {
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSizeState] = useState<10 | 20 | 50>(initialPageSize)
+
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
+  const safePage = Math.min(page, totalPages)
+
+  const pageItems = useMemo(
+    () => items.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [items, safePage, pageSize],
+  )
+
+  const setPageSize = (size: 10 | 20 | 50) => {
+    setPageSizeState(size)
+    setPage(1)
+  }
+
+  return { page: safePage, setPage, pageSize, setPageSize, totalPages, pageItems }
+}
+
+export function PageSizeSelect({
+  pageSize,
+  onChange,
+}: {
+  pageSize: 10 | 20 | 50
+  onChange: (size: 10 | 20 | 50) => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <label className="flex items-center gap-2 text-sm text-gray-600">
+      {t('admin.pageSize')}
+      <select
+        value={pageSize}
+        onChange={(e) => onChange(Number(e.target.value) as 10 | 20 | 50)}
+        className="rounded-lg border border-cream px-2 py-1"
+      >
+        <option value={10}>10</option>
+        <option value={20}>20</option>
+        <option value={50}>50</option>
+      </select>
+    </label>
+  )
+}
+
+export function TableFooterPagination({
+  page,
+  totalPages,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+}: {
+  page: number
+  totalPages: number
+  pageSize: 10 | 20 | 50
+  onPageChange: (page: number) => void
+  onPageSizeChange: (size: 10 | 20 | 50) => void
+}) {
+  return (
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+      <PageSizeSelect pageSize={pageSize} onChange={onPageSizeChange} />
+      <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
     </div>
   )
 }

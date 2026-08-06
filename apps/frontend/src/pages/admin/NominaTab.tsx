@@ -10,7 +10,13 @@ import {
   type NominaItem,
 } from '../../lib/adminApi'
 import { formatDate } from '../../lib/format'
-import { MonthYearPicker, PeriodBanner, usePayrollPeriod } from './PayrollShared'
+import {
+  MonthYearPicker,
+  PeriodBanner,
+  TableFooterPagination,
+  usePagedList,
+  usePayrollPeriod,
+} from './PayrollShared'
 import { ShiftsCalendar } from './ShiftsCalendar'
 
 const EMPTY_SHIFT_FORM = { fecha: '', hora_inicio: '', hora_fin: '' }
@@ -20,20 +26,35 @@ const HALF_HOUR_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   return `${hours}:${minutes}`
 })
 
-export function NominaTab() {
+export function NominaTab({
+  year,
+  month,
+  onYearChange,
+  onMonthChange,
+}: {
+  year: number
+  month: number
+  onYearChange: (year: number) => void
+  onMonthChange: (month: number) => void
+}) {
   const { t } = useTranslation()
   const { getToken } = useAuth()
 
-  const now = new Date()
-  const [year, setYear] = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1)
   const [view, setView] = useState<'lista' | 'calendario'>('lista')
   const [employeeId, setEmployeeId] = useState<number | null>(null)
 
   const [items, setItems] = useState<NominaItem[]>([])
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
 
-  const { period, approve } = usePayrollPeriod(year, month)
+  const { period, close } = usePayrollPeriod(year, month)
+  const {
+    page: itemsPage,
+    setPage: setItemsPage,
+    pageSize: itemsPageSize,
+    setPageSize: setItemsPageSize,
+    totalPages: itemsTotalPages,
+    pageItems: pagedItems,
+  } = usePagedList(items)
 
   const reloadNomina = useCallback(() => {
     setStatus('loading')
@@ -66,10 +87,10 @@ export function NominaTab() {
         <MonthYearPicker
           year={year}
           month={month}
-          onYearChange={setYear}
-          onMonthChange={setMonth}
+          onYearChange={onYearChange}
+          onMonthChange={onMonthChange}
         />
-        <PeriodBanner period={period} onApprove={approve} />
+        <PeriodBanner period={period} onClose={close} />
       </div>
 
       {status === 'loading' && (
@@ -79,35 +100,46 @@ export function NominaTab() {
         <p className="mt-10 text-gray-500">{t('common.error')}</p>
       )}
       {status === 'ready' && (
-        <table className="mt-8 w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-cream text-lavender">
-              <th className="py-2">{t('admin.fields.firstName')}</th>
-              <th className="py-2">{t('admin.fields.lastName')}</th>
-              <th className="py-2">{t('admin.fields.contractType')}</th>
-              <th className="py-2">{t('admin.amount')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.employee_id} className="border-b border-cream">
-                <td className="py-3">{item.nombre}</td>
-                <td className="py-3">{item.apellido}</td>
-                <td className="py-3">
-                  {t(`admin.contractTypes.${item.tipo_contrato}`)}
-                </td>
-                <td className="py-3">${item.monto_cop.toLocaleString('es-CO')}</td>
+        <>
+          <table className="mt-8 w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-cream text-lavender">
+                <th className="py-2">{t('admin.fields.firstName')}</th>
+                <th className="py-2">{t('admin.fields.lastName')}</th>
+                <th className="py-2">{t('admin.fields.contractType')}</th>
+                <th className="py-2">{t('admin.amount')}</th>
               </tr>
-            ))}
-            {items.length === 0 && (
-              <tr>
-                <td colSpan={4} className="py-6 text-center text-gray-500">
-                  {t('admin.noEligibleEmployees')}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {pagedItems.map((item) => (
+                <tr key={item.employee_id} className="border-b border-cream">
+                  <td className="py-3">{item.nombre}</td>
+                  <td className="py-3">{item.apellido}</td>
+                  <td className="py-3">
+                    {t(`admin.contractTypes.${item.tipo_contrato}`)}
+                  </td>
+                  <td className="py-3">${item.monto_cop.toLocaleString('es-CO')}</td>
+                </tr>
+              ))}
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="py-6 text-center text-gray-500">
+                    {t('admin.noEligibleEmployees')}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          {items.length > 0 && (
+            <TableFooterPagination
+              page={itemsPage}
+              totalPages={itemsTotalPages}
+              pageSize={itemsPageSize}
+              onPageChange={setItemsPage}
+              onPageSizeChange={setItemsPageSize}
+            />
+          )}
+        </>
       )}
 
       {hourlyEmployees.length > 0 && (
@@ -194,6 +226,15 @@ function ShiftsListView({
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
   const [shiftForm, setShiftForm] = useState(EMPTY_SHIFT_FORM)
   const [formError, setFormError] = useState<string | null>(null)
+
+  const {
+    page: shiftsPage,
+    setPage: setShiftsPage,
+    pageSize: shiftsPageSize,
+    setPageSize: setShiftsPageSize,
+    totalPages: shiftsTotalPages,
+    pageItems: pagedShifts,
+  } = usePagedList(summary?.shifts ?? [])
 
   const reload = useCallback(() => {
     if (employeeId === null) return
@@ -361,7 +402,7 @@ function ShiftsListView({
               </tr>
             </thead>
             <tbody>
-              {summary.shifts.map((shift) => (
+              {pagedShifts.map((shift) => (
                 <tr key={shift.id} className="border-b border-cream">
                   <td className="py-3">{formatDate(shift.fecha)}</td>
                   <td className="py-3">{shift.hora_inicio.slice(0, 5)}</td>
@@ -392,6 +433,15 @@ function ShiftsListView({
               )}
             </tbody>
           </table>
+          {summary.shifts.length > 0 && (
+            <TableFooterPagination
+              page={shiftsPage}
+              totalPages={shiftsTotalPages}
+              pageSize={shiftsPageSize}
+              onPageChange={setShiftsPage}
+              onPageSizeChange={setShiftsPageSize}
+            />
+          )}
 
           <div className="mt-4 flex justify-end gap-8 rounded-2xl border border-cream bg-white p-4 text-sm">
             <p>

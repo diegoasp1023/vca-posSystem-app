@@ -12,17 +12,29 @@ import {
   type NominaItem,
   type TipPool,
 } from '../../lib/adminApi'
-import { MonthYearPicker, PeriodBanner, usePayrollPeriod } from './PayrollShared'
+import {
+  MonthYearPicker,
+  PeriodBanner,
+  TableFooterPagination,
+  usePagedList,
+  usePayrollPeriod,
+} from './PayrollShared'
 
 const EMPTY_BONUS_FORM = { employeeId: '', montoCop: '', concepto: '' }
 
-export function BonosTab() {
+export function BonosTab({
+  year,
+  month,
+  onYearChange,
+  onMonthChange,
+}: {
+  year: number
+  month: number
+  onYearChange: (year: number) => void
+  onMonthChange: (month: number) => void
+}) {
   const { t } = useTranslation()
   const { getToken } = useAuth()
-
-  const now = new Date()
-  const [year, setYear] = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1)
 
   const [employees, setEmployees] = useState<NominaItem[]>([])
   const [bonuses, setBonuses] = useState<Bonus[]>([])
@@ -36,8 +48,17 @@ export function BonosTab() {
   const [tipParticipants, setTipParticipants] = useState<Set<number>>(new Set())
   const [tipError, setTipError] = useState<string | null>(null)
 
-  const { period, approve } = usePayrollPeriod(year, month)
+  const { period, close } = usePayrollPeriod(year, month)
   const isOpen = period?.estado === 'abierto'
+
+  const {
+    page: bonusesPage,
+    setPage: setBonusesPage,
+    pageSize: bonusesPageSize,
+    setPageSize: setBonusesPageSize,
+    totalPages: bonusesTotalPages,
+    pageItems: pagedBonuses,
+  } = usePagedList(bonuses)
 
   const reload = useCallback(() => {
     setStatus('loading')
@@ -127,10 +148,10 @@ export function BonosTab() {
         <MonthYearPicker
           year={year}
           month={month}
-          onYearChange={setYear}
-          onMonthChange={setMonth}
+          onYearChange={onYearChange}
+          onMonthChange={onMonthChange}
         />
-        <PeriodBanner period={period} onApprove={approve} />
+        <PeriodBanner period={period} onClose={close} />
       </div>
 
       {status === 'loading' && (
@@ -142,6 +163,80 @@ export function BonosTab() {
 
       {status === 'ready' && (
         <>
+          <section className="mt-10">
+            <h2 className="font-serif text-xl text-lavender-dark">{t('admin.tips')}</h2>
+
+            <form
+              onSubmit={submitTips}
+              className="mt-4 rounded-2xl border border-cream bg-white p-6"
+            >
+              <label className="block max-w-xs text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.totalTipAmount')}
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  disabled={!isOpen}
+                  value={tipAmount}
+                  onChange={(e) => setTipAmount(e.target.value)}
+                  className="w-full rounded-lg border border-cream px-3 py-2 disabled:bg-cream"
+                />
+              </label>
+
+              <p className="mt-4 text-sm font-semibold text-lavender-dark">
+                {t('admin.tipParticipants')}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-3">
+                {employees.map((employee) => (
+                  <label
+                    key={employee.employee_id}
+                    className="flex items-center gap-2 text-sm text-gray-700"
+                  >
+                    <input
+                      type="checkbox"
+                      disabled={!isOpen}
+                      checked={tipParticipants.has(employee.employee_id)}
+                      onChange={() => toggleParticipant(employee.employee_id)}
+                    />
+                    {employee.nombre} {employee.apellido}
+                  </label>
+                ))}
+              </div>
+
+              <p className="mt-4 text-sm text-gray-600">
+                {t('admin.perPersonPreview')}:{' '}
+                <span className="font-semibold text-lavender-dark">
+                  ${previewPerPerson.toLocaleString('es-CO')}
+                </span>
+              </p>
+
+              {isOpen && (
+                <button
+                  type="submit"
+                  className="mt-4 rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
+                >
+                  {t('admin.save')}
+                </button>
+              )}
+              {!isOpen && (
+                <p className="mt-4 text-sm font-semibold text-amber-700">
+                  {t('admin.periodLockedNotice')}
+                </p>
+              )}
+              {tipError && (
+                <p className="mt-2 text-sm font-semibold text-coral-dark">{tipError}</p>
+              )}
+            </form>
+
+            {tips && tips.participant_ids.length > 0 && (
+              <p className="mt-2 text-sm text-gray-600">
+                {t('admin.currentPerPerson')}: $
+                {tips.monto_por_persona.toLocaleString('es-CO')}
+              </p>
+            )}
+          </section>
+
           <section className="mt-10">
             <h2 className="font-serif text-xl text-lavender-dark">
               {t('admin.bonuses')}
@@ -232,7 +327,7 @@ export function BonosTab() {
                 </tr>
               </thead>
               <tbody>
-                {bonuses.map((bonus) => {
+                {pagedBonuses.map((bonus) => {
                   const employee = employees.find(
                     (e) => e.employee_id === bonus.employee_id,
                   )
@@ -268,79 +363,14 @@ export function BonosTab() {
                 )}
               </tbody>
             </table>
-          </section>
-
-          <section className="mt-10">
-            <h2 className="font-serif text-xl text-lavender-dark">{t('admin.tips')}</h2>
-
-            <form
-              onSubmit={submitTips}
-              className="mt-4 rounded-2xl border border-cream bg-white p-6"
-            >
-              <label className="block max-w-xs text-sm">
-                <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.totalTipAmount')}
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  disabled={!isOpen}
-                  value={tipAmount}
-                  onChange={(e) => setTipAmount(e.target.value)}
-                  className="w-full rounded-lg border border-cream px-3 py-2 disabled:bg-cream"
-                />
-              </label>
-
-              <p className="mt-4 text-sm font-semibold text-lavender-dark">
-                {t('admin.tipParticipants')}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-3">
-                {employees.map((employee) => (
-                  <label
-                    key={employee.employee_id}
-                    className="flex items-center gap-2 text-sm text-gray-700"
-                  >
-                    <input
-                      type="checkbox"
-                      disabled={!isOpen}
-                      checked={tipParticipants.has(employee.employee_id)}
-                      onChange={() => toggleParticipant(employee.employee_id)}
-                    />
-                    {employee.nombre} {employee.apellido}
-                  </label>
-                ))}
-              </div>
-
-              <p className="mt-4 text-sm text-gray-600">
-                {t('admin.perPersonPreview')}:{' '}
-                <span className="font-semibold text-lavender-dark">
-                  ${previewPerPerson.toLocaleString('es-CO')}
-                </span>
-              </p>
-
-              {isOpen && (
-                <button
-                  type="submit"
-                  className="mt-4 rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
-                >
-                  {t('admin.save')}
-                </button>
-              )}
-              {!isOpen && (
-                <p className="mt-4 text-sm font-semibold text-amber-700">
-                  {t('admin.periodLockedNotice')}
-                </p>
-              )}
-              {tipError && (
-                <p className="mt-2 text-sm font-semibold text-coral-dark">{tipError}</p>
-              )}
-            </form>
-
-            {tips && tips.participant_ids.length > 0 && (
-              <p className="mt-2 text-sm text-gray-600">
-                {t('admin.currentPerPerson')}: $
-                {tips.monto_por_persona.toLocaleString('es-CO')}
-              </p>
+            {bonuses.length > 0 && (
+              <TableFooterPagination
+                page={bonusesPage}
+                totalPages={bonusesTotalPages}
+                pageSize={bonusesPageSize}
+                onPageChange={setBonusesPage}
+                onPageSizeChange={setBonusesPageSize}
+              />
             )}
           </section>
         </>

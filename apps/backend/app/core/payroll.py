@@ -6,26 +6,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.employee import Employee
-from app.models.payroll import PayrollPeriod, PayrollSettings, PayrollSnapshot
+from app.models.payroll import PayrollPeriod, PayrollSnapshot
 from app.models.shift import Shift
 from app.schemas.payroll import PeriodState
 from app.schemas.shift import ShiftOut
-
-
-async def get_settings(db: AsyncSession) -> PayrollSettings:
-    settings = await db.scalar(select(PayrollSettings).limit(1))
-    if settings is None:
-        settings = PayrollSettings(dia_cierre=5)
-        db.add(settings)
-        try:
-            await db.commit()
-        except IntegrityError:
-            # Another concurrent request already created the singleton row.
-            await db.rollback()
-            settings = await db.scalar(select(PayrollSettings).limit(1))
-        else:
-            await db.refresh(settings)
-    return settings
 
 
 async def get_or_create_period(db: AsyncSession, year: int, month: int) -> PayrollPeriod:
@@ -33,7 +17,7 @@ async def get_or_create_period(db: AsyncSession, year: int, month: int) -> Payro
         select(PayrollPeriod).where(PayrollPeriod.year == year, PayrollPeriod.month == month)
     )
     if period is None:
-        period = PayrollPeriod(year=year, month=month, aprobado=False)
+        period = PayrollPeriod(year=year, month=month, cerrado=False)
         db.add(period)
         try:
             await db.commit()
@@ -50,20 +34,13 @@ async def get_or_create_period(db: AsyncSession, year: int, month: int) -> Payro
     return period
 
 
-def compute_period_state(year: int, month: int, dia_cierre: int, aprobado: bool) -> PeriodState:
-    if aprobado:
-        return "aprobado"
-    close_year, close_month = (year, month + 1) if month < 12 else (year + 1, 1)
-    close_date = date(close_year, close_month, dia_cierre)
-    if date.today() >= close_date:
-        return "cerrado"
-    return "abierto"
+def period_state_from_row(period: PayrollPeriod) -> PeriodState:
+    return "cerrado" if period.cerrado else "abierto"
 
 
 async def get_period_state(db: AsyncSession, year: int, month: int) -> PeriodState:
-    settings = await get_settings(db)
     period = await get_or_create_period(db, year, month)
-    return compute_period_state(year, month, settings.dia_cierre, period.aprobado)
+    return period_state_from_row(period)
 
 
 async def eligible_employees_for_month(

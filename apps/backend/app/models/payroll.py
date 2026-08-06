@@ -14,17 +14,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
 
-class PayrollSettings(Base):
-    """Single-row table holding the global payroll close-day configuration."""
-
-    __tablename__ = "payroll_settings"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    dia_cierre: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
-
-
 class PayrollPeriod(Base):
-    """Tracks whether a given month has been manually approved (locked forever)."""
+    """Tracks whether a given month has been manually closed by the admin.
+    Closing is a deliberate, irreversible action (no automatic date-based
+    transitions) — once cerrado, the month can never be edited again."""
 
     __tablename__ = "payroll_periods"
     __table_args__ = (UniqueConstraint("year", "month"),)
@@ -32,8 +25,8 @@ class PayrollPeriod(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     year: Mapped[int] = mapped_column(Integer, nullable=False)
     month: Mapped[int] = mapped_column(Integer, nullable=False)
-    aprobado: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    aprobado_en: Mapped[datetime | None] = mapped_column(
+    cerrado: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    cerrado_en: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 

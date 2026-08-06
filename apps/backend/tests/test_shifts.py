@@ -2,8 +2,6 @@ from datetime import date
 
 from tests.conftest import make_employee
 
-# Always use a month far enough in the future that it's never "cerrado"
-# relative to whenever the test suite actually runs.
 _FUTURE = date.today().replace(day=1)
 _FUTURE = _FUTURE.replace(year=_FUTURE.year + 1)
 YEAR = _FUTURE.year
@@ -198,14 +196,17 @@ async def test_delete_shift(db_session, admin_client):
 
 async def test_create_shift_rejected_when_period_closed(db_session, admin_client):
     employee = await make_hourly_employee(db_session)
-    past = date.today().replace(day=1)
-    past = date(past.year - 1, past.month, 1)
+
+    closed = await admin_client.post(
+        "/api/payroll/period/close", params={"year": YEAR, "month": MONTH}
+    )
+    assert closed.status_code == 200
 
     response = await admin_client.post(
         "/api/shifts",
         json={
             "employee_id": employee.id,
-            "fecha": past.isoformat(),
+            "fecha": _fecha(10),
             "hora_inicio": "08:00:00",
             "hora_fin": "10:00:00",
         },

@@ -1,8 +1,8 @@
 """add payroll tables
 
-Revision ID: e918435baee1
+Revision ID: 9497afa0a68d
 Revises: 93ed600b52dd
-Create Date: 2026-08-06 00:15:11.034011
+Create Date: 2026-08-06 06:11:16.386394
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'e918435baee1'
+revision: str = '9497afa0a68d'
 down_revision: Union[str, Sequence[str], None] = '93ed600b52dd'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,15 +25,10 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('year', sa.Integer(), nullable=False),
     sa.Column('month', sa.Integer(), nullable=False),
-    sa.Column('aprobado', sa.Boolean(), nullable=False),
-    sa.Column('aprobado_en', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('cerrado', sa.Boolean(), nullable=False),
+    sa.Column('cerrado_en', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('year', 'month')
-    )
-    op.create_table('payroll_settings',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('dia_cierre', sa.Integer(), nullable=False),
-    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('tip_pools',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -83,6 +78,5 @@ def downgrade() -> None:
     op.drop_table('payroll_snapshots')
     op.drop_table('bonuses')
     op.drop_table('tip_pools')
-    op.drop_table('payroll_settings')
     op.drop_table('payroll_periods')
     # ### end Alembic commands ###

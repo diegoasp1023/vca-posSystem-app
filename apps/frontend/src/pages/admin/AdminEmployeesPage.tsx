@@ -12,6 +12,10 @@ export function AdminEmployeesPage() {
   const { t } = useTranslation()
   const [tab, setTab] = useState<Tab>('empleados')
 
+  const now = new Date()
+  const [year, setYear] = useState(now.getFullYear())
+  const [month, setMonth] = useState(now.getMonth() + 1)
+
   return (
     <section className="px-6 py-16">
       <div className="mx-auto max-w-4xl">
@@ -25,6 +29,7 @@ export function AdminEmployeesPage() {
         <h1 className="mt-4 font-serif text-3xl text-lavender-dark">
           {t('admin.manageEmployees')}
         </h1>
+        <p className="mt-1 text-sm text-gray-600">{t('admin.manageEmployeesDesc')}</p>
 
         <div className="mt-6 flex flex-wrap gap-2 border-b border-cream">
           <TabButton active={tab === 'empleados'} onClick={() => setTab('empleados')}>
@@ -42,9 +47,15 @@ export function AdminEmployeesPage() {
         </div>
 
         {tab === 'empleados' && <EmployeesTab />}
-        {tab === 'nomina' && <NominaTab />}
-        {tab === 'resumen' && <ResumenTab />}
-        {tab === 'bonos' && <BonosTab />}
+        {tab === 'nomina' && (
+          <NominaTab year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} />
+        )}
+        {tab === 'resumen' && (
+          <ResumenTab year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} />
+        )}
+        {tab === 'bonos' && (
+          <BonosTab year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} />
+        )}
       </div>
     </section>
   )

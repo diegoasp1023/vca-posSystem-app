@@ -9,9 +9,10 @@ from app.core.database import get_db
 from app.core.payroll import (
     eligible_employees_for_month,
     get_employee_base_pay,
+    get_indefinido_pay,
     get_or_create_period,
     get_period_state,
-    get_settings,
+    period_state_from_row,
 )
 from app.models.employee import Employee
 from app.models.payroll import Bonus, TipPool, TipPoolParticipant
@@ -20,8 +21,6 @@ from app.schemas.payroll import (
     BonusWrite,
     NominaItemOut,
     PayrollPeriodOut,
-    PayrollSettingsOut,
-    PayrollSettingsWrite,
     PayrollSummaryOut,
     SummaryItemOut,
     TipPoolOut,
@@ -41,22 +40,6 @@ async def _require_open_period(db: AsyncSession, year: int, month: int) -> None:
         )
 
 
-@router.get("/settings", response_model=PayrollSettingsOut)
-async def read_settings(db: AsyncSession = Depends(get_db)) -> PayrollSettingsOut:
-    settings = await get_settings(db)
-    return PayrollSettingsOut(dia_cierre=settings.dia_cierre)
-
-
-@router.put("/settings", response_model=PayrollSettingsOut)
-async def update_settings(
-    body: PayrollSettingsWrite, db: AsyncSession = Depends(get_db)
-) -> PayrollSettingsOut:
-    settings = await get_settings(db)
-    settings.dia_cierre = body.dia_cierre
-    await db.commit()
-    return PayrollSettingsOut(dia_cierre=settings.dia_cierre)
-
-
 @router.get("/period", response_model=PayrollPeriodOut)
 async def read_period(
     year: int = Query(..., ge=2000, le=2100),
@@ -64,30 +47,37 @@ async def read_period(
     db: AsyncSession = Depends(get_db),
 ) -> PayrollPeriodOut:
     period = await get_or_create_period(db, year, month)
-    state = await get_period_state(db, year, month)
     return PayrollPeriodOut(
-        year=year, month=month, estado=state, aprobado_en=period.aprobado_en
+        year=year,
+        month=month,
+        estado=period_state_from_row(period),
+        cerrado_en=period.cerrado_en,
     )
 
 
-@router.post("/period/approve", response_model=PayrollPeriodOut)
-async def approve_period(
+@router.post("/period/close", response_model=PayrollPeriodOut)
+async def close_period(
     year: int = Query(..., ge=2000, le=2100),
     month: int = Query(..., ge=1, le=12),
     db: AsyncSession = Depends(get_db),
 ) -> PayrollPeriodOut:
-    state = await get_period_state(db, year, month)
-    if state != "cerrado":
-        raise HTTPException(
-            status_code=400,
-            detail="Only a closed (cerrado) period can be approved",
-        )
     period = await get_or_create_period(db, year, month)
-    period.aprobado = True
-    period.aprobado_en = datetime.now(timezone.utc)
+    if period.cerrado:
+        raise HTTPException(status_code=400, detail="This period is already closed")
+
+    # Freeze indefinido salaries at their current value before locking the month.
+    employees = await eligible_employees_for_month(db, year, month)
+    for employee in employees:
+        if employee.tipo_contrato == "indefinido":
+            await get_indefinido_pay(db, employee, year, month, "cerrado")
+
+    period.cerrado = True
+    period.cerrado_en = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(period)
-    return PayrollPeriodOut(year=year, month=month, estado="aprobado", aprobado_en=period.aprobado_en)
+    return PayrollPeriodOut(
+        year=year, month=month, estado="cerrado", cerrado_en=period.cerrado_en
+    )
 
 
 @router.get("/nomina", response_model=list[NominaItemOut])

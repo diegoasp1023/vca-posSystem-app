@@ -87,8 +87,9 @@ const resources = {
         manageProductsDesc: 'Agregá, editá o eliminá los cafés que se muestran en el sitio.',
         manageCourses: 'Gestión de Cursos y Talleres',
         manageCoursesDesc: 'Agregá, editá o eliminá los cursos y su contenido.',
-        manageEmployees: 'Gestión de Personal',
-        manageEmployeesDesc: 'Agregá, editá o da de baja a los empleados.',
+        manageEmployees: 'Gestión de Nómina',
+        manageEmployeesDesc:
+          'Agregá y editá empleados, gestioná turnos, bonos y propinas, y cerrá la nómina de cada mes cuando esté todo listo (una vez cerrado un mes, ya no se puede modificar).',
         newProduct: '+ Nuevo café',
         newCourse: '+ Nuevo curso',
         newEmployee: '+ Nuevo empleado',
@@ -133,11 +134,12 @@ const resources = {
         manageShifts: 'Gestionar turnos',
         noEligibleEmployees: 'No hay empleados elegibles este mes.',
         periodLockedNotice: 'Este mes ya está cerrado. No se pueden agregar ni editar cambios.',
-        approvePeriod: 'Aprobar mes',
+        closePeriod: 'Cerrar mes',
+        confirmClosePeriod:
+          '¿Seguro que querés cerrar {{month}} de {{year}}? Esta acción no se puede deshacer: después de cerrar no vas a poder modificar turnos, bonos, propinas ni salarios de ese mes.',
         periodState: {
           abierto: 'Abierto',
           cerrado: 'Cerrado',
-          aprobado: 'Aprobado',
         },
         baseAmount: 'Pago base',
         bonuses: 'Bonos',
@@ -315,8 +317,9 @@ const resources = {
         manageProductsDesc: 'Add, edit, or remove the coffees shown on the site.',
         manageCourses: 'Manage Courses & Workshops',
         manageCoursesDesc: 'Add, edit, or remove courses and their content.',
-        manageEmployees: 'Manage Staff',
-        manageEmployeesDesc: 'Add, edit, or deactivate employees.',
+        manageEmployees: 'Payroll Management',
+        manageEmployeesDesc:
+          'Add and edit employees, manage shifts, bonuses and tips, and close each month\'s payroll once everything is ready (a closed month can no longer be changed).',
         newProduct: '+ New coffee',
         newCourse: '+ New course',
         newEmployee: '+ New employee',
@@ -361,11 +364,12 @@ const resources = {
         manageShifts: 'Manage shifts',
         noEligibleEmployees: 'No eligible employees this month.',
         periodLockedNotice: 'This month is already closed. No changes can be made.',
-        approvePeriod: 'Approve month',
+        closePeriod: 'Close month',
+        confirmClosePeriod:
+          'Are you sure you want to close {{month}} {{year}}? This cannot be undone: once closed, shifts, bonuses, tips and salaries for that month can no longer be changed.',
         periodState: {
           abierto: 'Open',
           cerrado: 'Closed',
-          aprobado: 'Approved',
         },
         baseAmount: 'Base pay',
         bonuses: 'Bonuses',

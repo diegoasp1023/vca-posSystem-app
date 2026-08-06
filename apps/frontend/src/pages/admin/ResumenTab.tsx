@@ -2,19 +2,40 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { fetchPayrollSummary, type PayrollSummary } from '../../lib/adminApi'
-import { MonthYearPicker, PeriodBanner, usePayrollPeriod } from './PayrollShared'
+import {
+  MonthYearPicker,
+  PeriodBanner,
+  TableFooterPagination,
+  usePagedList,
+  usePayrollPeriod,
+} from './PayrollShared'
 
-export function ResumenTab() {
+export function ResumenTab({
+  year,
+  month,
+  onYearChange,
+  onMonthChange,
+}: {
+  year: number
+  month: number
+  onYearChange: (year: number) => void
+  onMonthChange: (month: number) => void
+}) {
   const { t } = useTranslation()
   const { getToken } = useAuth()
 
-  const now = new Date()
-  const [year, setYear] = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1)
   const [summary, setSummary] = useState<PayrollSummary | null>(null)
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
 
-  const { period, approve } = usePayrollPeriod(year, month)
+  const { period, close } = usePayrollPeriod(year, month)
+  const {
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    pageItems,
+  } = usePagedList(summary?.items ?? [])
 
   const reload = useCallback(() => {
     setStatus('loading')
@@ -35,10 +56,10 @@ export function ResumenTab() {
         <MonthYearPicker
           year={year}
           month={month}
-          onYearChange={setYear}
-          onMonthChange={setMonth}
+          onYearChange={onYearChange}
+          onMonthChange={onMonthChange}
         />
-        <PeriodBanner period={period} onApprove={approve} />
+        <PeriodBanner period={period} onClose={close} />
       </div>
 
       {status === 'loading' && (
@@ -61,7 +82,7 @@ export function ResumenTab() {
               </tr>
             </thead>
             <tbody>
-              {summary.items.map((item) => (
+              {pageItems.map((item) => (
                 <tr key={item.employee_id} className="border-b border-cream">
                   <td className="py-3">{item.nombre}</td>
                   <td className="py-3">{item.apellido}</td>
@@ -86,6 +107,15 @@ export function ResumenTab() {
               )}
             </tbody>
           </table>
+          {summary.items.length > 0 && (
+            <TableFooterPagination
+              page={page}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          )}
 
           <div className="mt-4 flex justify-end rounded-2xl border border-cream bg-white p-4 text-sm">
             <p>

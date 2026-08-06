@@ -10,7 +10,6 @@ from app.models.employee import Employee
 from app.models.payroll import (
     Bonus,
     PayrollPeriod,
-    PayrollSettings,
     PayrollSnapshot,
     TipPool,
     TipPoolParticipant,
@@ -27,7 +26,6 @@ __all__ = [
     "Employee",
     "PaymentMethod",
     "PayrollPeriod",
-    "PayrollSettings",
     "PayrollSnapshot",
     "Shift",
     "TipPool",
