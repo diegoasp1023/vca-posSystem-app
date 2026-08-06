@@ -9,22 +9,24 @@ import {
   type Employee,
   type MonthlyShiftSummary,
 } from '../../lib/adminApi'
+import { formatDate } from '../../lib/format'
+import { ShiftsCalendar } from './ShiftsCalendar'
 
 const EMPTY_SHIFT_FORM = { fecha: '', hora_inicio: '', hora_fin: '' }
+const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
 
 export function ShiftsTab() {
   const { t } = useTranslation()
   const { getToken } = useAuth()
 
   const [hourlyEmployees, setHourlyEmployees] = useState<Employee[]>([])
+  const [employeesLoaded, setEmployeesLoaded] = useState(false)
   const [employeeId, setEmployeeId] = useState<number | null>(null)
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
-  const [summary, setSummary] = useState<MonthlyShiftSummary | null>(null)
-  const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
-  const [shiftForm, setShiftForm] = useState(EMPTY_SHIFT_FORM)
-  const [formError, setFormError] = useState<string | null>(null)
+  const [view, setView] = useState<'lista' | 'calendario'>('lista')
+  const years = Array.from({ length: 6 }, (_, i) => now.getFullYear() - 3 + i)
 
   useEffect(() => {
     getToken()
@@ -43,9 +45,122 @@ export function ShiftsTab() {
         )
         setHourlyEmployees(active)
         if (active.length > 0) setEmployeeId(active[0].id)
+        setEmployeesLoaded(true)
       })
-      .catch(() => setStatus('error'))
   }, [getToken])
+
+  return (
+    <div>
+      <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-wrap items-end gap-4">
+          <label className="block text-sm">
+            <span className="mb-1 block font-semibold text-lavender-dark">
+              {t('admin.month')}
+            </span>
+            <select
+              value={month}
+              onChange={(e) => setMonth(Number(e.target.value))}
+              className="rounded-lg border border-cream px-3 py-2"
+            >
+              {MONTHS.map((m) => (
+                <option key={m} value={m}>
+                  {t(`admin.months.${m}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block font-semibold text-lavender-dark">
+              {t('admin.year')}
+            </span>
+            <select
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              className="rounded-lg border border-cream px-3 py-2"
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="flex gap-2 rounded-full border border-cream p-1">
+          <ViewButton active={view === 'lista'} onClick={() => setView('lista')}>
+            {t('admin.listView')}
+          </ViewButton>
+          <ViewButton
+            active={view === 'calendario'}
+            onClick={() => setView('calendario')}
+          >
+            {t('admin.calendarView')}
+          </ViewButton>
+        </div>
+      </div>
+
+      {!employeesLoaded ? (
+        <p className="mt-10 text-gray-500">{t('common.loading')}</p>
+      ) : hourlyEmployees.length === 0 ? (
+        <p className="mt-10 text-gray-500">{t('admin.noHourlyEmployees')}</p>
+      ) : view === 'lista' ? (
+        <ShiftsListView
+          hourlyEmployees={hourlyEmployees}
+          employeeId={employeeId}
+          setEmployeeId={setEmployeeId}
+          year={year}
+          month={month}
+        />
+      ) : (
+        <ShiftsCalendar hourlyEmployees={hourlyEmployees} year={year} month={month} />
+      )}
+    </div>
+  )
+}
+
+function ViewButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
+        active ? 'bg-coral text-white' : 'text-lavender-dark hover:bg-cream'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
+function ShiftsListView({
+  hourlyEmployees,
+  employeeId,
+  setEmployeeId,
+  year,
+  month,
+}: {
+  hourlyEmployees: Employee[]
+  employeeId: number | null
+  setEmployeeId: (id: number) => void
+  year: number
+  month: number
+}) {
+  const { t } = useTranslation()
+  const { getToken } = useAuth()
+
+  const [summary, setSummary] = useState<MonthlyShiftSummary | null>(null)
+  const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
+  const [shiftForm, setShiftForm] = useState(EMPTY_SHIFT_FORM)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const reload = useCallback(() => {
     if (employeeId === null) return
@@ -87,57 +202,24 @@ export function ShiftsTab() {
     reload()
   }
 
-  if (hourlyEmployees.length === 0 && status !== 'loading') {
-    return <p className="mt-10 text-gray-500">{t('admin.noHourlyEmployees')}</p>
-  }
-
   return (
     <div>
-      <div className="mt-6 flex flex-wrap items-end gap-4">
-        <label className="block text-sm">
-          <span className="mb-1 block font-semibold text-lavender-dark">
-            {t('admin.employee')}
-          </span>
-          <select
-            value={employeeId ?? ''}
-            onChange={(e) => setEmployeeId(Number(e.target.value))}
-            className="rounded-lg border border-cream px-3 py-2"
-          >
-            {hourlyEmployees.map((employee) => (
-              <option key={employee.id} value={employee.id}>
-                {employee.nombre} {employee.apellido}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-semibold text-lavender-dark">
-            {t('admin.month')}
-          </span>
-          <select
-            value={month}
-            onChange={(e) => setMonth(Number(e.target.value))}
-            className="rounded-lg border border-cream px-3 py-2"
-          >
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-semibold text-lavender-dark">
-            {t('admin.year')}
-          </span>
-          <input
-            type="number"
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
-            className="w-24 rounded-lg border border-cream px-3 py-2"
-          />
-        </label>
-      </div>
+      <label className="mt-6 block max-w-xs text-sm">
+        <span className="mb-1 block font-semibold text-lavender-dark">
+          {t('admin.employee')}
+        </span>
+        <select
+          value={employeeId ?? ''}
+          onChange={(e) => setEmployeeId(Number(e.target.value))}
+          className="w-full rounded-lg border border-cream px-3 py-2"
+        >
+          {hourlyEmployees.map((employee) => (
+            <option key={employee.id} value={employee.id}>
+              {employee.nombre} {employee.apellido}
+            </option>
+          ))}
+        </select>
+      </label>
 
       {employeeId !== null && (
         <form
@@ -222,9 +304,9 @@ export function ShiftsTab() {
             <tbody>
               {summary.shifts.map((shift) => (
                 <tr key={shift.id} className="border-b border-cream">
-                  <td className="py-3">{shift.fecha}</td>
-                  <td className="py-3">{shift.hora_inicio}</td>
-                  <td className="py-3">{shift.hora_fin}</td>
+                  <td className="py-3">{formatDate(shift.fecha)}</td>
+                  <td className="py-3">{shift.hora_inicio.slice(0, 5)}</td>
+                  <td className="py-3">{shift.hora_fin.slice(0, 5)}</td>
                   <td className="py-3">{shift.horas}</td>
                   <td className="py-3">
                     ${shift.monto_cop.toLocaleString('es-CO')}

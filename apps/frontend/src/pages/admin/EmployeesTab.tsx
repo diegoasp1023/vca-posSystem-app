@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faEye,
+  faPen,
+  faUserCheck,
+  faUserSlash,
+} from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../context/AuthContext'
 import {
   createEmployee,
@@ -13,6 +20,7 @@ import {
   type TipoCuenta,
   type TipoDocumento,
 } from '../../lib/adminApi'
+import { formatDate } from '../../lib/format'
 import { Pagination } from '../../components/Pagination'
 
 const DOCUMENT_TYPES: TipoDocumento[] = ['CC', 'TI', 'RC', 'CE', 'PA']
@@ -400,9 +408,7 @@ export function EmployeesTab() {
             <thead>
               <tr className="border-b border-cream text-lavender">
                 <th className="py-2">{t('admin.fields.firstName')}</th>
-                <th className="py-2">{t('admin.fields.documentNumber')}</th>
-                <th className="py-2">{t('admin.fields.position')}</th>
-                <th className="py-2">{t('admin.fields.contractType')}</th>
+                <th className="py-2">{t('admin.fields.lastName')}</th>
                 <th className="py-2">{t('admin.fields.status')}</th>
                 <th className="py-2" />
               </tr>
@@ -410,14 +416,8 @@ export function EmployeesTab() {
             <tbody>
               {employees.map((employee) => (
                 <tr key={employee.id} className="border-b border-cream">
-                  <td className="py-3">
-                    {employee.nombre} {employee.apellido}
-                  </td>
-                  <td className="py-3">{employee.numero_documento}</td>
-                  <td className="py-3">{employee.cargo}</td>
-                  <td className="py-3">
-                    {t(`admin.contractTypes.${employee.tipo_contrato}`)}
-                  </td>
+                  <td className="py-3">{employee.nombre}</td>
+                  <td className="py-3">{employee.apellido}</td>
                   <td className="py-3">
                     {employee.is_active
                       ? t('admin.statusActive')
@@ -427,25 +427,40 @@ export function EmployeesTab() {
                     <button
                       type="button"
                       onClick={() => setDetailsEmployee(employee)}
-                      className="mr-4 text-lavender-dark hover:underline"
+                      aria-label={t('admin.viewDetails')}
+                      title={t('admin.viewDetails')}
+                      className="mr-3 text-lavender-dark hover:text-lavender"
                     >
-                      {t('admin.viewDetails')}
+                      <FontAwesomeIcon icon={faEye} className="h-4 w-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => startEdit(employee)}
-                      className="mr-4 text-lavender-dark hover:underline"
+                      aria-label={t('admin.edit')}
+                      title={t('admin.edit')}
+                      className="mr-3 text-lavender-dark hover:text-lavender"
                     >
-                      {t('admin.edit')}
+                      <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => toggleActive(employee)}
-                      className="text-coral-dark hover:underline"
+                      aria-label={
+                        employee.is_active
+                          ? t('admin.deactivate')
+                          : t('admin.reactivate')
+                      }
+                      title={
+                        employee.is_active
+                          ? t('admin.deactivate')
+                          : t('admin.reactivate')
+                      }
+                      className="text-coral-dark hover:text-coral"
                     >
-                      {employee.is_active
-                        ? t('admin.deactivate')
-                        : t('admin.reactivate')}
+                      <FontAwesomeIcon
+                        icon={employee.is_active ? faUserSlash : faUserCheck}
+                        className="h-4 w-4"
+                      />
                     </button>
                   </td>
                 </tr>
@@ -475,19 +490,20 @@ function EmployeeDetailsModal({
 }) {
   const { t } = useTranslation()
 
-  const rows: [string, string][] = [
-    [t('admin.fields.firstName'), employee.nombre],
-    [t('admin.fields.lastName'), employee.apellido],
+  const personalRows: [string, string][] = [
     [
       t('admin.fields.documentType'),
       t(`admin.documentTypes.${employee.tipo_documento}`),
     ],
     [t('admin.fields.documentNumber'), employee.numero_documento],
-    [t('admin.fields.birthDate'), employee.fecha_nacimiento],
+    [t('admin.fields.birthDate'), formatDate(employee.fecha_nacimiento)],
     [t('admin.fields.email'), employee.correo_electronico],
     [t('admin.fields.address'), employee.direccion],
     [t('admin.fields.position'), employee.cargo],
     [t('admin.fields.eps'), employee.eps],
+  ]
+
+  const contractRows: [string, string][] = [
     [
       t('admin.fields.contractType'),
       t(`admin.contractTypes.${employee.tipo_contrato}`),
@@ -507,46 +523,86 @@ function EmployeeDetailsModal({
             `$${employee.salario_por_hora?.toLocaleString('es-CO')}`,
           ],
         ] as [string, string][])),
+    [t('admin.fields.hireDate'), formatDate(employee.fecha_ingreso)],
+    ...(employee.fecha_baja
+      ? ([[t('admin.fechaBaja'), formatDate(employee.fecha_baja)]] as [
+          string,
+          string,
+        ][])
+      : []),
+  ]
+
+  const bankingRows: [string, string][] = [
     [t('admin.fields.bank'), employee.banco],
     [
       t('admin.fields.accountType'),
       t(`admin.accountTypes.${employee.tipo_cuenta}`),
     ],
     [t('admin.fields.accountNumber'), employee.numero_cuenta],
-    [t('admin.fields.hireDate'), employee.fecha_ingreso],
-    [
-      t('admin.fields.status'),
-      employee.is_active ? t('admin.statusActive') : t('admin.statusInactive'),
-    ],
-    ...(employee.fecha_baja
-      ? ([[t('admin.fechaBaja'), employee.fecha_baja]] as [string, string][])
-      : []),
   ]
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-lg">
-        <div className="flex items-center justify-between">
-          <h2 className="font-serif text-2xl text-lavender-dark">
-            {employee.nombre} {employee.apellido}
-          </h2>
+      <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-lg">
+        <div className="flex items-center justify-between border-b border-cream px-6 py-4">
+          <div>
+            <h2 className="font-serif text-2xl text-lavender-dark">
+              {employee.nombre} {employee.apellido}
+            </h2>
+            <span
+              className={`mt-1 inline-block rounded-full px-3 py-0.5 text-xs font-semibold ${
+                employee.is_active
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-200 text-gray-600'
+              }`}
+            >
+              {employee.is_active
+                ? t('admin.statusActive')
+                : t('admin.statusInactive')}
+            </span>
+          </div>
+        </div>
+
+        <div className="overflow-y-auto px-6 py-4">
+          <DetailSection title={t('admin.detailsPersonal')} rows={personalRows} />
+          <DetailSection title={t('admin.detailsContract')} rows={contractRows} />
+          <DetailSection title={t('admin.detailsBanking')} rows={bankingRows} />
+        </div>
+
+        <div className="border-t border-cream px-6 py-4">
           <button
             type="button"
             onClick={onClose}
-            className="text-lavender-dark hover:underline"
+            className="w-full rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
           >
             {t('admin.close')}
           </button>
         </div>
-        <dl className="mt-4 space-y-2 text-sm">
-          {rows.map(([label, value]) => (
-            <div key={label} className="flex justify-between gap-4 border-b border-cream py-1">
-              <dt className="font-semibold text-lavender-dark">{label}</dt>
-              <dd className="text-right text-gray-700">{value}</dd>
-            </div>
-          ))}
-        </dl>
       </div>
+    </div>
+  )
+}
+
+function DetailSection({
+  title,
+  rows,
+}: {
+  title: string
+  rows: [string, string][]
+}) {
+  return (
+    <div className="mb-4 last:mb-0">
+      <p className="text-xs font-semibold tracking-wide text-lavender uppercase">
+        {title}
+      </p>
+      <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+        {rows.map(([label, value]) => (
+          <div key={label}>
+            <dt className="text-xs text-gray-500">{label}</dt>
+            <dd className="text-gray-800">{value}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   )
 }
