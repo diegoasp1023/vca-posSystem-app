@@ -1,4 +1,4 @@
-from tests.conftest import make_product
+from tests.conftest import make_presentation, make_product
 
 
 async def test_products_are_paginated_six_per_page(db_session, client):
@@ -52,8 +52,13 @@ async def test_create_product_requires_auth(client):
     assert response.status_code == 401
 
 
-async def test_create_product_as_admin(admin_client):
-    response = await admin_client.post("/api/products", json=PRODUCT_PAYLOAD)
+async def test_create_product_as_admin(db_session, admin_client):
+    presentation = await make_presentation(db_session)
+
+    response = await admin_client.post(
+        "/api/products",
+        json={**PRODUCT_PAYLOAD, "presentation_ids": [presentation.id]},
+    )
 
     assert response.status_code == 201
     assert response.json()["name"]["es"] == "Café Nuevo"
@@ -61,10 +66,16 @@ async def test_create_product_as_admin(admin_client):
 
 async def test_update_product_as_admin(db_session, admin_client):
     product = await make_product(db_session)
+    presentation = await make_presentation(db_session)
 
     response = await admin_client.put(
         f"/api/products/{product.id}",
-        json={**PRODUCT_PAYLOAD, "name_es": "Actualizado", "name_en": "Updated"},
+        json={
+            **PRODUCT_PAYLOAD,
+            "name_es": "Actualizado",
+            "name_en": "Updated",
+            "presentation_ids": [presentation.id],
+        },
     )
 
     assert response.status_code == 200

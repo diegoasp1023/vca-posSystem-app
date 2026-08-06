@@ -6,6 +6,7 @@ from app.models.course import (
     PaymentMethod,
     course_payment_methods,
 )
+from app.models.employee import Employee
 from app.models.product import Presentation, Product, product_presentations
 
 __all__ = [
@@ -13,6 +14,7 @@ __all__ = [
     "CourseContentModule",
     "CourseCost",
     "CourseObjective",
+    "Employee",
     "PaymentMethod",
     "course_payment_methods",
     "Presentation",

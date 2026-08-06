@@ -120,3 +120,69 @@ export function updateCourse(
 export function deleteCourse(token: string | undefined, id: number) {
   return adminFetch<void>(`/api/courses/${id}`, token, { method: 'DELETE' })
 }
+
+export type TipoDocumento = 'CC' | 'TI' | 'RC' | 'CE' | 'PA'
+export type TipoContrato = 'indefinido' | 'por_horas'
+export type TipoCuenta = 'ahorros' | 'corriente'
+
+export interface EmployeeWrite {
+  nombre: string
+  apellido: string
+  tipo_documento: TipoDocumento
+  numero_documento: string
+  fecha_nacimiento: string
+  correo_electronico: string
+  direccion: string
+  cargo: string
+  eps: string
+  tipo_contrato: TipoContrato
+  salario_mensual: number | null
+  salario_por_hora: number | null
+  arl: string | null
+  fondo_pension: string | null
+  banco: string
+  tipo_cuenta: TipoCuenta
+  numero_cuenta: string
+  fecha_ingreso: string
+}
+
+export interface Employee extends EmployeeWrite {
+  id: number
+  fecha_registro: string
+  is_active: boolean
+  fecha_baja: string | null
+}
+
+export function fetchAdminEmployees(token: string | undefined, page: number) {
+  return adminFetch<Page<Employee>>(`/api/employees/admin?page=${page}`, token)
+}
+
+export function createEmployee(token: string | undefined, body: EmployeeWrite) {
+  return adminFetch<Employee>('/api/employees', token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateEmployee(
+  token: string | undefined,
+  id: number,
+  body: EmployeeWrite,
+) {
+  return adminFetch<Employee>(`/api/employees/${id}`, token, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+}
+
+export function deactivateEmployee(token: string | undefined, id: number) {
+  return adminFetch<Employee>(`/api/employees/${id}/deactivate`, token, {
+    method: 'POST',
+  })
+}
+
+export function reactivateEmployee(token: string | undefined, id: number) {
+  return adminFetch<Employee>(`/api/employees/${id}/reactivate`, token, {
+    method: 'POST',
+  })
+}
