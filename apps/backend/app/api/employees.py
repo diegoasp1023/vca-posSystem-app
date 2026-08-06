@@ -39,7 +39,11 @@ async def list_employees(
     if search:
         pattern = f"%{search}%"
         base_query = base_query.where(
-            or_(Employee.nombre.ilike(pattern), Employee.apellido.ilike(pattern))
+            or_(
+                Employee.nombre.ilike(pattern),
+                Employee.apellido.ilike(pattern),
+                Employee.numero_documento.ilike(pattern),
+            )
         )
 
     total = await db.scalar(select(func.count()).select_from(base_query.subquery()))

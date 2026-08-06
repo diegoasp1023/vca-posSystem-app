@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import courses, employees, lookups, products, shifts
+from app.api import courses, employees, lookups, payroll, products, shifts
 from app.core.config import settings
 
 app = FastAPI(title="VCA POS Backend")
@@ -18,6 +18,7 @@ app.include_router(courses.router)
 app.include_router(lookups.router)
 app.include_router(employees.router)
 app.include_router(shifts.router)
+app.include_router(payroll.router)
 
 
 @app.get("/api/health")

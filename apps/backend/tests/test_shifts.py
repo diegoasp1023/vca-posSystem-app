@@ -1,4 +1,17 @@
+from datetime import date
+
 from tests.conftest import make_employee
+
+# Always use a month far enough in the future that it's never "cerrado"
+# relative to whenever the test suite actually runs.
+_FUTURE = date.today().replace(day=1)
+_FUTURE = _FUTURE.replace(year=_FUTURE.year + 1)
+YEAR = _FUTURE.year
+MONTH = _FUTURE.month
+
+
+def _fecha(day: int) -> str:
+    return date(YEAR, MONTH, day).isoformat()
 
 
 async def make_hourly_employee(session, **overrides):
@@ -21,7 +34,7 @@ async def test_create_shift_requires_hourly_employee(db_session, admin_client):
         "/api/shifts",
         json={
             "employee_id": employee.id,
-            "fecha": "2026-03-10",
+            "fecha": _fecha(10),
             "hora_inicio": "08:00:00",
             "hora_fin": "16:00:00",
         },
@@ -37,7 +50,7 @@ async def test_create_shift_rejects_end_before_start(db_session, admin_client):
         "/api/shifts",
         json={
             "employee_id": employee.id,
-            "fecha": "2026-03-10",
+            "fecha": _fecha(10),
             "hora_inicio": "16:00:00",
             "hora_fin": "08:00:00",
         },
@@ -53,7 +66,7 @@ async def test_create_shift_rejects_non_half_hour_marks(db_session, admin_client
         "/api/shifts",
         json={
             "employee_id": employee.id,
-            "fecha": "2026-03-10",
+            "fecha": _fecha(10),
             "hora_inicio": "08:15:00",
             "hora_fin": "12:00:00",
         },
@@ -69,7 +82,7 @@ async def test_create_shift_computes_hours_and_amount(db_session, admin_client):
         "/api/shifts",
         json={
             "employee_id": employee.id,
-            "fecha": "2026-03-10",
+            "fecha": _fecha(10),
             "hora_inicio": "08:00:00",
             "hora_fin": "12:30:00",
         },
@@ -89,7 +102,7 @@ async def test_shift_keeps_frozen_rate_after_salary_change(db_session, admin_cli
         "/api/shifts",
         json={
             "employee_id": employee.id,
-            "fecha": "2026-03-10",
+            "fecha": _fecha(10),
             "hora_inicio": "08:00:00",
             "hora_fin": "12:00:00",
         },
@@ -122,7 +135,7 @@ async def test_shift_keeps_frozen_rate_after_salary_change(db_session, admin_cli
 
     summary = (
         await admin_client.get(
-            "/api/shifts", params={"employee_id": employee.id, "year": 2026, "month": 3}
+            "/api/shifts", params={"employee_id": employee.id, "year": YEAR, "month": MONTH}
         )
     ).json()
 
@@ -133,7 +146,10 @@ async def test_shift_keeps_frozen_rate_after_salary_change(db_session, admin_cli
 async def test_monthly_summary_filters_by_month(db_session, admin_client):
     employee = await make_hourly_employee(db_session)
 
-    for fecha in ["2026-03-01", "2026-03-15", "2026-04-01"]:
+    other_month = MONTH + 1 if MONTH < 12 else 1
+    other_year = YEAR if MONTH < 12 else YEAR + 1
+
+    for fecha in [_fecha(1), _fecha(15), date(other_year, other_month, 1).isoformat()]:
         await admin_client.post(
             "/api/shifts",
             json={
@@ -146,7 +162,7 @@ async def test_monthly_summary_filters_by_month(db_session, admin_client):
 
     summary = (
         await admin_client.get(
-            "/api/shifts", params={"employee_id": employee.id, "year": 2026, "month": 3}
+            "/api/shifts", params={"employee_id": employee.id, "year": YEAR, "month": MONTH}
         )
     ).json()
 
@@ -162,7 +178,7 @@ async def test_delete_shift(db_session, admin_client):
         "/api/shifts",
         json={
             "employee_id": employee.id,
-            "fecha": "2026-03-10",
+            "fecha": _fecha(10),
             "hora_inicio": "08:00:00",
             "hora_fin": "10:00:00",
         },
@@ -174,7 +190,25 @@ async def test_delete_shift(db_session, admin_client):
 
     summary = (
         await admin_client.get(
-            "/api/shifts", params={"employee_id": employee.id, "year": 2026, "month": 3}
+            "/api/shifts", params={"employee_id": employee.id, "year": YEAR, "month": MONTH}
         )
     ).json()
     assert summary["shifts"] == []
+
+
+async def test_create_shift_rejected_when_period_closed(db_session, admin_client):
+    employee = await make_hourly_employee(db_session)
+    past = date.today().replace(day=1)
+    past = date(past.year - 1, past.month, 1)
+
+    response = await admin_client.post(
+        "/api/shifts",
+        json={
+            "employee_id": employee.id,
+            "fecha": past.isoformat(),
+            "hora_inicio": "08:00:00",
+            "hora_fin": "10:00:00",
+        },
+    )
+
+    assert response.status_code == 400

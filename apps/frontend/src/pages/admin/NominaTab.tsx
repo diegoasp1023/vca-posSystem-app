@@ -4,121 +4,145 @@ import { useAuth } from '../../context/AuthContext'
 import {
   createShift,
   deleteShift,
-  fetchAdminEmployees,
   fetchMonthlyShifts,
-  type Employee,
+  fetchNomina,
   type MonthlyShiftSummary,
+  type NominaItem,
 } from '../../lib/adminApi'
 import { formatDate } from '../../lib/format'
+import { MonthYearPicker, PeriodBanner, usePayrollPeriod } from './PayrollShared'
 import { ShiftsCalendar } from './ShiftsCalendar'
 
 const EMPTY_SHIFT_FORM = { fecha: '', hora_inicio: '', hora_fin: '' }
-const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
 const HALF_HOUR_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const hours = String(Math.floor(i / 2)).padStart(2, '0')
   const minutes = i % 2 === 0 ? '00' : '30'
   return `${hours}:${minutes}`
 })
 
-export function ShiftsTab() {
+export function NominaTab() {
   const { t } = useTranslation()
   const { getToken } = useAuth()
 
-  const [hourlyEmployees, setHourlyEmployees] = useState<Employee[]>([])
-  const [employeesLoaded, setEmployeesLoaded] = useState(false)
-  const [employeeId, setEmployeeId] = useState<number | null>(null)
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [view, setView] = useState<'lista' | 'calendario'>('lista')
-  const years = Array.from({ length: 30 }, (_, i) => now.getFullYear() - 5 + i)
+  const [employeeId, setEmployeeId] = useState<number | null>(null)
 
-  useEffect(() => {
+  const [items, setItems] = useState<NominaItem[]>([])
+  const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
+
+  const { period, approve } = usePayrollPeriod(year, month)
+
+  const reloadNomina = useCallback(() => {
+    setStatus('loading')
     getToken()
-      .then(async (token) => {
-        const first = await fetchAdminEmployees(token, { page: 1, pageSize: 50 })
-        const rest = await Promise.all(
-          Array.from({ length: first.total_pages - 1 }, (_, i) =>
-            fetchAdminEmployees(token, { page: i + 2, pageSize: 50 }),
-          ),
+      .then((token) => fetchNomina(token, year, month))
+      .then((result) => {
+        setItems(result)
+        const hourly = result.filter((i) => i.tipo_contrato === 'por_horas')
+        setEmployeeId((current) =>
+          hourly.some((e) => e.employee_id === current)
+            ? current
+            : (hourly[0]?.employee_id ?? null),
         )
-        return [first, ...rest].flatMap((page) => page.items)
+        setStatus('ready')
       })
-      .then((allEmployees) => {
-        const active = allEmployees.filter(
-          (e) => e.tipo_contrato === 'por_horas' && e.is_active,
-        )
-        setHourlyEmployees(active)
-        if (active.length > 0) setEmployeeId(active[0].id)
-        setEmployeesLoaded(true)
-      })
-  }, [getToken])
+      .catch(() => setStatus('error'))
+  }, [year, month, getToken])
+
+  useEffect(reloadNomina, [reloadNomina])
+
+  const hourlyEmployees = items
+    .filter((i) => i.tipo_contrato === 'por_horas')
+    .map((i) => ({ id: i.employee_id, nombre: i.nombre, apellido: i.apellido }))
+
+  const isOpen = period?.estado === 'abierto'
 
   return (
     <div>
       <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-wrap items-end gap-4">
-          <label className="block text-sm">
-            <span className="mb-1 block font-semibold text-lavender-dark">
-              {t('admin.month')}
-            </span>
-            <select
-              value={month}
-              onChange={(e) => setMonth(Number(e.target.value))}
-              className="rounded-lg border border-cream px-3 py-2"
-            >
-              {MONTHS.map((m) => (
-                <option key={m} value={m}>
-                  {t(`admin.months.${m}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block font-semibold text-lavender-dark">
-              {t('admin.year')}
-            </span>
-            <select
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-              className="rounded-lg border border-cream px-3 py-2"
-            >
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="flex gap-2 rounded-full border border-cream p-1">
-          <ViewButton active={view === 'lista'} onClick={() => setView('lista')}>
-            {t('admin.listView')}
-          </ViewButton>
-          <ViewButton
-            active={view === 'calendario'}
-            onClick={() => setView('calendario')}
-          >
-            {t('admin.calendarView')}
-          </ViewButton>
-        </div>
-      </div>
-
-      {!employeesLoaded ? (
-        <p className="mt-10 text-gray-500">{t('common.loading')}</p>
-      ) : hourlyEmployees.length === 0 ? (
-        <p className="mt-10 text-gray-500">{t('admin.noHourlyEmployees')}</p>
-      ) : view === 'lista' ? (
-        <ShiftsListView
-          hourlyEmployees={hourlyEmployees}
-          employeeId={employeeId}
-          setEmployeeId={setEmployeeId}
+        <MonthYearPicker
           year={year}
           month={month}
+          onYearChange={setYear}
+          onMonthChange={setMonth}
         />
-      ) : (
-        <ShiftsCalendar hourlyEmployees={hourlyEmployees} year={year} month={month} />
+        <PeriodBanner period={period} onApprove={approve} />
+      </div>
+
+      {status === 'loading' && (
+        <p className="mt-10 text-gray-500">{t('common.loading')}</p>
+      )}
+      {status === 'error' && (
+        <p className="mt-10 text-gray-500">{t('common.error')}</p>
+      )}
+      {status === 'ready' && (
+        <table className="mt-8 w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-cream text-lavender">
+              <th className="py-2">{t('admin.fields.firstName')}</th>
+              <th className="py-2">{t('admin.fields.lastName')}</th>
+              <th className="py-2">{t('admin.fields.contractType')}</th>
+              <th className="py-2">{t('admin.amount')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.employee_id} className="border-b border-cream">
+                <td className="py-3">{item.nombre}</td>
+                <td className="py-3">{item.apellido}</td>
+                <td className="py-3">
+                  {t(`admin.contractTypes.${item.tipo_contrato}`)}
+                </td>
+                <td className="py-3">${item.monto_cop.toLocaleString('es-CO')}</td>
+              </tr>
+            ))}
+            {items.length === 0 && (
+              <tr>
+                <td colSpan={4} className="py-6 text-center text-gray-500">
+                  {t('admin.noEligibleEmployees')}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      )}
+
+      {hourlyEmployees.length > 0 && (
+        <div className="mt-10">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h2 className="font-serif text-xl text-lavender-dark">
+              {t('admin.manageShifts')}
+            </h2>
+            <div className="flex gap-2 rounded-full border border-cream p-1">
+              <ViewButton active={view === 'lista'} onClick={() => setView('lista')}>
+                {t('admin.listView')}
+              </ViewButton>
+              <ViewButton
+                active={view === 'calendario'}
+                onClick={() => setView('calendario')}
+              >
+                {t('admin.calendarView')}
+              </ViewButton>
+            </div>
+          </div>
+
+          {view === 'lista' ? (
+            <ShiftsListView
+              hourlyEmployees={hourlyEmployees}
+              employeeId={employeeId}
+              setEmployeeId={setEmployeeId}
+              year={year}
+              month={month}
+              isOpen={isOpen}
+              onShiftsChanged={reloadNomina}
+            />
+          ) : (
+            <ShiftsCalendar hourlyEmployees={hourlyEmployees} year={year} month={month} />
+          )}
+        </div>
       )}
     </div>
   )
@@ -152,12 +176,16 @@ function ShiftsListView({
   setEmployeeId,
   year,
   month,
+  isOpen,
+  onShiftsChanged,
 }: {
-  hourlyEmployees: Employee[]
+  hourlyEmployees: { id: number; nombre: string; apellido: string }[]
   employeeId: number | null
   setEmployeeId: (id: number) => void
   year: number
   month: number
+  isOpen: boolean
+  onShiftsChanged: () => void
 }) {
   const { t } = useTranslation()
   const { getToken } = useAuth()
@@ -195,6 +223,7 @@ function ShiftsListView({
       })
       setShiftForm(EMPTY_SHIFT_FORM)
       reload()
+      onShiftsChanged()
     } catch {
       setFormError(t('admin.saveError'))
     }
@@ -205,6 +234,7 @@ function ShiftsListView({
     const token = await getToken()
     await deleteShift(token, id)
     reload()
+    onShiftsChanged()
   }
 
   return (
@@ -226,7 +256,13 @@ function ShiftsListView({
         </select>
       </label>
 
-      {employeeId !== null && (
+      {!isOpen && (
+        <p className="mt-4 text-sm font-semibold text-amber-700">
+          {t('admin.periodLockedNotice')}
+        </p>
+      )}
+
+      {employeeId !== null && isOpen && (
         <form
           onSubmit={submitShift}
           className="mt-6 rounded-2xl border border-cream bg-white p-6"
@@ -335,13 +371,15 @@ function ShiftsListView({
                     ${shift.monto_cop.toLocaleString('es-CO')}
                   </td>
                   <td className="py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => removeShift(shift.id)}
-                      className="text-coral-dark hover:underline"
-                    >
-                      {t('admin.delete')}
-                    </button>
+                    {isOpen && (
+                      <button
+                        type="button"
+                        onClick={() => removeShift(shift.id)}
+                        className="text-coral-dark hover:underline"
+                      >
+                        {t('admin.delete')}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

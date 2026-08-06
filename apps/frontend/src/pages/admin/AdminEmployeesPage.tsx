@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
+import { BonosTab } from './BonosTab'
 import { EmployeesTab } from './EmployeesTab'
-import { ShiftsTab } from './ShiftsTab'
+import { NominaTab } from './NominaTab'
+import { ResumenTab } from './ResumenTab'
 
-type Tab = 'empleados' | 'turnos'
+type Tab = 'empleados' | 'nomina' | 'resumen' | 'bonos'
 
 export function AdminEmployeesPage() {
   const { t } = useTranslation()
@@ -24,16 +26,25 @@ export function AdminEmployeesPage() {
           {t('admin.manageEmployees')}
         </h1>
 
-        <div className="mt-6 flex gap-2 border-b border-cream">
+        <div className="mt-6 flex flex-wrap gap-2 border-b border-cream">
           <TabButton active={tab === 'empleados'} onClick={() => setTab('empleados')}>
             {t('admin.employeesTab')}
           </TabButton>
-          <TabButton active={tab === 'turnos'} onClick={() => setTab('turnos')}>
-            {t('admin.shiftsTab')}
+          <TabButton active={tab === 'nomina'} onClick={() => setTab('nomina')}>
+            {t('admin.nominaTab')}
+          </TabButton>
+          <TabButton active={tab === 'resumen'} onClick={() => setTab('resumen')}>
+            {t('admin.resumenTab')}
+          </TabButton>
+          <TabButton active={tab === 'bonos'} onClick={() => setTab('bonos')}>
+            {t('admin.bonosTab')}
           </TabButton>
         </div>
 
-        {tab === 'empleados' ? <EmployeesTab /> : <ShiftsTab />}
+        {tab === 'empleados' && <EmployeesTab />}
+        {tab === 'nomina' && <NominaTab />}
+        {tab === 'resumen' && <ResumenTab />}
+        {tab === 'bonos' && <BonosTab />}
       </div>
     </section>
   )

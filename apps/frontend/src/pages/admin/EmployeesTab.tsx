@@ -456,6 +456,7 @@ export function EmployeesTab() {
                   sortDir={sortDir}
                   onClick={toggleSort}
                 />
+                <th className="py-2">{t('admin.fields.documentNumber')}</th>
                 <SortableHeader
                   label={t('admin.fields.status')}
                   column="is_active"
@@ -471,6 +472,7 @@ export function EmployeesTab() {
                 <tr key={employee.id} className="border-b border-cream">
                   <td className="py-3">{employee.nombre}</td>
                   <td className="py-3">{employee.apellido}</td>
+                  <td className="py-3">{employee.numero_documento}</td>
                   <td className="py-3">
                     {employee.is_active
                       ? t('admin.statusActive')

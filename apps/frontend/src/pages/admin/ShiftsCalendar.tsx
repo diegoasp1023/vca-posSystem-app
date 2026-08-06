@@ -1,25 +1,31 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
-import { fetchMonthlyShifts, type Employee, type Shift } from '../../lib/adminApi'
+import { fetchMonthlyShifts, type Shift } from '../../lib/adminApi'
 import { employeeColor, employeeLegendColor, employeeTextColor } from '../../lib/format'
 
 const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
+
+export interface EmployeeRef {
+  id: number
+  nombre: string
+  apellido: string
+}
 
 export function ShiftsCalendar({
   hourlyEmployees,
   year,
   month,
 }: {
-  hourlyEmployees: Employee[]
+  hourlyEmployees: EmployeeRef[]
   year: number
   month: number
 }) {
   const { t } = useTranslation()
   const { getToken } = useAuth()
-  const [shiftsByDay, setShiftsByDay] = useState<Map<string, (Shift & { employee: Employee })[]>>(
-    new Map(),
-  )
+  const [shiftsByDay, setShiftsByDay] = useState<
+    Map<string, (Shift & { employee: EmployeeRef })[]>
+  >(new Map())
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
 
   useEffect(() => {
@@ -33,7 +39,7 @@ export function ShiftsCalendar({
             ),
           ),
         )
-        const byDay = new Map<string, (Shift & { employee: Employee })[]>()
+        const byDay = new Map<string, (Shift & { employee: EmployeeRef })[]>()
         for (const shift of summaries.flat()) {
           const existing = byDay.get(shift.fecha) ?? []
           existing.push(shift)
