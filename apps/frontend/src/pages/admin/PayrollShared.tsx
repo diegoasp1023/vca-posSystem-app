@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../context/AuthContext'
 import {
   closePayrollPeriod,
@@ -171,6 +173,80 @@ export function PageSizeSelect({
         <option value={50}>50</option>
       </select>
     </label>
+  )
+}
+
+export function MultiSelectDropdown({
+  options,
+  selected,
+  onChange,
+  disabled,
+  placeholder,
+}: {
+  options: { id: number; label: string }[]
+  selected: Set<number>
+  onChange: (selected: Set<number>) => void
+  disabled?: boolean
+  placeholder: string
+}) {
+  const { t } = useTranslation()
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const toggleOption = (id: number) => {
+    const next = new Set(selected)
+    if (next.has(id)) {
+      next.delete(id)
+    } else {
+      next.add(id)
+    }
+    onChange(next)
+  }
+
+  return (
+    <div ref={containerRef} className="relative max-w-xs">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen((open) => !open)}
+        className="flex w-full items-center justify-between gap-2 rounded-lg border border-cream bg-white px-3 py-2 text-left text-sm disabled:bg-cream"
+      >
+        <span className={selected.size === 0 ? 'text-gray-400' : ''}>
+          {selected.size === 0
+            ? placeholder
+            : t('admin.selectedCount', { count: selected.size })}
+        </span>
+        <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3 text-gray-500" />
+      </button>
+
+      {isOpen && !disabled && (
+        <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-cream bg-white p-2 shadow-md">
+          {options.map((option) => (
+            <label
+              key={option.id}
+              className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-cream"
+            >
+              <input
+                type="checkbox"
+                checked={selected.has(option.id)}
+                onChange={() => toggleOption(option.id)}
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 

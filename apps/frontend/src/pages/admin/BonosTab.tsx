@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-} from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import {
@@ -20,6 +14,7 @@ import {
 } from '../../lib/adminApi'
 import {
   MonthYearPicker,
+  MultiSelectDropdown,
   PeriodBanner,
   TableFooterPagination,
   usePagedList,
@@ -113,11 +108,6 @@ export function BonosTab({
     reload()
   }
 
-  const handleParticipantsChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const selected = Array.from(e.target.selectedOptions, (option) => Number(option.value))
-    setTipParticipants(new Set(selected))
-  }
-
   const submitTips = async (e: FormEvent) => {
     e.preventDefault()
     setTipError(null)
@@ -183,27 +173,21 @@ export function BonosTab({
                 />
               </label>
 
-              <label className="mt-4 block max-w-xs text-sm">
-                <span className="mb-1 block font-semibold text-lavender-dark">
+              <div className="mt-4">
+                <span className="mb-1 block text-sm font-semibold text-lavender-dark">
                   {t('admin.tipParticipants')}
                 </span>
-                <select
-                  multiple
+                <MultiSelectDropdown
+                  options={employees.map((employee) => ({
+                    id: employee.employee_id,
+                    label: `${employee.nombre} ${employee.apellido}`,
+                  }))}
+                  selected={tipParticipants}
+                  onChange={setTipParticipants}
                   disabled={!isOpen}
-                  value={[...tipParticipants].map(String)}
-                  onChange={handleParticipantsChange}
-                  className="h-40 w-full rounded-lg border border-cream px-3 py-2 disabled:bg-cream"
-                >
-                  {employees.map((employee) => (
-                    <option key={employee.employee_id} value={employee.employee_id}>
-                      {employee.nombre} {employee.apellido}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <p className="mt-2 text-sm text-gray-600">
-                {t('admin.selectedCount', { count: tipParticipants.size })}
-              </p>
+                  placeholder={t('admin.tipParticipants')}
+                />
+              </div>
 
               <p className="mt-4 text-sm text-gray-600">
                 {t('admin.perPersonPreview')}:{' '}
