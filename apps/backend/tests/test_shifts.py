@@ -46,6 +46,22 @@ async def test_create_shift_rejects_end_before_start(db_session, admin_client):
     assert response.status_code == 422
 
 
+async def test_create_shift_rejects_non_half_hour_marks(db_session, admin_client):
+    employee = await make_hourly_employee(db_session)
+
+    response = await admin_client.post(
+        "/api/shifts",
+        json={
+            "employee_id": employee.id,
+            "fecha": "2026-03-10",
+            "hora_inicio": "08:15:00",
+            "hora_fin": "12:00:00",
+        },
+    )
+
+    assert response.status_code == 422
+
+
 async def test_create_shift_computes_hours_and_amount(db_session, admin_client):
     employee = await make_hourly_employee(db_session, salario_por_hora=20000)
 

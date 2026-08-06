@@ -153,8 +153,26 @@ export interface Employee extends EmployeeWrite {
   fecha_baja: string | null
 }
 
-export function fetchAdminEmployees(token: string | undefined, page: number) {
-  return adminFetch<Page<Employee>>(`/api/employees/admin?page=${page}`, token)
+export interface EmployeeListParams {
+  page: number
+  pageSize?: 10 | 20 | 50
+  search?: string
+  sortBy?: 'nombre' | 'apellido' | 'is_active'
+  sortDir?: 'asc' | 'desc'
+}
+
+export function fetchAdminEmployees(
+  token: string | undefined,
+  params: EmployeeListParams,
+) {
+  const query = new URLSearchParams({
+    page: String(params.page),
+    page_size: String(params.pageSize ?? 10),
+    sort_by: params.sortBy ?? 'nombre',
+    sort_dir: params.sortDir ?? 'asc',
+  })
+  if (params.search) query.set('search', params.search)
+  return adminFetch<Page<Employee>>(`/api/employees/admin?${query}`, token)
 }
 
 export function createEmployee(token: string | undefined, body: EmployeeWrite) {

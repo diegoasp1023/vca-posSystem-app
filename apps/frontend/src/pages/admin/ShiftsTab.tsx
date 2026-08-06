@@ -14,6 +14,11 @@ import { ShiftsCalendar } from './ShiftsCalendar'
 
 const EMPTY_SHIFT_FORM = { fecha: '', hora_inicio: '', hora_fin: '' }
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
+const HALF_HOUR_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const hours = String(Math.floor(i / 2)).padStart(2, '0')
+  const minutes = i % 2 === 0 ? '00' : '30'
+  return `${hours}:${minutes}`
+})
 
 export function ShiftsTab() {
   const { t } = useTranslation()
@@ -26,15 +31,15 @@ export function ShiftsTab() {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [view, setView] = useState<'lista' | 'calendario'>('lista')
-  const years = Array.from({ length: 6 }, (_, i) => now.getFullYear() - 3 + i)
+  const years = Array.from({ length: 30 }, (_, i) => now.getFullYear() - 5 + i)
 
   useEffect(() => {
     getToken()
       .then(async (token) => {
-        const first = await fetchAdminEmployees(token, 1)
+        const first = await fetchAdminEmployees(token, { page: 1, pageSize: 50 })
         const rest = await Promise.all(
           Array.from({ length: first.total_pages - 1 }, (_, i) =>
-            fetchAdminEmployees(token, i + 2),
+            fetchAdminEmployees(token, { page: i + 2, pageSize: 50 }),
           ),
         )
         return [first, ...rest].flatMap((page) => page.items)
@@ -224,61 +229,79 @@ function ShiftsListView({
       {employeeId !== null && (
         <form
           onSubmit={submitShift}
-          className="mt-6 flex flex-wrap items-end gap-4 rounded-2xl border border-cream bg-white p-6"
+          className="mt-6 rounded-2xl border border-cream bg-white p-6"
         >
-          <label className="block text-sm">
-            <span className="mb-1 block font-semibold text-lavender-dark">
-              {t('admin.fields.shiftDate')} *
-            </span>
-            <input
-              required
-              type="date"
-              value={shiftForm.fecha}
-              onChange={(e) =>
-                setShiftForm({ ...shiftForm, fecha: e.target.value })
-              }
-              className="rounded-lg border border-cream px-3 py-2"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block font-semibold text-lavender-dark">
-              {t('admin.fields.startTime')} *
-            </span>
-            <input
-              required
-              type="time"
-              value={shiftForm.hora_inicio}
-              onChange={(e) =>
-                setShiftForm({ ...shiftForm, hora_inicio: e.target.value })
-              }
-              className="rounded-lg border border-cream px-3 py-2"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block font-semibold text-lavender-dark">
-              {t('admin.fields.endTime')} *
-            </span>
-            <input
-              required
-              type="time"
-              value={shiftForm.hora_fin}
-              onChange={(e) =>
-                setShiftForm({ ...shiftForm, hora_fin: e.target.value })
-              }
-              className="rounded-lg border border-cream px-3 py-2"
-            />
-          </label>
-          <button
-            type="submit"
-            className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
-          >
-            {t('admin.addShift')}
-          </button>
-          {formError && (
-            <p className="w-full text-sm font-semibold text-coral-dark">
-              {formError}
-            </p>
-          )}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <label className="block text-sm">
+              <span className="mb-1 block font-semibold text-lavender-dark">
+                {t('admin.fields.shiftDate')} *
+              </span>
+              <input
+                required
+                type="date"
+                value={shiftForm.fecha}
+                onChange={(e) =>
+                  setShiftForm({ ...shiftForm, fecha: e.target.value })
+                }
+                className="w-full rounded-lg border border-cream px-3 py-2"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-semibold text-lavender-dark">
+                {t('admin.fields.startTime')} *
+              </span>
+              <select
+                required
+                value={shiftForm.hora_inicio}
+                onChange={(e) =>
+                  setShiftForm({ ...shiftForm, hora_inicio: e.target.value })
+                }
+                className="w-full rounded-lg border border-cream px-3 py-2"
+              >
+                <option value="" disabled>
+                  --:--
+                </option>
+                {HALF_HOUR_OPTIONS.map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-semibold text-lavender-dark">
+                {t('admin.fields.endTime')} *
+              </span>
+              <select
+                required
+                value={shiftForm.hora_fin}
+                onChange={(e) =>
+                  setShiftForm({ ...shiftForm, hora_fin: e.target.value })
+                }
+                className="w-full rounded-lg border border-cream px-3 py-2"
+              >
+                <option value="" disabled>
+                  --:--
+                </option>
+                {HALF_HOUR_OPTIONS.map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="mt-4 flex items-center gap-4">
+            <button
+              type="submit"
+              className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
+            >
+              {t('admin.addShift')}
+            </button>
+            {formError && (
+              <p className="text-sm font-semibold text-coral-dark">{formError}</p>
+            )}
+          </div>
         </form>
       )}
 

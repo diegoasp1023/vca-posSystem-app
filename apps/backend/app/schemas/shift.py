@@ -15,6 +15,9 @@ class ShiftWrite(BaseModel):
     def validate_times(self) -> "ShiftWrite":
         if self.hora_fin <= self.hora_inicio:
             raise ValueError("hora_fin must be after hora_inicio")
+        for label, value in (("hora_inicio", self.hora_inicio), ("hora_fin", self.hora_fin)):
+            if value.minute not in (0, 30) or value.second != 0:
+                raise ValueError(f"{label} must be on a 30-minute mark (e.g. 11:00 or 11:30)")
         return self
 
 

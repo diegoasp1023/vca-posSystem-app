@@ -4,6 +4,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faEye,
   faPen,
+  faSort,
+  faSortDown,
+  faSortUp,
   faUserCheck,
   faUserSlash,
 } from '@fortawesome/free-solid-svg-icons'
@@ -52,6 +55,11 @@ export function EmployeesTab() {
   const { getToken } = useAuth()
 
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<10 | 20 | 50>(10)
+  const [searchInput, setSearchInput] = useState('')
+  const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState<'nombre' | 'apellido' | 'is_active'>('nombre')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [totalPages, setTotalPages] = useState(1)
   const [employees, setEmployees] = useState<Employee[]>([])
   const [editingId, setEditingId] = useState<number | 'new' | null>(null)
@@ -60,19 +68,39 @@ export function EmployeesTab() {
   const [formError, setFormError] = useState<string | null>(null)
   const [detailsEmployee, setDetailsEmployee] = useState<Employee | null>(null)
 
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setSearch(searchInput)
+      setPage(1)
+    }, 300)
+    return () => clearTimeout(timeout)
+  }, [searchInput])
+
   const reload = useCallback(() => {
     setStatus('loading')
     getToken()
-      .then((token) => fetchAdminEmployees(token, page))
+      .then((token) =>
+        fetchAdminEmployees(token, { page, pageSize, search, sortBy, sortDir }),
+      )
       .then((result) => {
         setEmployees(result.items)
         setTotalPages(result.total_pages)
         setStatus('ready')
       })
       .catch(() => setStatus('error'))
-  }, [page, getToken])
+  }, [page, pageSize, search, sortBy, sortDir, getToken])
 
   useEffect(reload, [reload])
+
+  const toggleSort = (column: 'nombre' | 'apellido' | 'is_active') => {
+    if (sortBy === column) {
+      setSortDir((dir) => (dir === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortBy(column)
+      setSortDir('asc')
+    }
+    setPage(1)
+  }
 
   const startCreate = () => {
     setForm(EMPTY_FORM)
@@ -139,7 +167,14 @@ export function EmployeesTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-end">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <input
+          type="search"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder={t('admin.searchPlaceholder')}
+          className="w-full max-w-xs rounded-lg border border-cream px-3 py-2 text-sm"
+        />
         <button
           type="button"
           onClick={startCreate}
@@ -407,9 +442,27 @@ export function EmployeesTab() {
           <table className="mt-8 w-full text-left text-sm">
             <thead>
               <tr className="border-b border-cream text-lavender">
-                <th className="py-2">{t('admin.fields.firstName')}</th>
-                <th className="py-2">{t('admin.fields.lastName')}</th>
-                <th className="py-2">{t('admin.fields.status')}</th>
+                <SortableHeader
+                  label={t('admin.fields.firstName')}
+                  column="nombre"
+                  sortBy={sortBy}
+                  sortDir={sortDir}
+                  onClick={toggleSort}
+                />
+                <SortableHeader
+                  label={t('admin.fields.lastName')}
+                  column="apellido"
+                  sortBy={sortBy}
+                  sortDir={sortDir}
+                  onClick={toggleSort}
+                />
+                <SortableHeader
+                  label={t('admin.fields.status')}
+                  column="is_active"
+                  sortBy={sortBy}
+                  sortDir={sortDir}
+                  onClick={toggleSort}
+                />
                 <th className="py-2" />
               </tr>
             </thead>
@@ -467,7 +520,24 @@ export function EmployeesTab() {
               ))}
             </tbody>
           </table>
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              {t('admin.pageSize')}
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value) as 10 | 20 | 50)
+                  setPage(1)
+                }}
+                className="rounded-lg border border-cream px-2 py-1"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+            </label>
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          </div>
         </>
       )}
 
@@ -580,6 +650,36 @@ function EmployeeDetailsModal({
         </div>
       </div>
     </div>
+  )
+}
+
+function SortableHeader({
+  label,
+  column,
+  sortBy,
+  sortDir,
+  onClick,
+}: {
+  label: string
+  column: 'nombre' | 'apellido' | 'is_active'
+  sortBy: 'nombre' | 'apellido' | 'is_active'
+  sortDir: 'asc' | 'desc'
+  onClick: (column: 'nombre' | 'apellido' | 'is_active') => void
+}) {
+  const active = sortBy === column
+  const icon = active ? (sortDir === 'asc' ? faSortUp : faSortDown) : faSort
+
+  return (
+    <th className="py-2">
+      <button
+        type="button"
+        onClick={() => onClick(column)}
+        className={`flex items-center gap-1.5 font-semibold ${active ? 'text-lavender-dark' : 'text-lavender'}`}
+      >
+        {label}
+        <FontAwesomeIcon icon={icon} className="h-3 w-3" />
+      </button>
+    </th>
   )
 }
 

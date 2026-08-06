@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { fetchMonthlyShifts, type Employee, type Shift } from '../../lib/adminApi'
-import { employeeColor } from '../../lib/format'
+import { employeeColor, employeeLegendColor, employeeTextColor } from '../../lib/format'
 
 const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
@@ -84,10 +84,13 @@ export function ShiftsCalendar({
                   <div
                     key={shift.id}
                     title={`${shift.employee.nombre} ${shift.employee.apellido}: ${shift.hora_inicio.slice(0, 5)}-${shift.hora_fin.slice(0, 5)}`}
-                    className="truncate rounded px-1 py-0.5 text-[11px] font-medium text-white"
-                    style={{ backgroundColor: employeeColor(shift.employee.id) }}
+                    className="truncate rounded px-1 py-0.5 text-[11px] font-medium"
+                    style={{
+                      backgroundColor: employeeColor(shift.employee.id),
+                      color: employeeTextColor(shift.employee.id),
+                    }}
                   >
-                    {shift.employee.nombre} {shift.hora_inicio.slice(0, 5)}
+                    {shift.hora_inicio.slice(0, 5)}-{shift.hora_fin.slice(0, 5)}
                   </div>
                 ))}
               </div>
@@ -105,7 +108,7 @@ export function ShiftsCalendar({
             <div key={employee.id} className="flex items-center gap-2 text-sm">
               <span
                 className="h-3 w-3 rounded-full"
-                style={{ backgroundColor: employeeColor(employee.id) }}
+                style={{ backgroundColor: employeeLegendColor(employee.id) }}
               />
               {employee.nombre} {employee.apellido}
             </div>
