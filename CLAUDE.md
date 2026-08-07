@@ -154,3 +154,4 @@ React 19 + Vite + TypeScript + Tailwind CSS 4, routing con `react-router-dom`.
 - Si una tarea implica una decisión de arquitectura no cubierta aquí (ej. nueva base de datos, nuevo servicio, cambio de flujo de auth), preguntar antes de implementar en lugar de asumir.
 - Mantener consistencia entre `.env.example`, `docker-compose.yml` y cualquier documentación en `keycloak/README.md` o `docs/` — si se cambia una variable en un lado, actualizar los demás en el mismo cambio.
 - No incluir trailers de Claude (`Co-Authored-By`, `Claude-Session`) en los mensajes de commit.
+- Se debe usar conventional commit en cada commit, y deben ser commit muy pequeños en cuanto cambios
