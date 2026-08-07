@@ -2,6 +2,17 @@ import type { CourseDetail, CourseSummary, Page, Product } from './api'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string
 
+export class AdminApiError extends Error {
+  status: number
+  detail?: string
+
+  constructor(status: number, detail?: string) {
+    super(detail ?? `Admin API request failed with ${status}`)
+    this.status = status
+    this.detail = detail
+  }
+}
+
 async function adminFetch<T>(
   path: string,
   token: string | undefined,
@@ -17,7 +28,11 @@ async function adminFetch<T>(
   })
 
   if (!response.ok) {
-    throw new Error(`Admin API request to ${path} failed with ${response.status}`)
+    const detail = await response
+      .json()
+      .then((body: { detail?: string }) => body.detail)
+      .catch(() => undefined)
+    throw new AdminApiError(response.status, detail)
   }
 
   if (response.status === 204) return undefined as T
