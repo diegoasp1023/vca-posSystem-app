@@ -765,7 +765,7 @@ export function AdminCoursesPage() {
             <table className="mt-8 w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-cream text-lavender">
-                  <th className="py-2">{t('admin.fields.titleEs')}</th>
+                  <th className="py-2">{t('admin.fields.title')}</th>
                   <th className="py-2" />
                 </tr>
               </thead>
