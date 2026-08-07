@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../context/AuthContext'
 import {
   createProduct,
@@ -13,6 +14,8 @@ import {
 } from '../../lib/adminApi'
 import type { Product } from '../../lib/api'
 import { Pagination } from '../../components/Pagination'
+import { BackToPanelLink } from './BackToPanelLink'
+import { Modal } from './Modal'
 
 const EMPTY_FORM: ProductWrite = {
   name_es: '',
@@ -122,33 +125,41 @@ export function AdminProductsPage() {
   return (
     <section className="px-6 py-16">
       <div className="mx-auto max-w-4xl">
-        <Link
-          to="/admin"
-          className="text-sm font-semibold text-lavender-dark hover:underline"
-        >
-          {t('admin.backToPanel')}
-        </Link>
+        <BackToPanelLink />
 
-        <div className="mt-4 flex items-center justify-between">
-          <h1 className="font-serif text-3xl text-lavender-dark">
-            {t('admin.manageProducts')}
-          </h1>
+        <div className="mt-4 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-serif text-3xl text-lavender-dark">
+              {t('admin.manageProducts')}
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">{t('admin.manageProductsDesc')}</p>
+          </div>
           <button
             type="button"
             onClick={startCreate}
-            className="rounded-full bg-coral px-5 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
+            className="shrink-0 rounded-full bg-coral px-5 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
           >
             {t('admin.newProduct')}
           </button>
         </div>
 
         {editingId !== null && (
+          <Modal
+            title={
+              editingId === 'new' ? t('admin.newProduct') : t('admin.editProduct')
+            }
+            onClose={() => {
+              setFormError(null)
+              setEditingId(null)
+            }}
+            maxWidthClassName="max-w-2xl"
+          >
           <form
             onSubmit={(e) => {
               e.preventDefault()
               submit()
             }}
-            className="mt-6 space-y-4 rounded-2xl border border-cream bg-white p-6"
+            className="space-y-4"
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm">
@@ -281,6 +292,7 @@ export function AdminProductsPage() {
               </button>
             </div>
           </form>
+          </Modal>
         )}
 
         {status === 'loading' && (
@@ -295,6 +307,7 @@ export function AdminProductsPage() {
               <thead>
                 <tr className="border-b border-cream text-lavender">
                   <th className="py-2">{t('admin.fields.nameEs')}</th>
+                  <th className="py-2">{t('admin.fields.descriptionEs')}</th>
                   <th className="py-2">{t('admin.fields.weight')}</th>
                   <th className="py-2">{t('admin.fields.price')}</th>
                   <th className="py-2" />
@@ -304,22 +317,29 @@ export function AdminProductsPage() {
                 {products.map((product) => (
                   <tr key={product.id} className="border-b border-cream">
                     <td className="py-3">{product.name.es}</td>
+                    <td className="max-w-xs truncate py-3 text-gray-600">
+                      {product.description.es}
+                    </td>
                     <td className="py-3">{product.weight_grams}gr</td>
                     <td className="py-3">${product.price_cop.toLocaleString('es-CO')}</td>
-                    <td className="py-3 text-right">
+                    <td className="py-3 text-right whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => startEdit(product)}
-                        className="mr-4 text-lavender-dark hover:underline"
+                        aria-label={t('admin.edit')}
+                        title={t('admin.edit')}
+                        className="mr-3 text-lavender-dark hover:text-lavender"
                       >
-                        {t('admin.edit')}
+                        <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => remove(product.id)}
-                        className="text-coral-dark hover:underline"
+                        aria-label={t('admin.delete')}
+                        title={t('admin.delete')}
+                        className="text-coral-dark hover:text-coral"
                       >
-                        {t('admin.delete')}
+                        <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
                       </button>
                     </td>
                   </tr>
