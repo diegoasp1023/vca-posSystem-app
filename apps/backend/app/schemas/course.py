@@ -28,7 +28,7 @@ class CourseWrite(BaseModel):
     tagline_en: str = Field(min_length=1, max_length=300)
     duration_text_es: str = Field(min_length=1, max_length=500)
     duration_text_en: str = Field(min_length=1, max_length=500)
-    image_url: str = Field(min_length=1, max_length=500)
+    image_url: str | None = Field(default=None, max_length=500)
     is_active: bool = True
     objectives: list[LocalizedTextWrite] = []
     content: list[CourseContentItemWrite] = []
@@ -43,7 +43,7 @@ class CourseSummaryOut(BaseModel):
     slug: str
     title: LocalizedText
     tagline: LocalizedText
-    image_url: str
+    image_url: str | None
 
     @classmethod
     def from_model(cls, course: Course) -> "CourseSummaryOut":
@@ -61,7 +61,7 @@ class CourseDetailOut(BaseModel):
     slug: str
     title: LocalizedText
     tagline: LocalizedText
-    image_url: str
+    image_url: str | None
     objectives: list[LocalizedText]
     content: list[CourseContentItem]
     duration: LocalizedText

@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     keycloak_admin_user: str = "admin"
     keycloak_admin_password: str = "changeme"
 
+    upload_dir: str = "./uploads"
+
     @property
     def database_url(self) -> str:
         return (

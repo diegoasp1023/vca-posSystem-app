@@ -11,18 +11,18 @@ import {
   fetchAdminCourses,
   fetchPaymentMethods,
   updateCourse,
+  uploadCourseImage,
   type CourseWrite,
   type Lookup,
 } from '../../lib/adminApi'
-import type { CourseSummary } from '../../lib/api'
+import { getCourseImageUrl, type CourseSummary } from '../../lib/api'
 import { Pagination } from '../../components/Pagination'
 import { BackToPanelLink } from './BackToPanelLink'
 import { Modal } from './Modal'
 import { MultiSelectDropdown } from './PayrollShared'
 
-const COURSE_LOGO_URL = '/images/logo-cafe.svg'
 const FORCED_PAYMENT_METHOD_NAME_ES = 'Pago 100% por adelantado al inscribirte'
-const FIXED_COST_NOTE_ES = 'Ambas incluyen materiales y certificado de asistencia'
+const FIXED_COST_NOTE_ES = 'Incluyen materiales y certificado de asistencia'
 const FIXED_COST_NOTE_EN = 'Both include materials and a completion certificate'
 
 function slugify(value: string): string {
@@ -42,6 +42,15 @@ function parseHours(durationLabel: string): number | '' {
   return durationLabel.toLowerCase().includes('min') ? value / 60 : value
 }
 
+const DEFAULT_RESCHEDULE_FEE = 50000
+
+function parseRescheduleFee(durationText: string): number | '' {
+  const match = durationText.match(/\$([\d.,]+)\s*COP/)
+  if (!match) return ''
+  const digits = match[1].replace(/[^\d]/g, '')
+  return digits === '' ? '' : Number(digits)
+}
+
 function splitCost(text: string): { description: string; amount: number | '' } {
   const separatorIndex = text.indexOf(': ')
   const description = separatorIndex === -1 ? text : text.slice(0, separatorIndex)
@@ -50,17 +59,82 @@ function splitCost(text: string): { description: string; amount: number | '' } {
   return { description, amount: digits === '' ? '' : Number(digits) }
 }
 
-function formatCostAmount(amount: number | '', locale: string, suffix: string): string {
+function formatMoney(amount: number | '', locale: string): string {
   const value = Number(amount) || 0
-  return `$${value.toLocaleString(locale)} COP ${suffix}`
+  return `$${value.toLocaleString(locale)} COP`
+}
+
+function formatCostAmount(amount: number | '', locale: string, suffix: string): string {
+  return suffix ? `${formatMoney(amount, locale)} ${suffix}` : formatMoney(amount, locale)
 }
 
 type ObjectiveRow = { es: string; en: string }
 type ContentRow = { module_es: string; module_en: string; hours: number | '' }
-type CostRow = {
-  description_es: string
-  description_en: string
-  amount: number | ''
+type CostRow =
+  | {
+      kind: 'individual'
+      description_es: string
+      description_en: string
+      amount: number | ''
+    }
+  | {
+      kind: 'grupal'
+      description_es: string
+      description_en: string
+      groupSize: number | ''
+      pricePerPerson: number | ''
+    }
+
+const EMPTY_COST_ROW: CostRow = {
+  kind: 'grupal',
+  description_es: '',
+  description_en: '',
+  groupSize: '',
+  pricePerPerson: '',
+}
+
+function formatCostRow(row: CostRow, lang: 'es' | 'en'): string {
+  const description = lang === 'es' ? row.description_es : row.description_en
+  const locale = lang === 'es' ? 'es-CO' : 'en-US'
+
+  if (row.kind === 'individual') {
+    return `${description}: ${formatMoney(row.amount, locale)}`
+  }
+
+  const groupLabel =
+    lang === 'es'
+      ? `${description} (grupo de ${row.groupSize || 0} personas)`
+      : `${description} (group of ${row.groupSize || 0} people)`
+  const suffix = lang === 'es' ? 'por persona' : 'per person'
+  return `${groupLabel}: ${formatCostAmount(row.pricePerPerson, locale, suffix)}`
+}
+
+function parseCostRow(esText: string, enText: string): CostRow {
+  const es = splitCost(esText)
+  const en = splitCost(enText)
+  const groupMatchEs = es.description.match(/^(.*)\s\(grupo de (\d+) personas?\)$/)
+  const groupMatchEn = en.description.match(/^(.*)\s\(group of (\d+) people?\)$/i)
+
+  if (groupMatchEs || groupMatchEn) {
+    return {
+      kind: 'grupal',
+      description_es: groupMatchEs ? groupMatchEs[1] : es.description,
+      description_en: groupMatchEn ? groupMatchEn[1] : en.description,
+      groupSize: groupMatchEs
+        ? Number(groupMatchEs[2])
+        : groupMatchEn
+          ? Number(groupMatchEn[2])
+          : '',
+      pricePerPerson: es.amount !== '' ? es.amount : en.amount,
+    }
+  }
+
+  return {
+    kind: 'individual',
+    description_es: es.description,
+    description_en: en.description,
+    amount: es.amount !== '' ? es.amount : en.amount,
+  }
 }
 
 interface CourseFormState {
@@ -68,9 +142,11 @@ interface CourseFormState {
   title_en: string
   tagline_es: string
   tagline_en: string
+  image_url: string | null
   objectives: ObjectiveRow[]
   content: ContentRow[]
   costRows: CostRow[]
+  rescheduleFeeAmount: number | ''
   payment_method_ids: number[]
 }
 
@@ -79,9 +155,11 @@ const EMPTY_FORM: CourseFormState = {
   title_en: '',
   tagline_es: '',
   tagline_en: '',
+  image_url: null,
   objectives: [],
   content: [],
   costRows: [],
+  rescheduleFeeAmount: DEFAULT_RESCHEDULE_FEE,
   payment_method_ids: [],
 }
 
@@ -99,6 +177,7 @@ export function AdminCoursesPage() {
   const [form, setForm] = useState<CourseFormState>(EMPTY_FORM)
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
   const [formError, setFormError] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const reload = useCallback(() => {
     setStatus('loading')
@@ -148,6 +227,7 @@ export function AdminCoursesPage() {
       title_en: detail.title.en,
       tagline_es: detail.tagline.es,
       tagline_en: detail.tagline.en,
+      image_url: detail.image_url,
       objectives: detail.objectives.map((o) => ({ es: o.es, en: o.en })),
       content: detail.content.map((c) => ({
         module_es: c.module.es,
@@ -156,15 +236,11 @@ export function AdminCoursesPage() {
       })),
       costRows: detail.cost
         .filter((c) => c.es !== FIXED_COST_NOTE_ES && c.en !== FIXED_COST_NOTE_EN)
-        .map((c) => {
-          const es = splitCost(c.es)
-          const en = splitCost(c.en)
-          return {
-            description_es: es.description,
-            description_en: en.description,
-            amount: es.amount !== '' ? es.amount : en.amount,
-          }
-        }),
+        .map((c) => parseCostRow(c.es, c.en)),
+      rescheduleFeeAmount: (() => {
+        const parsed = parseRescheduleFee(detail.duration.es)
+        return parsed !== '' ? parsed : parseRescheduleFee(detail.duration.en)
+      })(),
       payment_method_ids: selectedMethodIds,
     })
     setEditingSlug(detail.slug)
@@ -174,16 +250,39 @@ export function AdminCoursesPage() {
 
   const totalHours = form.content.reduce((sum, c) => sum + (Number(c.hours) || 0), 0)
 
+  const handleImageSelected = async (file: File | undefined) => {
+    if (!file) return
+    setFormError(null)
+    setUploadingImage(true)
+    try {
+      const token = await getToken()
+      const { url } = await uploadCourseImage(token, file)
+      setForm((current) => ({ ...current, image_url: url }))
+    } catch (error) {
+      setFormError(
+        error instanceof AdminApiError ? error.detail ?? error.message : String(error),
+      )
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   const submit = async () => {
     setFormError(null)
+
+    if (form.costRows.filter((row) => row.kind === 'individual').length > 1) {
+      setFormError(t('admin.costIndividualLimitError'))
+      return
+    }
+
     const baseBody: Omit<CourseWrite, 'slug'> = {
       title_es: form.title_es,
       title_en: form.title_en,
       tagline_es: form.tagline_es,
       tagline_en: form.tagline_en,
-      duration_text_es: `${totalHours} horas en total. Horarios personalizados a convenir; reprogramar tiene un costo de $50.000 COP por día.`,
-      duration_text_en: `${totalHours} hours total. Personalized schedules by arrangement; rescheduling costs $50,000 COP per day.`,
-      image_url: COURSE_LOGO_URL,
+      duration_text_es: `${totalHours} horas en total. Horarios personalizados a convenir; reprogramar tiene un costo de ${formatCostAmount(form.rescheduleFeeAmount, 'es-CO', 'por día')}.`,
+      duration_text_en: `${totalHours} hours total. Personalized schedules by arrangement; rescheduling costs ${formatCostAmount(form.rescheduleFeeAmount, 'en-US', 'per day')}.`,
+      image_url: form.image_url,
       is_active: true,
       objectives: form.objectives,
       content: form.content.map((c) => ({
@@ -193,8 +292,8 @@ export function AdminCoursesPage() {
       })),
       cost: [
         ...form.costRows.map((row) => ({
-          es: `${row.description_es}: ${formatCostAmount(row.amount, 'es-CO', 'por persona')}`,
-          en: `${row.description_en}: ${formatCostAmount(row.amount, 'en-US', 'per person')}`,
+          es: formatCostRow(row, 'es'),
+          en: formatCostRow(row, 'en'),
         })),
         { es: FIXED_COST_NOTE_ES, en: FIXED_COST_NOTE_EN },
       ],
@@ -327,6 +426,29 @@ export function AdminCoursesPage() {
               </label>
             </div>
 
+            <div className="block text-sm">
+              <span className="mb-1 block font-semibold text-lavender-dark">
+                {t('admin.fields.image')}
+              </span>
+              <div className="flex items-center gap-4">
+                <img
+                  src={getCourseImageUrl({ image_url: form.image_url })}
+                  alt=""
+                  className="h-16 w-16 rounded-lg border border-cream object-cover"
+                />
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={uploadingImage}
+                  onChange={(e) => handleImageSelected(e.target.files?.[0])}
+                  className="text-sm text-lavender-dark file:mr-3 file:rounded-full file:border-0 file:bg-coral file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white file:transition hover:file:bg-coral-dark disabled:opacity-50"
+                />
+              </div>
+              <p className="mt-1 text-xs text-lavender-dark/70">
+                {uploadingImage ? t('admin.fields.imageUploading') : t('admin.fields.imageHint')}
+              </p>
+            </div>
+
             <ListEditor
               label={t('coursePage.objectives')}
               rows={form.objectives}
@@ -431,61 +553,164 @@ export function AdminCoursesPage() {
                 rows={form.costRows}
                 onChange={(costRows) => setForm({ ...form, costRows })}
                 columnsClassName="sm:grid-cols-2"
-                renderRow={(row, onChange) => (
-                  <>
-                    <label className="block text-sm">
-                      <span className="mb-1 block text-xs font-semibold text-lavender-dark">
-                        {t('admin.fields.costDescriptionEs')}
-                      </span>
-                      <textarea
-                        required
-                        rows={3}
-                        value={row.description_es}
-                        onChange={(e) =>
-                          onChange({ ...row, description_es: e.target.value })
-                        }
-                        className="w-full rounded-lg border border-cream px-3 py-2"
-                      />
-                    </label>
-                    <label className="block text-sm">
-                      <span className="mb-1 block text-xs font-semibold text-lavender-dark">
-                        {t('admin.fields.costDescriptionEn')}
-                      </span>
-                      <textarea
-                        required
-                        rows={3}
-                        value={row.description_en}
-                        onChange={(e) =>
-                          onChange({ ...row, description_en: e.target.value })
-                        }
-                        className="w-full rounded-lg border border-cream px-3 py-2"
-                      />
-                    </label>
-                    <label className="block text-sm sm:col-span-2 sm:max-w-[12rem]">
-                      <span className="mb-1 block text-xs font-semibold text-lavender-dark">
-                        {t('admin.fields.costAmount')}
-                      </span>
-                      <input
-                        required
-                        type="number"
-                        min={1}
-                        value={row.amount}
-                        onChange={(e) =>
-                          onChange({
-                            ...row,
-                            amount: e.target.value === '' ? '' : Number(e.target.value),
-                          })
-                        }
-                        className="w-full rounded-lg border border-cream px-3 py-2"
-                      />
-                    </label>
-                  </>
-                )}
-                emptyRow={{ description_es: '', description_en: '', amount: '' }}
+                renderRow={(row, onChange) => {
+                  const individualCount = form.costRows.filter(
+                    (r) => r.kind === 'individual',
+                  ).length
+                  const individualDisabled = individualCount >= 1 && row.kind !== 'individual'
+
+                  return (
+                    <>
+                      <label className="block text-sm sm:col-span-2 sm:max-w-[12rem]">
+                        <span className="mb-1 block text-xs font-semibold text-lavender-dark">
+                          {t('admin.fields.costKind')}
+                        </span>
+                        <select
+                          value={row.kind}
+                          onChange={(e) => {
+                            const kind = e.target.value as CostRow['kind']
+                            if (kind === row.kind) return
+                            onChange(
+                              kind === 'individual'
+                                ? {
+                                    kind,
+                                    description_es: row.description_es,
+                                    description_en: row.description_en,
+                                    amount: '',
+                                  }
+                                : {
+                                    kind,
+                                    description_es: row.description_es,
+                                    description_en: row.description_en,
+                                    groupSize: '',
+                                    pricePerPerson: '',
+                                  },
+                            )
+                          }}
+                          className="w-full rounded-lg border border-cream px-3 py-2"
+                        >
+                          <option value="grupal">{t('admin.fields.costKindGrupal')}</option>
+                          <option value="individual" disabled={individualDisabled}>
+                            {t('admin.fields.costKindIndividual')}
+                          </option>
+                        </select>
+                      </label>
+                      <label className="block text-sm">
+                        <span className="mb-1 block text-xs font-semibold text-lavender-dark">
+                          {t('admin.fields.costDescriptionEs')}
+                        </span>
+                        <textarea
+                          required
+                          rows={3}
+                          value={row.description_es}
+                          onChange={(e) =>
+                            onChange({ ...row, description_es: e.target.value })
+                          }
+                          className="w-full rounded-lg border border-cream px-3 py-2"
+                        />
+                      </label>
+                      <label className="block text-sm">
+                        <span className="mb-1 block text-xs font-semibold text-lavender-dark">
+                          {t('admin.fields.costDescriptionEn')}
+                        </span>
+                        <textarea
+                          required
+                          rows={3}
+                          value={row.description_en}
+                          onChange={(e) =>
+                            onChange({ ...row, description_en: e.target.value })
+                          }
+                          className="w-full rounded-lg border border-cream px-3 py-2"
+                        />
+                      </label>
+                      {row.kind === 'individual' ? (
+                        <label className="block text-sm sm:col-span-2 sm:max-w-[12rem]">
+                          <span className="mb-1 block text-xs font-semibold text-lavender-dark">
+                            {t('admin.fields.costAmount')}
+                          </span>
+                          <input
+                            required
+                            type="number"
+                            min={1}
+                            value={row.amount}
+                            onChange={(e) =>
+                              onChange({
+                                ...row,
+                                amount: e.target.value === '' ? '' : Number(e.target.value),
+                              })
+                            }
+                            className="w-full rounded-lg border border-cream px-3 py-2"
+                          />
+                        </label>
+                      ) : (
+                        <>
+                          <label className="block text-sm sm:max-w-[12rem]">
+                            <span className="mb-1 block text-xs font-semibold text-lavender-dark">
+                              {t('admin.fields.groupSize')}
+                            </span>
+                            <input
+                              required
+                              type="number"
+                              min={2}
+                              value={row.groupSize}
+                              onChange={(e) =>
+                                onChange({
+                                  ...row,
+                                  groupSize: e.target.value === '' ? '' : Number(e.target.value),
+                                })
+                              }
+                              className="w-full rounded-lg border border-cream px-3 py-2"
+                            />
+                          </label>
+                          <label className="block text-sm sm:max-w-[12rem]">
+                            <span className="mb-1 block text-xs font-semibold text-lavender-dark">
+                              {t('admin.fields.pricePerPerson')}
+                            </span>
+                            <input
+                              required
+                              type="number"
+                              min={1}
+                              value={row.pricePerPerson}
+                              onChange={(e) =>
+                                onChange({
+                                  ...row,
+                                  pricePerPerson:
+                                    e.target.value === '' ? '' : Number(e.target.value),
+                                })
+                              }
+                              className="w-full rounded-lg border border-cream px-3 py-2"
+                            />
+                          </label>
+                        </>
+                      )}
+                    </>
+                  )
+                }}
+                emptyRow={EMPTY_COST_ROW}
               />
               <p className="mt-2 text-sm text-gray-600">{t('admin.costAmountHint')}</p>
               <p className="mt-1 text-sm text-gray-600">{t('admin.costIncludesNote')}</p>
             </div>
+
+            <label className="block text-sm sm:max-w-xs">
+              <span className="mb-1 block font-semibold text-lavender-dark">
+                {t('admin.fields.rescheduleFee')}
+              </span>
+              <input
+                required
+                type="number"
+                min={0}
+                step={1000}
+                value={form.rescheduleFeeAmount}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    rescheduleFeeAmount: e.target.value === '' ? '' : Number(e.target.value),
+                  })
+                }
+                className="w-full rounded-lg border border-cream px-3 py-2"
+              />
+            </label>
 
             <div>
               <p className="mb-1 text-sm font-semibold text-lavender-dark">
@@ -512,7 +737,8 @@ export function AdminCoursesPage() {
             <div className="flex gap-3">
               <button
                 type="submit"
-                className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
+                disabled={uploadingImage}
+                className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark disabled:opacity-50"
               >
                 {t('admin.save')}
               </button>

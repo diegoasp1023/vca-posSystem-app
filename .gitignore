@@ -5,6 +5,7 @@
 *.pem
 *.key
 *.p12
+.secrets
 
 # ===== Node (frontend/backend) =====
 node_modules/
@@ -23,6 +24,7 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
+apps/backend/uploads/
 
 # ===== Keycloak =====
 keycloak/realm-export/*-prod.json      # nunca versionar export de prod con datos reales

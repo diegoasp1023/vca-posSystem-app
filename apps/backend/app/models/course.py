@@ -49,7 +49,7 @@ class Course(Base):
     tagline_en: Mapped[str] = mapped_column(String(300), nullable=False)
     duration_text_es: Mapped[str] = mapped_column(String(500), nullable=False)
     duration_text_en: Mapped[str] = mapped_column(String(500), nullable=False)
-    image_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
