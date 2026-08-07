@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.auth import require_admin
 from app.core.database import get_db
+from app.core.uploads import delete_uploaded_file
 from app.models.course import (
     Course,
     CourseContentModule,
@@ -172,6 +173,8 @@ async def update_course(
     if duplicate_slug is not None:
         raise HTTPException(status_code=400, detail="A course with this slug already exists")
 
+    previous_image_url = course.image_url
+
     for field, value in body.model_dump(
         exclude={"objectives", "content", "cost", "payment_method_ids"}
     ).items():
@@ -180,6 +183,8 @@ async def update_course(
     _apply_children(course, body)
 
     await db.commit()
+    if body.image_url != previous_image_url:
+        delete_uploaded_file(previous_image_url)
     result = await db.execute(
         select(Course).where(Course.id == course_id).options(*DETAIL_OPTIONS)
     )
@@ -191,5 +196,7 @@ async def delete_course(course_id: int, db: AsyncSession = Depends(get_db)) -> N
     course = await db.get(Course, course_id)
     if course is None:
         raise HTTPException(status_code=404, detail="Course not found")
+    image_url = course.image_url
     await db.delete(course)
     await db.commit()
+    delete_uploaded_file(image_url)

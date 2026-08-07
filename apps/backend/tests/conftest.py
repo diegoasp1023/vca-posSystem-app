@@ -7,11 +7,18 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from app.core.auth import AuthenticatedUser, require_admin
+from app.core.config import settings
 from app.core.database import Base, get_db
 from app.main import app
 from app.models.course import Course, CourseContentModule, CourseCost, CourseObjective
 from app.models.employee import Employee
 from app.models.product import Presentation, Product
+
+
+@pytest.fixture(autouse=True)
+def upload_dir(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "upload_dir", str(tmp_path))
+    return tmp_path
 
 
 @pytest.fixture

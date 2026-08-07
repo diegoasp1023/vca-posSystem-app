@@ -1,3 +1,5 @@
+import os
+
 from tests.conftest import make_course
 
 
@@ -70,6 +72,24 @@ async def test_create_course_as_admin(admin_client):
     assert body["objectives"] == [{"es": "Objetivo", "en": "Objective"}]
 
 
+async def test_create_course_without_image_defaults_to_null(admin_client):
+    payload = {**COURSE_PAYLOAD, "slug": "curso-sin-imagen"}
+    del payload["image_url"]
+
+    response = await admin_client.post("/api/courses", json=payload)
+
+    assert response.status_code == 201
+    assert response.json()["image_url"] is None
+
+
+async def test_public_course_list_returns_null_image_url(db_session, client):
+    await make_course(db_session, slug="curso-sin-imagen", image_url=None)
+
+    response = await client.get("/api/courses?page=1")
+
+    assert response.json()["items"][0]["image_url"] is None
+
+
 async def test_create_course_rejects_duplicate_slug(db_session, admin_client):
     await make_course(db_session, slug="curso-nuevo")
 
@@ -100,3 +120,28 @@ async def test_delete_course_as_admin(db_session, admin_client):
 
     listing = (await admin_client.get("/api/courses/admin?page=1")).json()
     assert listing["total"] == 0
+
+
+async def test_delete_course_removes_uploaded_image(db_session, admin_client, upload_dir):
+    course_images_dir = upload_dir / "courses"
+    course_images_dir.mkdir()
+    (course_images_dir / "photo.jpg").write_bytes(b"data")
+    course = await make_course(db_session, image_url="/uploads/courses/photo.jpg")
+
+    response = await admin_client.delete(f"/api/courses/{course.id}")
+
+    assert response.status_code == 204
+    assert not (course_images_dir / "photo.jpg").exists()
+
+
+async def test_update_course_removes_replaced_image(db_session, admin_client, upload_dir):
+    course_images_dir = upload_dir / "courses"
+    course_images_dir.mkdir()
+    (course_images_dir / "old.jpg").write_bytes(b"data")
+    course = await make_course(db_session, image_url="/uploads/courses/old.jpg")
+
+    payload = {**COURSE_PAYLOAD, "slug": "curso-test", "image_url": "/uploads/courses/new.jpg"}
+    response = await admin_client.put(f"/api/courses/{course.id}", json=payload)
+
+    assert response.status_code == 200
+    assert not os.path.isfile(course_images_dir / "old.jpg")
