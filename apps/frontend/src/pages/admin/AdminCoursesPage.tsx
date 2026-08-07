@@ -17,20 +17,70 @@ import type { CourseSummary } from '../../lib/api'
 import { Pagination } from '../../components/Pagination'
 import { BackToPanelLink } from './BackToPanelLink'
 import { Modal } from './Modal'
+import { MultiSelectDropdown } from './PayrollShared'
 
-const EMPTY_FORM: CourseWrite = {
-  slug: '',
+const COURSE_LOGO_URL = '/images/logo-cafe.svg'
+const FORCED_PAYMENT_METHOD_NAME_ES = 'Pago 100% por adelantado al inscribirte'
+const FIXED_COST_NOTE_ES = 'Ambas incluyen materiales y certificado de asistencia'
+const FIXED_COST_NOTE_EN = 'Both include materials and a completion certificate'
+
+function slugify(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function parseHours(durationLabel: string): number | '' {
+  const match = durationLabel.match(/^(\d+(\.\d+)?)/)
+  if (!match) return ''
+  const value = Number(match[1])
+  return durationLabel.toLowerCase().includes('min') ? value / 60 : value
+}
+
+function splitCost(text: string): { description: string; amount: number | '' } {
+  const separatorIndex = text.indexOf(': ')
+  const description = separatorIndex === -1 ? text : text.slice(0, separatorIndex)
+  const amountPart = separatorIndex === -1 ? '' : text.slice(separatorIndex + 2)
+  const digits = amountPart.replace(/[^\d]/g, '')
+  return { description, amount: digits === '' ? '' : Number(digits) }
+}
+
+function formatCostAmount(amount: number | '', locale: string, suffix: string): string {
+  const value = Number(amount) || 0
+  return `$${value.toLocaleString(locale)} COP ${suffix}`
+}
+
+type ObjectiveRow = { es: string; en: string }
+type ContentRow = { module_es: string; module_en: string; hours: number | '' }
+type CostRow = {
+  description_es: string
+  description_en: string
+  amount: number | ''
+}
+
+interface CourseFormState {
+  title_es: string
+  title_en: string
+  tagline_es: string
+  tagline_en: string
+  objectives: ObjectiveRow[]
+  content: ContentRow[]
+  costRows: CostRow[]
+  payment_method_ids: number[]
+}
+
+const EMPTY_FORM: CourseFormState = {
   title_es: '',
   title_en: '',
   tagline_es: '',
   tagline_en: '',
-  duration_text_es: '',
-  duration_text_en: '',
-  image_url: '',
-  is_active: true,
   objectives: [],
   content: [],
-  cost: [],
+  costRows: [],
   payment_method_ids: [],
 }
 
@@ -39,85 +89,143 @@ export function AdminCoursesPage() {
   const { getToken } = useAuth()
 
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<10 | 20 | 50>(10)
   const [totalPages, setTotalPages] = useState(1)
   const [courses, setCourses] = useState<CourseSummary[]>([])
   const [paymentMethods, setPaymentMethods] = useState<Lookup[]>([])
   const [editingId, setEditingId] = useState<number | 'new' | null>(null)
-  const [form, setForm] = useState<CourseWrite>(EMPTY_FORM)
+  const [editingSlug, setEditingSlug] = useState<string | null>(null)
+  const [form, setForm] = useState<CourseFormState>(EMPTY_FORM)
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
+  const [formError, setFormError] = useState<string | null>(null)
 
   const reload = useCallback(() => {
     setStatus('loading')
     getToken()
-      .then((token) => fetchAdminCourses(token, page))
+      .then((token) => fetchAdminCourses(token, page, pageSize))
       .then((result) => {
         setCourses(result.items)
         setTotalPages(result.total_pages)
         setStatus('ready')
       })
       .catch(() => setStatus('error'))
-  }, [page, getToken])
+  }, [page, pageSize, getToken])
 
   useEffect(reload, [reload])
   useEffect(() => {
     fetchPaymentMethods().then(setPaymentMethods)
   }, [])
 
+  const forcedPaymentMethodId = paymentMethods.find(
+    (method) => method.name.es === FORCED_PAYMENT_METHOD_NAME_ES,
+  )?.id
+
+  const selectablePaymentMethods = paymentMethods.filter(
+    (method) => method.id !== forcedPaymentMethodId,
+  )
+
   const startCreate = () => {
     setForm(EMPTY_FORM)
+    setEditingSlug(null)
+    setFormError(null)
     setEditingId('new')
   }
 
   const startEdit = async (course: CourseSummary) => {
     const token = await getToken()
     const detail = await fetchAdminCourse(token, course.id)
+    const selectedMethodIds = paymentMethods
+      .filter(
+        (method) =>
+          method.id !== forcedPaymentMethodId &&
+          detail.methods.some((m) => m.es === method.name.es),
+      )
+      .map((method) => method.id)
+
     setForm({
-      slug: detail.slug,
       title_es: detail.title.es,
       title_en: detail.title.en,
       tagline_es: detail.tagline.es,
       tagline_en: detail.tagline.en,
-      duration_text_es: detail.duration.es,
-      duration_text_en: detail.duration.en,
-      image_url: detail.image_url,
-      is_active: true,
       objectives: detail.objectives.map((o) => ({ es: o.es, en: o.en })),
       content: detail.content.map((c) => ({
         module_es: c.module.es,
         module_en: c.module.en,
-        duration_label: c.duration,
+        hours: parseHours(c.duration),
       })),
-      cost: detail.cost.map((c) => ({ es: c.es, en: c.en })),
-      payment_method_ids: [],
+      costRows: detail.cost
+        .filter((c) => c.es !== FIXED_COST_NOTE_ES && c.en !== FIXED_COST_NOTE_EN)
+        .map((c) => {
+          const es = splitCost(c.es)
+          const en = splitCost(c.en)
+          return {
+            description_es: es.description,
+            description_en: en.description,
+            amount: es.amount !== '' ? es.amount : en.amount,
+          }
+        }),
+      payment_method_ids: selectedMethodIds,
     })
+    setEditingSlug(detail.slug)
+    setFormError(null)
     setEditingId(course.id)
   }
 
+  const totalHours = form.content.reduce((sum, c) => sum + (Number(c.hours) || 0), 0)
+
   const submit = async () => {
-    const token = await getToken()
-    if (editingId === 'new') {
-      await createCourse(token, form)
-    } else if (editingId !== null) {
-      await updateCourse(token, editingId, form)
+    setFormError(null)
+    const body: CourseWrite = {
+      slug: editingSlug ?? slugify(form.title_es),
+      title_es: form.title_es,
+      title_en: form.title_en,
+      tagline_es: form.tagline_es,
+      tagline_en: form.tagline_en,
+      duration_text_es: `${totalHours} horas en total. Horarios personalizados a convenir; reprogramar tiene un costo de $50.000 COP por día.`,
+      duration_text_en: `${totalHours} hours total. Personalized schedules by arrangement; rescheduling costs $50,000 COP per day.`,
+      image_url: COURSE_LOGO_URL,
+      is_active: true,
+      objectives: form.objectives,
+      content: form.content.map((c) => ({
+        module_es: c.module_es,
+        module_en: c.module_en,
+        duration_label: `${Number(c.hours) || 0}h`,
+      })),
+      cost: [
+        ...form.costRows.map((row) => ({
+          es: `${row.description_es}: ${formatCostAmount(row.amount, 'es-CO', 'por persona')}`,
+          en: `${row.description_en}: ${formatCostAmount(row.amount, 'en-US', 'per person')}`,
+        })),
+        { es: FIXED_COST_NOTE_ES, en: FIXED_COST_NOTE_EN },
+      ],
+      payment_method_ids: forcedPaymentMethodId
+        ? [...form.payment_method_ids, forcedPaymentMethodId]
+        : form.payment_method_ids,
     }
-    setEditingId(null)
-    reload()
+
+    try {
+      const token = await getToken()
+      if (editingId === 'new') {
+        await createCourse(token, body)
+      } else if (editingId !== null) {
+        await updateCourse(token, editingId, body)
+      }
+      setEditingId(null)
+      reload()
+    } catch {
+      setFormError(t('admin.saveError'))
+    }
   }
 
   const remove = async (id: number) => {
     if (!window.confirm(t('admin.confirmDelete'))) return
     const token = await getToken()
     await deleteCourse(token, id)
-    reload()
-  }
-
-  const togglePaymentMethod = (id: number) => {
-    setForm((f) => ({
-      ...f,
-      payment_method_ids: f.payment_method_ids.includes(id)
-        ? f.payment_method_ids.filter((p) => p !== id)
-        : [...f.payment_method_ids, id],
-    }))
+    if (courses.length === 1 && page > 1) {
+      setPage(page - 1)
+    } else {
+      reload()
+    }
   }
 
   return (
@@ -155,30 +263,6 @@ export function AdminCoursesPage() {
             className="space-y-6"
           >
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm">
-                <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.slug')} *
-                </span>
-                <input
-                  required
-                  placeholder={t('admin.fields.slug')}
-                  value={form.slug}
-                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                  className="w-full rounded-lg border border-cream px-3 py-2"
-                />
-              </label>
-              <label className="block text-sm">
-                <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.imageUrl')} *
-                </span>
-                <input
-                  required
-                  placeholder={t('admin.fields.imageUrl')}
-                  value={form.image_url}
-                  onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-                  className="w-full rounded-lg border border-cream px-3 py-2"
-                />
-              </label>
               <label className="block text-sm">
                 <span className="mb-1 block font-semibold text-lavender-dark">
                   {t('admin.fields.titleEs')} *
@@ -227,133 +311,189 @@ export function AdminCoursesPage() {
                   className="w-full rounded-lg border border-cream px-3 py-2"
                 />
               </label>
-              <label className="block text-sm sm:col-span-2">
-                <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.durationEs')} *
-                </span>
-                <textarea
-                  required
-                  placeholder={t('admin.fields.durationEs')}
-                  value={form.duration_text_es}
-                  onChange={(e) =>
-                    setForm({ ...form, duration_text_es: e.target.value })
-                  }
-                  className="w-full rounded-lg border border-cream px-3 py-2"
-                />
-              </label>
-              <label className="block text-sm sm:col-span-2">
-                <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.durationEn')} *
-                </span>
-                <textarea
-                  required
-                  placeholder={t('admin.fields.durationEn')}
-                  value={form.duration_text_en}
-                  onChange={(e) =>
-                    setForm({ ...form, duration_text_en: e.target.value })
-                  }
-                  className="w-full rounded-lg border border-cream px-3 py-2"
-                />
-              </label>
             </div>
 
             <ListEditor
               label={t('coursePage.objectives')}
               rows={form.objectives}
               onChange={(objectives) => setForm({ ...form, objectives })}
+              columnsClassName="sm:grid-cols-2"
               renderRow={(row, onChange) => (
                 <>
-                  <input
-                    placeholder="Español"
-                    value={row.es}
-                    onChange={(e) => onChange({ ...row, es: e.target.value })}
-                    className="rounded-lg border border-cream px-3 py-2"
-                  />
-                  <input
-                    placeholder="English"
-                    value={row.en}
-                    onChange={(e) => onChange({ ...row, en: e.target.value })}
-                    className="rounded-lg border border-cream px-3 py-2"
-                  />
-                </>
-              )}
-              emptyRow={{ es: '', en: '' }}
-            />
-
-            <ListEditor
-              label={t('coursePage.content')}
-              rows={form.content}
-              onChange={(content) => setForm({ ...form, content })}
-              renderRow={(row, onChange) => (
-                <>
-                  <input
-                    placeholder="Módulo (Español)"
-                    value={row.module_es}
-                    onChange={(e) => onChange({ ...row, module_es: e.target.value })}
-                    className="rounded-lg border border-cream px-3 py-2"
-                  />
-                  <input
-                    placeholder="Módulo (English)"
-                    value={row.module_en}
-                    onChange={(e) => onChange({ ...row, module_en: e.target.value })}
-                    className="rounded-lg border border-cream px-3 py-2"
-                  />
-                  <input
-                    placeholder="2h"
-                    value={row.duration_label}
-                    onChange={(e) =>
-                      onChange({ ...row, duration_label: e.target.value })
-                    }
-                    className="rounded-lg border border-cream px-3 py-2"
-                  />
-                </>
-              )}
-              emptyRow={{ module_es: '', module_en: '', duration_label: '' }}
-            />
-
-            <ListEditor
-              label={t('coursePage.cost')}
-              rows={form.cost}
-              onChange={(cost) => setForm({ ...form, cost })}
-              renderRow={(row, onChange) => (
-                <>
-                  <input
-                    placeholder="Español"
-                    value={row.es}
-                    onChange={(e) => onChange({ ...row, es: e.target.value })}
-                    className="rounded-lg border border-cream px-3 py-2"
-                  />
-                  <input
-                    placeholder="English"
-                    value={row.en}
-                    onChange={(e) => onChange({ ...row, en: e.target.value })}
-                    className="rounded-lg border border-cream px-3 py-2"
-                  />
+                  <label className="block text-sm">
+                    <span className="mb-1 block text-xs font-semibold text-lavender-dark">
+                      {t('admin.fields.objectiveEs')}
+                    </span>
+                    <textarea
+                      required
+                      rows={4}
+                      value={row.es}
+                      onChange={(e) => onChange({ ...row, es: e.target.value })}
+                      className="w-full rounded-lg border border-cream px-3 py-2"
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="mb-1 block text-xs font-semibold text-lavender-dark">
+                      {t('admin.fields.objectiveEn')}
+                    </span>
+                    <textarea
+                      required
+                      rows={4}
+                      value={row.en}
+                      onChange={(e) => onChange({ ...row, en: e.target.value })}
+                      className="w-full rounded-lg border border-cream px-3 py-2"
+                    />
+                  </label>
                 </>
               )}
               emptyRow={{ es: '', en: '' }}
             />
 
             <div>
-              <p className="text-sm font-semibold text-lavender-dark">
+              <ListEditor
+                label={t('coursePage.content')}
+                rows={form.content}
+                onChange={(content) => setForm({ ...form, content })}
+                columnsClassName="sm:grid-cols-2"
+                renderRow={(row, onChange) => (
+                  <>
+                    <label className="block text-sm">
+                      <span className="mb-1 block text-xs font-semibold text-lavender-dark">
+                        {t('admin.fields.moduleEs')}
+                      </span>
+                      <textarea
+                        required
+                        rows={3}
+                        value={row.module_es}
+                        onChange={(e) => onChange({ ...row, module_es: e.target.value })}
+                        className="w-full rounded-lg border border-cream px-3 py-2"
+                      />
+                    </label>
+                    <label className="block text-sm">
+                      <span className="mb-1 block text-xs font-semibold text-lavender-dark">
+                        {t('admin.fields.moduleEn')}
+                      </span>
+                      <textarea
+                        required
+                        rows={3}
+                        value={row.module_en}
+                        onChange={(e) => onChange({ ...row, module_en: e.target.value })}
+                        className="w-full rounded-lg border border-cream px-3 py-2"
+                      />
+                    </label>
+                    <label className="block text-sm sm:col-span-2 sm:max-w-[10rem]">
+                      <span className="mb-1 block text-xs font-semibold text-lavender-dark">
+                        {t('admin.fields.hours')}
+                      </span>
+                      <input
+                        required
+                        type="number"
+                        min={0.5}
+                        step={0.5}
+                        value={row.hours}
+                        onChange={(e) =>
+                          onChange({
+                            ...row,
+                            hours: e.target.value === '' ? '' : Number(e.target.value),
+                          })
+                        }
+                        className="w-full rounded-lg border border-cream px-3 py-2"
+                      />
+                    </label>
+                  </>
+                )}
+                emptyRow={{ module_es: '', module_en: '', hours: '' }}
+              />
+              {form.content.length > 0 && (
+                <p className="mt-2 text-sm text-gray-600">
+                  {t('admin.durationTotal', { hours: totalHours })}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <ListEditor
+                label={t('coursePage.cost')}
+                rows={form.costRows}
+                onChange={(costRows) => setForm({ ...form, costRows })}
+                columnsClassName="sm:grid-cols-2"
+                renderRow={(row, onChange) => (
+                  <>
+                    <label className="block text-sm">
+                      <span className="mb-1 block text-xs font-semibold text-lavender-dark">
+                        {t('admin.fields.costDescriptionEs')}
+                      </span>
+                      <textarea
+                        required
+                        rows={3}
+                        value={row.description_es}
+                        onChange={(e) =>
+                          onChange({ ...row, description_es: e.target.value })
+                        }
+                        className="w-full rounded-lg border border-cream px-3 py-2"
+                      />
+                    </label>
+                    <label className="block text-sm">
+                      <span className="mb-1 block text-xs font-semibold text-lavender-dark">
+                        {t('admin.fields.costDescriptionEn')}
+                      </span>
+                      <textarea
+                        required
+                        rows={3}
+                        value={row.description_en}
+                        onChange={(e) =>
+                          onChange({ ...row, description_en: e.target.value })
+                        }
+                        className="w-full rounded-lg border border-cream px-3 py-2"
+                      />
+                    </label>
+                    <label className="block text-sm sm:col-span-2 sm:max-w-[12rem]">
+                      <span className="mb-1 block text-xs font-semibold text-lavender-dark">
+                        {t('admin.fields.costAmount')}
+                      </span>
+                      <input
+                        required
+                        type="number"
+                        min={1}
+                        value={row.amount}
+                        onChange={(e) =>
+                          onChange({
+                            ...row,
+                            amount: e.target.value === '' ? '' : Number(e.target.value),
+                          })
+                        }
+                        className="w-full rounded-lg border border-cream px-3 py-2"
+                      />
+                    </label>
+                  </>
+                )}
+                emptyRow={{ description_es: '', description_en: '', amount: '' }}
+              />
+              <p className="mt-2 text-sm text-gray-600">{t('admin.costAmountHint')}</p>
+              <p className="mt-1 text-sm text-gray-600">{t('admin.costIncludesNote')}</p>
+            </div>
+
+            <div>
+              <p className="mb-1 text-sm font-semibold text-lavender-dark">
                 {t('coursePage.methods')}
               </p>
-              <div className="mt-2 flex flex-wrap gap-3">
-                {paymentMethods.map((method) => (
-                  <label
-                    key={method.id}
-                    className="flex items-center gap-2 text-sm text-gray-700"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={form.payment_method_ids.includes(method.id)}
-                      onChange={() => togglePaymentMethod(method.id)}
-                    />
-                    {method.name.es}
-                  </label>
-                ))}
-              </div>
+              <MultiSelectDropdown
+                options={selectablePaymentMethods.map((method) => ({
+                  id: method.id,
+                  label: method.name.es,
+                }))}
+                selected={new Set(form.payment_method_ids)}
+                onChange={(selected) =>
+                  setForm({ ...form, payment_method_ids: [...selected] })
+                }
+                placeholder={t('coursePage.methods')}
+              />
+              <p className="mt-2 text-sm text-gray-600">{t('admin.paymentIncludesNote')}</p>
             </div>
+
+            {formError && (
+              <p className="text-sm font-semibold text-coral-dark">{formError}</p>
+            )}
 
             <div className="flex gap-3">
               <button
@@ -386,8 +526,6 @@ export function AdminCoursesPage() {
               <thead>
                 <tr className="border-b border-cream text-lavender">
                   <th className="py-2">{t('admin.fields.titleEs')}</th>
-                  <th className="py-2">{t('admin.fields.taglineEs')}</th>
-                  <th className="py-2">{t('admin.fields.slug')}</th>
                   <th className="py-2" />
                 </tr>
               </thead>
@@ -395,10 +533,6 @@ export function AdminCoursesPage() {
                 {courses.map((course) => (
                   <tr key={course.id} className="border-b border-cream">
                     <td className="py-3">{course.title.es}</td>
-                    <td className="max-w-xs truncate py-3 text-gray-600">
-                      {course.tagline.es}
-                    </td>
-                    <td className="py-3">{course.slug}</td>
                     <td className="py-3 text-right whitespace-nowrap">
                       <button
                         type="button"
@@ -423,7 +557,24 @@ export function AdminCoursesPage() {
                 ))}
               </tbody>
             </table>
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+              <label className="flex items-center gap-2 text-sm text-gray-600">
+                {t('admin.pageSize')}
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value) as 10 | 20 | 50)
+                    setPage(1)
+                  }}
+                  className="rounded-lg border border-cream px-2 py-1"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </label>
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            </div>
           </>
         )}
       </div>
@@ -437,20 +588,24 @@ function ListEditor<T>({
   onChange,
   renderRow,
   emptyRow,
+  columnsClassName = 'sm:grid-cols-2 lg:grid-cols-3',
 }: {
   label: string
   rows: T[]
   onChange: (rows: T[]) => void
   renderRow: (row: T, onChange: (row: T) => void) => ReactNode
   emptyRow: T
+  columnsClassName?: string
 }) {
+  const { t } = useTranslation()
+
   return (
     <div>
       <p className="text-sm font-semibold text-lavender-dark">{label}</p>
-      <div className="mt-2 space-y-2">
+      <div className="mt-2 space-y-3">
         {rows.map((row, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <div className="grid flex-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div key={index} className="flex items-start gap-2">
+            <div className={`grid flex-1 gap-3 ${columnsClassName}`}>
               {renderRow(row, (updated) => {
                 const next = [...rows]
                 next[index] = updated
@@ -460,10 +615,10 @@ function ListEditor<T>({
             <button
               type="button"
               onClick={() => onChange(rows.filter((_, i) => i !== index))}
-              className="text-coral-dark"
-              aria-label="Quitar"
+              className="mt-6 text-coral-dark"
+              aria-label={t('admin.delete')}
             >
-              ✕
+              <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
             </button>
           </div>
         ))}
