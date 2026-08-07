@@ -50,7 +50,6 @@ export interface MenuItem {
   name: LocalizedText
   description: LocalizedText | null
   price_cop: number | null
-  image_url: string | null
   is_active: boolean
 }
 
@@ -63,12 +62,6 @@ export function getCourseImageUrl(course: Pick<CourseSummary, 'image_url'>): str
   if (!url) return DEFAULT_COURSE_IMAGE_URL
   // Uploaded images are served by the backend (see apps/backend/app/api/uploads.py),
   // so a relative /uploads/... path must resolve against the API origin, not the frontend's.
-  return url.startsWith('/uploads/') ? `${API_BASE_URL}${url}` : url
-}
-
-export function getMenuItemImageUrl(item: Pick<MenuItem, 'image_url'>): string {
-  const url = item.image_url
-  if (!url) return DEFAULT_COURSE_IMAGE_URL
   return url.startsWith('/uploads/') ? `${API_BASE_URL}${url}` : url
 }
 
@@ -90,4 +83,12 @@ export function fetchCourses(page: number): Promise<Page<CourseSummary>> {
 
 export function fetchCourseBySlug(slug: string): Promise<CourseDetail> {
   return apiGet(`/api/courses/${slug}`)
+}
+
+export function fetchMenuCategories(): Promise<MenuCategory[]> {
+  return apiGet('/api/menu-categories')
+}
+
+export function fetchMenuItems(): Promise<MenuItem[]> {
+  return apiGet('/api/menu-items')
 }

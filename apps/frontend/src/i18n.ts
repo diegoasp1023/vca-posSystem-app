@@ -62,9 +62,14 @@ const resources = {
         text: 'Hecho con ♥ · Valiente Café',
       },
       menuPage: {
-        heading: 'Menú',
-        comingSoon: 'Muy pronto vas a poder ver acá el menú del local.',
+        heading: 'Nuestro Menú',
+        intro:
+          'Café de especialidad, comidas y postres 100% veganos. Elige una categoría para verla.',
+        allCategories: 'Todas',
+        askUs: 'Pregúntanos',
+        empty: 'Todavía no hay productos publicados en el menú.',
         back: 'Volver al inicio',
+        backToTop: 'Subir arriba',
       },
       aboutPage: {
         heading: 'Nosotros',
@@ -346,9 +351,13 @@ const resources = {
         text: 'Made with ♥ · Valiente Café',
       },
       menuPage: {
-        heading: 'Menu',
-        comingSoon: "Our in-house menu will be available here soon.",
+        heading: 'Our Menu',
+        intro: 'Specialty coffee, food and desserts, 100% vegan. Pick a category to view it.',
+        allCategories: 'All',
+        askUs: 'Ask us',
+        empty: 'No menu items have been published yet.',
         back: 'Back to home',
+        backToTop: 'Back to top',
       },
       aboutPage: {
         heading: 'About us',
