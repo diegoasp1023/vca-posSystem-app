@@ -108,7 +108,11 @@ export function AdminCoursesPage() {
     if (!window.confirm(t('admin.confirmDelete'))) return
     const token = await getToken()
     await deleteCourse(token, id)
-    reload()
+    if (courses.length === 1 && page > 1) {
+      setPage(page - 1)
+    } else {
+      reload()
+    }
   }
 
   const togglePaymentMethod = (id: number) => {
