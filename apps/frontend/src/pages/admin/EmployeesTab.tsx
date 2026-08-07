@@ -25,6 +25,8 @@ import {
 } from '../../lib/adminApi'
 import { formatDate } from '../../lib/format'
 import { Pagination } from '../../components/Pagination'
+import { DateField } from './DateField'
+import { Modal } from './Modal'
 
 const DOCUMENT_TYPES: TipoDocumento[] = ['CC', 'TI', 'RC', 'CE', 'PA']
 const ACCOUNT_TYPES: TipoCuenta[] = ['ahorros', 'corriente']
@@ -185,12 +187,22 @@ export function EmployeesTab() {
       </div>
 
       {editingId !== null && (
+        <Modal
+          title={
+            editingId === 'new' ? t('admin.newEmployee') : t('admin.editEmployee')
+          }
+          onClose={() => {
+            setFormError(null)
+            setEditingId(null)
+          }}
+          maxWidthClassName="max-w-3xl"
+        >
         <form
           onSubmit={(e) => {
             e.preventDefault()
             submit()
           }}
-          className="mt-6 space-y-4 rounded-2xl border border-cream bg-white p-6"
+          className="space-y-4"
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t('admin.fields.firstName')}>
@@ -239,13 +251,10 @@ export function EmployeesTab() {
               />
             </Field>
             <Field label={t('admin.fields.birthDate')}>
-              <input
+              <DateField
                 required
-                type="date"
                 value={form.fecha_nacimiento}
-                onChange={(e) =>
-                  setForm({ ...form, fecha_nacimiento: e.target.value })
-                }
+                onChange={(iso) => setForm({ ...form, fecha_nacimiento: iso })}
                 className="w-full rounded-lg border border-cream px-3 py-2"
               />
             </Field>
@@ -285,13 +294,10 @@ export function EmployeesTab() {
               />
             </Field>
             <Field label={t('admin.fields.hireDate')}>
-              <input
+              <DateField
                 required
-                type="date"
                 value={form.fecha_ingreso}
-                onChange={(e) =>
-                  setForm({ ...form, fecha_ingreso: e.target.value })
-                }
+                onChange={(iso) => setForm({ ...form, fecha_ingreso: iso })}
                 className="w-full rounded-lg border border-cream px-3 py-2"
               />
             </Field>
@@ -429,6 +435,7 @@ export function EmployeesTab() {
             </button>
           </div>
         </form>
+        </Modal>
       )}
 
       {status === 'loading' && (
