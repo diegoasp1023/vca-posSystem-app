@@ -228,6 +228,15 @@ export function AdminCoursesPage() {
     }
   }
 
+  const togglePaymentMethod = (id: number) => {
+    setForm((f) => ({
+      ...f,
+      payment_method_ids: f.payment_method_ids.includes(id)
+        ? f.payment_method_ids.filter((p) => p !== id)
+        : [...f.payment_method_ids, id],
+    }))
+  }
+
   return (
     <section className="px-6 py-16">
       <div className="mx-auto max-w-4xl">

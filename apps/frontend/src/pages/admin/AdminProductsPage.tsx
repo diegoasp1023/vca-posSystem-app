@@ -121,7 +121,11 @@ export function AdminProductsPage() {
     if (!window.confirm(t('admin.confirmDelete'))) return
     const token = await getToken()
     await deleteProduct(token, id)
-    reload()
+    if (products.length === 1 && page > 1) {
+      setPage(page - 1)
+    } else {
+      reload()
+    }
   }
 
   return (
