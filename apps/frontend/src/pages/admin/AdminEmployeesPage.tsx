@@ -3,10 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { BackToPanelLink } from './BackToPanelLink'
 import { BonosTab } from './BonosTab'
 import { EmployeesTab } from './EmployeesTab'
+import { PropinasTab } from './PropinasTab'
 import { TurnosTab } from './TurnosTab'
 import { ResumenTab } from './ResumenTab'
 
-type Tab = 'empleados' | 'turnos' | 'bonos' | 'resumen'
+type Tab = 'empleados' | 'turnos' | 'bonos' | 'propinas' | 'resumen'
 
 export function AdminEmployeesPage() {
   const { t } = useTranslation()
@@ -36,6 +37,9 @@ export function AdminEmployeesPage() {
           <TabButton active={tab === 'bonos'} onClick={() => setTab('bonos')}>
             {t('admin.bonosTab')}
           </TabButton>
+          <TabButton active={tab === 'propinas'} onClick={() => setTab('propinas')}>
+            {t('admin.propinasTab')}
+          </TabButton>
           <TabButton active={tab === 'resumen'} onClick={() => setTab('resumen')}>
             {t('admin.resumenTab')}
           </TabButton>
@@ -47,6 +51,9 @@ export function AdminEmployeesPage() {
         )}
         {tab === 'bonos' && (
           <BonosTab year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} />
+        )}
+        {tab === 'propinas' && (
+          <PropinasTab year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} />
         )}
         {tab === 'resumen' && (
           <ResumenTab year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} />
