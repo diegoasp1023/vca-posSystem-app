@@ -150,6 +150,7 @@ export interface Employee extends EmployeeWrite {
   id: number
   fecha_registro: string
   is_active: boolean
+  fecha_activacion: string
   fecha_baja: string | null
 }
 
@@ -249,4 +250,132 @@ export function createShift(token: string | undefined, body: ShiftWrite) {
 
 export function deleteShift(token: string | undefined, id: number) {
   return adminFetch<void>(`/api/shifts/${id}`, token, { method: 'DELETE' })
+}
+
+export type PeriodState = 'abierto' | 'cerrado'
+
+export interface PayrollPeriod {
+  year: number
+  month: number
+  estado: PeriodState
+  cerrado_en: string | null
+}
+
+export interface NominaItem {
+  employee_id: number
+  nombre: string
+  apellido: string
+  tipo_contrato: TipoContrato
+  monto_cop: number
+}
+
+export interface BonusWrite {
+  employee_id: number
+  year: number
+  month: number
+  monto_cop: number
+  concepto: string
+}
+
+export interface Bonus extends BonusWrite {
+  id: number
+  created_at: string
+}
+
+export interface TipPool {
+  year: number
+  month: number
+  monto_total_cop: number
+  participant_ids: number[]
+  monto_por_persona: number
+}
+
+export interface PayrollSummaryItem {
+  employee_id: number
+  nombre: string
+  apellido: string
+  pago_base_cop: number
+  bonos_cop: number
+  propina_cop: number
+  total_cop: number
+}
+
+export interface PayrollSummary {
+  year: number
+  month: number
+  items: PayrollSummaryItem[]
+  total_general_cop: number
+}
+
+export function fetchPayrollPeriod(
+  token: string | undefined,
+  year: number,
+  month: number,
+) {
+  return adminFetch<PayrollPeriod>(
+    `/api/payroll/period?year=${year}&month=${month}`,
+    token,
+  )
+}
+
+export function closePayrollPeriod(
+  token: string | undefined,
+  year: number,
+  month: number,
+) {
+  return adminFetch<PayrollPeriod>(
+    `/api/payroll/period/close?year=${year}&month=${month}`,
+    token,
+    { method: 'POST' },
+  )
+}
+
+export function fetchNomina(token: string | undefined, year: number, month: number) {
+  return adminFetch<NominaItem[]>(
+    `/api/payroll/nomina?year=${year}&month=${month}`,
+    token,
+  )
+}
+
+export function fetchBonuses(token: string | undefined, year: number, month: number) {
+  return adminFetch<Bonus[]>(`/api/payroll/bonuses?year=${year}&month=${month}`, token)
+}
+
+export function createBonus(token: string | undefined, body: BonusWrite) {
+  return adminFetch<Bonus>('/api/payroll/bonuses', token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function deleteBonus(token: string | undefined, id: number) {
+  return adminFetch<void>(`/api/payroll/bonuses/${id}`, token, { method: 'DELETE' })
+}
+
+export function fetchTips(token: string | undefined, year: number, month: number) {
+  return adminFetch<TipPool>(`/api/payroll/tips?year=${year}&month=${month}`, token)
+}
+
+export function updateTips(
+  token: string | undefined,
+  year: number,
+  month: number,
+  montoTotalCop: number,
+  employeeIds: number[],
+) {
+  return adminFetch<TipPool>(`/api/payroll/tips?year=${year}&month=${month}`, token, {
+    method: 'PUT',
+    body: JSON.stringify({ monto_total_cop: montoTotalCop, employee_ids: employeeIds }),
+  })
+}
+
+export function fetchPayrollSummary(
+  token: string | undefined,
+  year: number,
+  month: number,
+) {
+  return adminFetch<PayrollSummary>(
+    `/api/payroll/summary?year=${year}&month=${month}`,
+    token,
+  )
 }

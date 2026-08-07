@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import require_admin
 from app.core.database import get_db
+from app.core.payroll import get_period_state
 from app.models.employee import Employee
 from app.models.shift import Shift
 from app.schemas.shift import MonthlyShiftSummary, ShiftOut, ShiftWrite
@@ -51,6 +52,12 @@ async def create_shift(body: ShiftWrite, db: AsyncSession = Depends(get_db)) -> 
     if not employee.is_active:
         raise HTTPException(status_code=400, detail="Employee is deactivated")
 
+    state = await get_period_state(db, body.fecha.year, body.fecha.month)
+    if state != "abierto":
+        raise HTTPException(
+            status_code=400, detail=f"Payroll period for {body.fecha} is {state}"
+        )
+
     shift = Shift(
         employee_id=body.employee_id,
         fecha=body.fecha,
@@ -69,5 +76,12 @@ async def delete_shift(shift_id: int, db: AsyncSession = Depends(get_db)) -> Non
     shift = await db.get(Shift, shift_id)
     if shift is None:
         raise HTTPException(status_code=404, detail="Shift not found")
+
+    state = await get_period_state(db, shift.fecha.year, shift.fecha.month)
+    if state != "abierto":
+        raise HTTPException(
+            status_code=400, detail=f"Payroll period for {shift.fecha} is {state}"
+        )
+
     await db.delete(shift)
     await db.commit()

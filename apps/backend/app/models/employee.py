@@ -36,6 +36,7 @@ class Employee(Base):
     fecha_ingreso: Mapped[date] = mapped_column(Date, nullable=False)
 
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    fecha_activacion: Mapped[date] = mapped_column(Date, nullable=False)
     fecha_baja: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

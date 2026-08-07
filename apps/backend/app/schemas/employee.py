@@ -74,6 +74,7 @@ class EmployeeOut(BaseModel):
     fecha_ingreso: date
     fecha_registro: datetime
     is_active: bool
+    fecha_activacion: date
     fecha_baja: date | None
 
     @classmethod
@@ -100,5 +101,6 @@ class EmployeeOut(BaseModel):
             fecha_ingreso=employee.fecha_ingreso,
             fecha_registro=employee.created_at,
             is_active=employee.is_active,
+            fecha_activacion=employee.fecha_activacion,
             fecha_baja=employee.fecha_baja,
         )
