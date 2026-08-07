@@ -1,4 +1,4 @@
-import type { CourseDetail, CourseSummary, Page, Product } from './api'
+import type { CourseDetail, CourseSummary, MenuCategory, MenuItem, Page, Product } from './api'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string
 
@@ -149,6 +149,86 @@ export function uploadCourseImage(token: string | undefined, file: File) {
   const formData = new FormData()
   formData.append('file', file)
   return adminFetch<{ url: string }>('/api/uploads/course-images', token, {
+    method: 'POST',
+    body: formData,
+  })
+}
+
+export interface MenuCategoryWrite {
+  name_es: string
+  name_en: string
+  sort_order: number
+}
+
+export function fetchAdminMenuCategories(token: string | undefined) {
+  return adminFetch<MenuCategory[]>('/api/menu-categories', token)
+}
+
+export function createMenuCategory(token: string | undefined, body: MenuCategoryWrite) {
+  return adminFetch<MenuCategory>('/api/menu-categories', token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateMenuCategory(
+  token: string | undefined,
+  id: number,
+  body: MenuCategoryWrite,
+) {
+  return adminFetch<MenuCategory>(`/api/menu-categories/${id}`, token, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+}
+
+export function deleteMenuCategory(token: string | undefined, id: number) {
+  return adminFetch<void>(`/api/menu-categories/${id}`, token, { method: 'DELETE' })
+}
+
+export interface MenuItemWrite {
+  category_id: number
+  name_es: string
+  name_en: string
+  description_es: string | null
+  description_en: string | null
+  price_cop: number | null
+  image_url: string | null
+  is_active: boolean
+}
+
+export function fetchAdminMenuItems(
+  token: string | undefined,
+  page: number,
+  categoryId?: number,
+) {
+  const query = new URLSearchParams({ page: String(page) })
+  if (categoryId !== undefined) query.set('category_id', String(categoryId))
+  return adminFetch<Page<MenuItem>>(`/api/menu-items?${query}`, token)
+}
+
+export function createMenuItem(token: string | undefined, body: MenuItemWrite) {
+  return adminFetch<MenuItem>('/api/menu-items', token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateMenuItem(token: string | undefined, id: number, body: MenuItemWrite) {
+  return adminFetch<MenuItem>(`/api/menu-items/${id}`, token, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+}
+
+export function deleteMenuItem(token: string | undefined, id: number) {
+  return adminFetch<void>(`/api/menu-items/${id}`, token, { method: 'DELETE' })
+}
+
+export function uploadMenuItemImage(token: string | undefined, file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return adminFetch<{ url: string }>('/api/uploads/menu-item-images', token, {
     method: 'POST',
     body: formData,
   })

@@ -7,6 +7,7 @@ from app.models.course import (
     course_payment_methods,
 )
 from app.models.employee import Employee
+from app.models.menu_item import MenuCategory, MenuItem
 from app.models.payroll import (
     Bonus,
     PayrollPeriod,
@@ -24,6 +25,8 @@ __all__ = [
     "CourseCost",
     "CourseObjective",
     "Employee",
+    "MenuCategory",
+    "MenuItem",
     "PaymentMethod",
     "PayrollPeriod",
     "PayrollSnapshot",

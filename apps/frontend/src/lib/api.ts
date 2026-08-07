@@ -37,6 +37,23 @@ export interface CourseDetail extends CourseSummary {
   methods: LocalizedText[]
 }
 
+export interface MenuCategory {
+  id: number
+  name: LocalizedText
+  sort_order: number
+}
+
+export interface MenuItem {
+  id: number
+  category_id: number
+  category: LocalizedText
+  name: LocalizedText
+  description: LocalizedText | null
+  price_cop: number | null
+  image_url: string | null
+  is_active: boolean
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string
 
 export const DEFAULT_COURSE_IMAGE_URL = '/images/logo-cafe.svg'
@@ -46,6 +63,12 @@ export function getCourseImageUrl(course: Pick<CourseSummary, 'image_url'>): str
   if (!url) return DEFAULT_COURSE_IMAGE_URL
   // Uploaded images are served by the backend (see apps/backend/app/api/uploads.py),
   // so a relative /uploads/... path must resolve against the API origin, not the frontend's.
+  return url.startsWith('/uploads/') ? `${API_BASE_URL}${url}` : url
+}
+
+export function getMenuItemImageUrl(item: Pick<MenuItem, 'image_url'>): string {
+  const url = item.image_url
+  if (!url) return DEFAULT_COURSE_IMAGE_URL
   return url.startsWith('/uploads/') ? `${API_BASE_URL}${url}` : url
 }
 
