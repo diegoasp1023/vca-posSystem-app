@@ -153,8 +153,26 @@ export interface Employee extends EmployeeWrite {
   fecha_baja: string | null
 }
 
-export function fetchAdminEmployees(token: string | undefined, page: number) {
-  return adminFetch<Page<Employee>>(`/api/employees/admin?page=${page}`, token)
+export interface EmployeeListParams {
+  page: number
+  pageSize?: 10 | 20 | 50
+  search?: string
+  sortBy?: 'nombre' | 'apellido' | 'is_active'
+  sortDir?: 'asc' | 'desc'
+}
+
+export function fetchAdminEmployees(
+  token: string | undefined,
+  params: EmployeeListParams,
+) {
+  const query = new URLSearchParams({
+    page: String(params.page),
+    page_size: String(params.pageSize ?? 10),
+    sort_by: params.sortBy ?? 'nombre',
+    sort_dir: params.sortDir ?? 'asc',
+  })
+  if (params.search) query.set('search', params.search)
+  return adminFetch<Page<Employee>>(`/api/employees/admin?${query}`, token)
 }
 
 export function createEmployee(token: string | undefined, body: EmployeeWrite) {
@@ -185,4 +203,50 @@ export function reactivateEmployee(token: string | undefined, id: number) {
   return adminFetch<Employee>(`/api/employees/${id}/reactivate`, token, {
     method: 'POST',
   })
+}
+
+export interface ShiftWrite {
+  employee_id: number
+  fecha: string
+  hora_inicio: string
+  hora_fin: string
+}
+
+export interface Shift extends ShiftWrite {
+  id: number
+  tarifa_hora_cop: number
+  horas: number
+  monto_cop: number
+}
+
+export interface MonthlyShiftSummary {
+  employee_id: number
+  year: number
+  month: number
+  shifts: Shift[]
+  total_horas: number
+  total_cop: number
+}
+
+export function fetchMonthlyShifts(
+  token: string | undefined,
+  employeeId: number,
+  year: number,
+  month: number,
+) {
+  return adminFetch<MonthlyShiftSummary>(
+    `/api/shifts?employee_id=${employeeId}&year=${year}&month=${month}`,
+    token,
+  )
+}
+
+export function createShift(token: string | undefined, body: ShiftWrite) {
+  return adminFetch<Shift>('/api/shifts', token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function deleteShift(token: string | undefined, id: number) {
+  return adminFetch<void>(`/api/shifts/${id}`, token, { method: 'DELETE' })
 }

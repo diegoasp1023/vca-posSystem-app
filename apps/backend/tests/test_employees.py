@@ -108,3 +108,41 @@ async def test_admin_listing_includes_deactivated_employees(db_session, admin_cl
     response = (await admin_client.get("/api/employees/admin?page=1")).json()
 
     assert response["total"] == 2
+
+
+async def test_admin_listing_supports_page_size(db_session, admin_client):
+    for i in range(15):
+        await make_employee(db_session, numero_documento=str(i), nombre=f"Emp{i}")
+
+    response = (
+        await admin_client.get("/api/employees/admin?page=1&page_size=20")
+    ).json()
+
+    assert response["page_size"] == 20
+    assert len(response["items"]) == 15
+    assert response["total_pages"] == 1
+
+
+async def test_admin_listing_search_filters_by_name(db_session, admin_client):
+    await make_employee(db_session, numero_documento="1", nombre="Laura", apellido="Gomez")
+    await make_employee(db_session, numero_documento="2", nombre="Carlos", apellido="Ruiz")
+
+    response = (
+        await admin_client.get("/api/employees/admin?page=1&search=laura")
+    ).json()
+
+    assert response["total"] == 1
+    assert response["items"][0]["nombre"] == "Laura"
+
+
+async def test_admin_listing_sorts_by_column(db_session, admin_client):
+    await make_employee(db_session, numero_documento="1", nombre="Zoe")
+    await make_employee(db_session, numero_documento="2", nombre="Ana")
+
+    response = (
+        await admin_client.get(
+            "/api/employees/admin?page=1&sort_by=nombre&sort_dir=asc"
+        )
+    ).json()
+
+    assert [item["nombre"] for item in response["items"]] == ["Ana", "Zoe"]
