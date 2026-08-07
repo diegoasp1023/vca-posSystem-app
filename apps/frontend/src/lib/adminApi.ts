@@ -91,8 +91,15 @@ export interface CourseWrite {
   payment_method_ids: number[]
 }
 
-export function fetchAdminCourses(token: string | undefined, page: number) {
-  return adminFetch<Page<CourseSummary>>(`/api/courses/admin?page=${page}`, token)
+export function fetchAdminCourses(
+  token: string | undefined,
+  page: number,
+  pageSize: 10 | 20 | 50 = 10,
+) {
+  return adminFetch<Page<CourseSummary>>(
+    `/api/courses/admin?page=${page}&page_size=${pageSize}`,
+    token,
+  )
 }
 
 export function fetchAdminCourse(token: string | undefined, id: number) {
