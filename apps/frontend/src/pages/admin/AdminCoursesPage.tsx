@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../context/AuthContext'
 import {
+  AdminApiError,
   createCourse,
   deleteCourse,
   fetchAdminCourse,
@@ -175,8 +176,7 @@ export function AdminCoursesPage() {
 
   const submit = async () => {
     setFormError(null)
-    const body: CourseWrite = {
-      slug: editingSlug ?? slugify(form.title_es),
+    const baseBody: Omit<CourseWrite, 'slug'> = {
       title_es: form.title_es,
       title_en: form.title_en,
       tagline_es: form.tagline_es,
@@ -203,18 +203,32 @@ export function AdminCoursesPage() {
         : form.payment_method_ids,
     }
 
-    try {
-      const token = await getToken()
-      if (editingId === 'new') {
-        await createCourse(token, body)
-      } else if (editingId !== null) {
-        await updateCourse(token, editingId, body)
+    const token = await getToken()
+    const baseSlug = editingSlug ?? slugify(form.title_es)
+    const MAX_SLUG_ATTEMPTS = 20
+
+    for (let attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt++) {
+      const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`
+      try {
+        if (editingId === 'new') {
+          await createCourse(token, { ...baseBody, slug })
+        } else if (editingId !== null) {
+          await updateCourse(token, editingId, { ...baseBody, slug })
+        }
+        setEditingId(null)
+        reload()
+        return
+      } catch (err) {
+        const isSlugCollision =
+          editingId === 'new' && err instanceof AdminApiError && err.status === 400
+        if (!isSlugCollision) {
+          setFormError(t('admin.saveError'))
+          return
+        }
+        // slug taken (e.g. another course with a similar title) — retry with a numeric suffix
       }
-      setEditingId(null)
-      reload()
-    } catch {
-      setFormError(t('admin.saveError'))
     }
+    setFormError(t('admin.saveError'))
   }
 
   const remove = async (id: number) => {
@@ -226,15 +240,6 @@ export function AdminCoursesPage() {
     } else {
       reload()
     }
-  }
-
-  const togglePaymentMethod = (id: number) => {
-    setForm((f) => ({
-      ...f,
-      payment_method_ids: f.payment_method_ids.includes(id)
-        ? f.payment_method_ids.filter((p) => p !== id)
-        : [...f.payment_method_ids, id],
-    }))
   }
 
   return (
