@@ -26,7 +26,7 @@ export interface CourseSummary {
   slug: string
   title: LocalizedText
   tagline: LocalizedText
-  image_url: string
+  image_url: string | null
 }
 
 export interface CourseDetail extends CourseSummary {
@@ -38,6 +38,16 @@ export interface CourseDetail extends CourseSummary {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string
+
+export const DEFAULT_COURSE_IMAGE_URL = '/images/logo-cafe.svg'
+
+export function getCourseImageUrl(course: Pick<CourseSummary, 'image_url'>): string {
+  const url = course.image_url
+  if (!url) return DEFAULT_COURSE_IMAGE_URL
+  // Uploaded images are served by the backend (see apps/backend/app/api/uploads.py),
+  // so a relative /uploads/... path must resolve against the API origin, not the frontend's.
+  return url.startsWith('/uploads/') ? `${API_BASE_URL}${url}` : url
+}
 
 async function apiGet<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`)

@@ -21,7 +21,9 @@ async function adminFetch<T>(
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.body && !(options.body instanceof FormData)
+        ? { 'Content-Type': 'application/json' }
+        : {}),
       Authorization: `Bearer ${token}`,
       ...options.headers,
     },
@@ -98,7 +100,7 @@ export interface CourseWrite {
   tagline_en: string
   duration_text_es: string
   duration_text_en: string
-  image_url: string
+  image_url: string | null
   is_active: boolean
   objectives: { es: string; en: string }[]
   content: { module_es: string; module_en: string; duration_label: string }[]
@@ -141,6 +143,15 @@ export function updateCourse(
 
 export function deleteCourse(token: string | undefined, id: number) {
   return adminFetch<void>(`/api/courses/${id}`, token, { method: 'DELETE' })
+}
+
+export function uploadCourseImage(token: string | undefined, file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return adminFetch<{ url: string }>('/api/uploads/course-images', token, {
+    method: 'POST',
+    body: formData,
+  })
 }
 
 export type TipoDocumento = 'CC' | 'TI' | 'RC' | 'CE' | 'PA'

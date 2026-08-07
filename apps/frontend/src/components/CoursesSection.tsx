@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { fetchCourses, type CourseSummary } from '../lib/api'
+import { fetchCourses, getCourseImageUrl, type CourseSummary } from '../lib/api'
 import { Pagination } from './Pagination'
 
 export function CoursesSection() {
@@ -55,7 +55,7 @@ export function CoursesSection() {
                   className="overflow-hidden rounded-2xl border border-white bg-white shadow-sm transition hover:shadow-md"
                 >
                   <img
-                    src={course.image_url}
+                    src={getCourseImageUrl(course)}
                     alt={course.title[lang]}
                     className="h-48 w-full object-cover"
                   />

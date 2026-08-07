@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { fetchCourseBySlug, type CourseDetail } from '../lib/api'
+import { fetchCourseBySlug, getCourseImageUrl, type CourseDetail } from '../lib/api'
 import { socialLinks } from '../data/social'
 
 export function CoursePage() {
@@ -63,7 +63,7 @@ export function CoursePage() {
   return (
     <article>
       <img
-        src={course.image_url}
+        src={getCourseImageUrl(course)}
         alt={course.title[lang]}
         className="h-72 w-full object-cover sm:h-96"
       />
