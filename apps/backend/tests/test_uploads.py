@@ -66,17 +66,3 @@ def test_sweep_orphaned_images_handles_missing_dir(upload_dir):
     removed = sweep_orphaned_images("courses", set())
 
     assert removed == 0
-
-
-async def test_upload_menu_item_image_as_admin(admin_client, upload_dir):
-    response = await admin_client.post(
-        "/api/uploads/menu-item-images",
-        files={"file": ("photo.jpg", JPEG_BYTES, "image/jpeg")},
-    )
-
-    assert response.status_code == 200
-    url = response.json()["url"]
-    assert url.startswith("/uploads/menu-items/")
-
-    saved_path = upload_dir / "menu-items" / url.removeprefix("/uploads/menu-items/")
-    assert os.path.isfile(saved_path)

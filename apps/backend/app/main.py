@@ -20,13 +20,8 @@ from app.api import (
 )
 from app.core.config import settings
 from app.core.database import async_session_factory
-from app.core.uploads import (
-    COURSE_IMAGES_SUBDIR,
-    MENU_ITEM_IMAGES_SUBDIR,
-    sweep_orphaned_images,
-)
+from app.core.uploads import COURSE_IMAGES_SUBDIR, sweep_orphaned_images
 from app.models.course import Course
-from app.models.menu_item import MenuItem
 
 
 @asynccontextmanager
@@ -34,10 +29,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     async with async_session_factory() as session:
         course_result = await session.execute(select(Course.image_url))
         course_urls = {url for url in course_result.scalars().all() if url is not None}
-        menu_item_result = await session.execute(select(MenuItem.image_url))
-        menu_item_urls = {url for url in menu_item_result.scalars().all() if url is not None}
     sweep_orphaned_images(COURSE_IMAGES_SUBDIR, course_urls)
-    sweep_orphaned_images(MENU_ITEM_IMAGES_SUBDIR, menu_item_urls)
     yield
 
 

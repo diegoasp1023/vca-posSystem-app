@@ -7,49 +7,87 @@ MENU_ITEM_PAYLOAD = {
 }
 
 
-async def test_list_menu_items_requires_auth(client):
-    response = await client.get("/api/menu-items")
-
-    assert response.status_code == 401
-
-
-async def test_menu_items_are_paginated(db_session, admin_client):
+async def test_list_menu_items_is_public_and_active_only(db_session, client):
     category = await make_menu_category(db_session)
-    for i in range(12):
-        await make_menu_item(db_session, category=category, name_es=f"Item {i}", name_en=f"Item {i}")
+    await make_menu_item(db_session, category=category, name_es="Activo", name_en="Active", is_active=True)
+    await make_menu_item(
+        db_session, category=category, name_es="Inactivo", name_en="Inactive", is_active=False
+    )
 
-    page_1 = (await admin_client.get("/api/menu-items?page=1")).json()
-    assert page_1["page_size"] == 10
-    assert page_1["total"] == 12
-    assert len(page_1["items"]) == 10
+    response = (await client.get("/api/menu-items")).json()
 
-    page_2 = (await admin_client.get("/api/menu-items?page=2")).json()
-    assert len(page_2["items"]) == 2
+    assert [item["name"]["es"] for item in response] == ["Activo"]
 
 
-async def test_menu_items_filtered_by_category(db_session, admin_client):
-    hot = await make_menu_category(db_session, name_es="Bebidas calientes", name_en="Hot")
+async def test_list_menu_items_ordered_by_category_sort_order(db_session, client):
+    hot = await make_menu_category(db_session, name_es="Bebidas calientes", name_en="Hot", sort_order=1)
     cold = await make_menu_category(db_session, name_es="Bebidas frías", name_en="Cold", sort_order=2)
-    await make_menu_item(db_session, category=hot)
     await make_menu_item(db_session, category=cold, name_es="Agua", name_en="Water")
+    await make_menu_item(db_session, category=hot, name_es="Americano", name_en="Americano")
 
-    response = (await admin_client.get(f"/api/menu-items?category_id={cold.id}")).json()
+    response = (await client.get("/api/menu-items")).json()
 
-    assert response["total"] == 1
-    assert response["items"][0]["name"]["es"] == "Agua"
+    assert [item["category"]["es"] for item in response] == ["Bebidas calientes", "Bebidas frías"]
 
 
-async def test_menu_item_optional_fields_default_to_none(db_session, admin_client):
+async def test_menu_item_optional_fields_default_to_none(db_session, client):
     category = await make_menu_category(db_session)
     await make_menu_item(
         db_session, category=category, price_cop=None, description_es=None, description_en=None
     )
 
-    response = (await admin_client.get("/api/menu-items")).json()
-    item = response["items"][0]
+    response = (await client.get("/api/menu-items")).json()
+    item = response[0]
 
     assert item["price_cop"] is None
     assert item["description"] is None
+
+
+async def test_menu_items_admin_listing_requires_auth(client):
+    response = await client.get("/api/menu-items/admin")
+
+    assert response.status_code == 401
+
+
+async def test_menu_items_admin_are_paginated(db_session, admin_client):
+    category = await make_menu_category(db_session)
+    for i in range(12):
+        await make_menu_item(db_session, category=category, name_es=f"Item {i}", name_en=f"Item {i}")
+
+    page_1 = (await admin_client.get("/api/menu-items/admin?page=1")).json()
+    assert page_1["page_size"] == 10
+    assert page_1["total"] == 12
+    assert len(page_1["items"]) == 10
+
+    page_2 = (await admin_client.get("/api/menu-items/admin?page=2")).json()
+    assert len(page_2["items"]) == 2
+
+
+async def test_menu_items_admin_includes_inactive(db_session, admin_client):
+    category = await make_menu_category(db_session)
+    await make_menu_item(db_session, category=category, is_active=False)
+
+    response = (await admin_client.get("/api/menu-items/admin")).json()
+
+    assert response["total"] == 1
+
+
+async def test_menu_items_admin_filtered_by_category(db_session, admin_client):
+    hot = await make_menu_category(db_session, name_es="Bebidas calientes", name_en="Hot")
+    cold = await make_menu_category(db_session, name_es="Bebidas frías", name_en="Cold", sort_order=2)
+    await make_menu_item(db_session, category=hot)
+    await make_menu_item(db_session, category=cold, name_es="Agua", name_en="Water")
+
+    response = (await admin_client.get(f"/api/menu-items/admin?category_id={cold.id}")).json()
+
+    assert response["total"] == 1
+    assert response["items"][0]["name"]["es"] == "Agua"
+
+
+async def test_create_menu_item_requires_auth(client):
+    response = await client.post("/api/menu-items", json={**MENU_ITEM_PAYLOAD, "category_id": 1})
+
+    assert response.status_code == 401
 
 
 async def test_create_menu_item_as_admin(db_session, admin_client):
