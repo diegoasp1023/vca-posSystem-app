@@ -39,6 +39,15 @@ export function AdminHomePage() {
               </p>
             </Link>
             <Link
+              to="/admin/menu"
+              className="rounded-2xl border border-cream bg-white p-8 text-left shadow-sm transition hover:shadow-md"
+            >
+              <h2 className="text-lg font-semibold text-lavender-dark">
+                {t('adminMenu.title')}
+              </h2>
+              <p className="mt-2 text-sm text-gray-600">{t('adminMenu.description')}</p>
+            </Link>
+            <Link
               to="/admin/personal"
               className="rounded-2xl border border-cream bg-white p-8 text-left shadow-sm transition hover:shadow-md"
             >
