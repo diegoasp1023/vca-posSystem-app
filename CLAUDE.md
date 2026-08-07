@@ -112,6 +112,33 @@ React 19 + Vite + TypeScript + Tailwind CSS 4, routing con `react-router-dom`.
 
 ---
 
+## Flujo de trabajo con Claude Code (obligatorio)
+
+Cuando se pida corregir un bug, hacer un ajuste o implementar algo puntual:
+
+1. **Crear rama antes de tocar código.** Siempre partir de `dev` actualizado, con
+   el patrón `fix/nombre-corto` o `feature/nombre-corto` según corresponda.
+   No trabajar directo sobre `dev`.
+2. **Nunca hacer commit sin preguntar primero.** Después de cada cambio (o
+   grupo pequeño de cambios relacionados), mostrar un resumen de qué se
+   modificó y por qué, y esperar aprobación explícita antes de correr
+   `git commit`. No asumir aprobación por continuidad de la conversación.
+3. **Commits pequeños y atómicos.** Un commit = un cambio con sentido propio
+   (ej. no mezclar un fix de backend con un ajuste de estilo en frontend). Si
+   una tarea generó cambios en varios frentes, dividir en varios commits, cada
+   uno con su propio mensaje conventional commit, preguntando por la
+   aprobación de cada uno (por separado o en bloque, según lo indique el
+   usuario en el momento).
+4. **PR solo después de que el/los commits estén aprobados.** Una vez
+   aprobado el último commit de la rama, abrir el PR hacia `dev` (nunca hacia
+   `staging` o `main` directamente, ver tabla de ramas arriba). Incluir en la
+   descripción del PR un resumen breve de los commits incluidos.
+5. Si a mitad de la tarea surge la necesidad de un cambio no relacionado al
+   ajuste original, avisar y sugerir manejarlo en una rama/PR aparte en vez de
+   mezclarlo.
+
+---
+
 ## Variables de entorno
 
 - Nunca commitear archivos `.env`, `.env.dev`, `.env.staging`, `.env.prod`.
@@ -154,4 +181,4 @@ React 19 + Vite + TypeScript + Tailwind CSS 4, routing con `react-router-dom`.
 - Si una tarea implica una decisión de arquitectura no cubierta aquí (ej. nueva base de datos, nuevo servicio, cambio de flujo de auth), preguntar antes de implementar en lugar de asumir.
 - Mantener consistencia entre `.env.example`, `docker-compose.yml` y cualquier documentación en `keycloak/README.md` o `docs/` — si se cambia una variable en un lado, actualizar los demás en el mismo cambio.
 - No incluir trailers de Claude (`Co-Authored-By`, `Claude-Session`) en los mensajes de commit.
-- Se debe usar conventional commit en cada commit, y deben ser commit muy pequeños en cuanto cambios
+- Se debe usar conventional commit en cada commit (ver detalle de tamaño y aprobación de commits en "Flujo de trabajo con Claude Code" arriba).

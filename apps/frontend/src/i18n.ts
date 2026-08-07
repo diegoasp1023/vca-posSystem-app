@@ -15,7 +15,7 @@ const resources = {
       hero: {
         tagline:
           'Café de especialidad, 100% vegano. Porque la valentía de cambiar el mundo empieza con decisiones conscientes. Cada taza, servida con la calma y el respeto que todos merecemos.',
-        cta: 'Ver nuestros cafés',
+        cta: 'Ver Menú',
         contactCta: 'Contáctanos',
       },
       menu: {
@@ -249,7 +249,7 @@ const resources = {
       hero: {
         tagline:
           'Specialty coffee, 100% vegan. Courage to change the world starts with conscious choices. Every cup, crafted with the patience and respect we all deserve.',
-        cta: 'See our coffees',
+        cta: 'View Menu',
         contactCta: 'Contact us',
       },
       menu: {
