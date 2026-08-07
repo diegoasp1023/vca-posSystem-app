@@ -3,6 +3,7 @@ import os
 from app.core.config import settings
 
 COURSE_IMAGES_SUBDIR = "courses"
+MENU_ITEM_IMAGES_SUBDIR = "menu-items"
 UPLOAD_URL_PREFIX = "/uploads/"
 
 
@@ -38,22 +39,22 @@ def delete_uploaded_file(url: str | None) -> None:
         pass
 
 
-def sweep_orphaned_course_images(active_urls: set[str]) -> int:
-    """Delete course images on disk that no course references anymore.
+def sweep_orphaned_images(subdir: str, active_urls: set[str]) -> int:
+    """Delete images under an uploads subdirectory that nothing references anymore.
 
     Meant to run once at backend startup: catches uploads that were sent to
     the server (see app/api/uploads.py) but never ended up attached to a
-    saved course (e.g. the admin picked a file then cancelled the form).
+    saved record (e.g. the admin picked a file then cancelled the form).
     Returns the number of files removed.
     """
-    course_images_dir = os.path.join(settings.upload_dir, COURSE_IMAGES_SUBDIR)
-    if not os.path.isdir(course_images_dir):
+    images_dir = os.path.join(settings.upload_dir, subdir)
+    if not os.path.isdir(images_dir):
         return 0
 
     removed = 0
-    for filename in os.listdir(course_images_dir):
-        url = f"{UPLOAD_URL_PREFIX}{COURSE_IMAGES_SUBDIR}/{filename}"
+    for filename in os.listdir(images_dir):
+        url = f"{UPLOAD_URL_PREFIX}{subdir}/{filename}"
         if url not in active_urls:
-            os.remove(os.path.join(course_images_dir, filename))
+            os.remove(os.path.join(images_dir, filename))
             removed += 1
     return removed

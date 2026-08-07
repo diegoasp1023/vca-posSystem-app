@@ -7,19 +7,37 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
-from app.api import courses, employees, lookups, payroll, products, shifts, uploads
+from app.api import (
+    courses,
+    employees,
+    lookups,
+    menu_categories,
+    menu_items,
+    payroll,
+    products,
+    shifts,
+    uploads,
+)
 from app.core.config import settings
 from app.core.database import async_session_factory
-from app.core.uploads import sweep_orphaned_course_images
+from app.core.uploads import (
+    COURSE_IMAGES_SUBDIR,
+    MENU_ITEM_IMAGES_SUBDIR,
+    sweep_orphaned_images,
+)
 from app.models.course import Course
+from app.models.menu_item import MenuItem
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     async with async_session_factory() as session:
-        result = await session.execute(select(Course.image_url))
-        active_urls = {url for url in result.scalars().all() if url is not None}
-    sweep_orphaned_course_images(active_urls)
+        course_result = await session.execute(select(Course.image_url))
+        course_urls = {url for url in course_result.scalars().all() if url is not None}
+        menu_item_result = await session.execute(select(MenuItem.image_url))
+        menu_item_urls = {url for url in menu_item_result.scalars().all() if url is not None}
+    sweep_orphaned_images(COURSE_IMAGES_SUBDIR, course_urls)
+    sweep_orphaned_images(MENU_ITEM_IMAGES_SUBDIR, menu_item_urls)
     yield
 
 
@@ -42,6 +60,8 @@ app.include_router(employees.router)
 app.include_router(shifts.router)
 app.include_router(payroll.router)
 app.include_router(uploads.router)
+app.include_router(menu_categories.router)
+app.include_router(menu_items.router)
 
 
 @app.get("/api/health")

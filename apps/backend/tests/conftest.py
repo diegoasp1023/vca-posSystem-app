@@ -12,6 +12,7 @@ from app.core.database import Base, get_db
 from app.main import app
 from app.models.course import Course, CourseContentModule, CourseCost, CourseObjective
 from app.models.employee import Employee
+from app.models.menu_item import MenuCategory, MenuItem
 from app.models.product import Presentation, Product
 
 
@@ -142,3 +143,29 @@ async def make_course(session, **overrides) -> Course:
     session.add(course)
     await session.commit()
     return course
+
+
+async def make_menu_category(session, **overrides) -> MenuCategory:
+    defaults = {"name_es": "Bebidas calientes", "name_en": "Hot drinks", "sort_order": 1}
+    defaults.update(overrides)
+    category = MenuCategory(**defaults)
+    session.add(category)
+    await session.commit()
+    return category
+
+
+async def make_menu_item(session, category=None, **overrides) -> MenuItem:
+    if category is None:
+        category = await make_menu_category(session)
+    defaults = {
+        "category_id": category.id,
+        "name_es": "Café Latte 9 Oz",
+        "name_en": "Café Latte 9 oz",
+        "price_cop": 9900,
+        "is_active": True,
+    }
+    defaults.update(overrides)
+    item = MenuItem(**defaults)
+    session.add(item)
+    await session.commit()
+    return item
