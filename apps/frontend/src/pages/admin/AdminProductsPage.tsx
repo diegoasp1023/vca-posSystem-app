@@ -314,8 +314,8 @@ export function AdminProductsPage() {
             <table className="mt-8 w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-cream text-lavender">
-                  <th className="py-2">{t('admin.fields.nameEs')}</th>
-                  <th className="py-2">{t('admin.fields.descriptionEs')}</th>
+                  <th className="py-2">{t('admin.fields.name')}</th>
+                  <th className="py-2">{t('admin.fields.description')}</th>
                   <th className="py-2">{t('admin.fields.weight')}</th>
                   <th className="py-2">{t('admin.fields.price')}</th>
                   <th className="py-2" />

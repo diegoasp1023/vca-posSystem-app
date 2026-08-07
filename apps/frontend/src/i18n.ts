@@ -195,6 +195,9 @@ const resources = {
           sun: 'Dom',
         },
         fields: {
+          name: 'Nombre',
+          description: 'Descripción',
+          title: 'Título',
           nameEs: 'Nombre (Español)',
           nameEn: 'Nombre (English)',
           descriptionEs: 'Descripción (Español)',
@@ -454,6 +457,9 @@ const resources = {
           sun: 'Sun',
         },
         fields: {
+          name: 'Name',
+          description: 'Description',
+          title: 'Title',
           nameEs: 'Name (Spanish)',
           nameEn: 'Name (English)',
           descriptionEs: 'Description (Spanish)',
