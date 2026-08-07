@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
+import { faChevronDown, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../context/AuthContext'
 import {
   closePayrollPeriod,
@@ -191,11 +192,39 @@ export function MultiSelectDropdown({
 }) {
   const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
+  const [panelStyle, setPanelStyle] = useState<{
+    top: number
+    left: number
+    width: number
+  } | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  const updatePanelPosition = useCallback(() => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    setPanelStyle({ top: rect.bottom + 4, left: rect.left, width: rect.width })
+  }, [])
+
+  useEffect(() => {
+    if (!isOpen) return
+    updatePanelPosition()
+    window.addEventListener('resize', updatePanelPosition)
+    window.addEventListener('scroll', updatePanelPosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePanelPosition)
+      window.removeEventListener('scroll', updatePanelPosition, true)
+    }
+  }, [isOpen, updatePanelPosition])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node) &&
+        panelRef.current &&
+        !panelRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false)
       }
     }
@@ -213,6 +242,8 @@ export function MultiSelectDropdown({
     onChange(next)
   }
 
+  const selectedOptions = options.filter((option) => selected.has(option.id))
+
   return (
     <div ref={containerRef} className="relative max-w-xs">
       <button
@@ -229,20 +260,56 @@ export function MultiSelectDropdown({
         <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3 text-gray-500" />
       </button>
 
-      {isOpen && !disabled && (
-        <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-cream bg-white p-2 shadow-md">
-          {options.map((option) => (
-            <label
+      {isOpen &&
+        !disabled &&
+        panelStyle &&
+        createPortal(
+          <div
+            ref={panelRef}
+            style={{
+              position: 'fixed',
+              top: panelStyle.top,
+              left: panelStyle.left,
+              width: panelStyle.width,
+            }}
+            className="z-[70] max-h-56 overflow-y-auto rounded-lg border border-cream bg-white p-2 shadow-lg"
+          >
+            {options.map((option) => (
+              <label
+                key={option.id}
+                className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-cream"
+              >
+                <input
+                  type="checkbox"
+                  checked={selected.has(option.id)}
+                  onChange={() => toggleOption(option.id)}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>,
+          document.body,
+        )}
+
+      {selectedOptions.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {selectedOptions.map((option) => (
+            <span
               key={option.id}
-              className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-cream"
+              className="flex items-center gap-1.5 rounded-full bg-cream px-3 py-1 text-xs font-medium text-lavender-dark"
             >
-              <input
-                type="checkbox"
-                checked={selected.has(option.id)}
-                onChange={() => toggleOption(option.id)}
-              />
               {option.label}
-            </label>
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={() => toggleOption(option.id)}
+                  aria-label={t('admin.delete')}
+                  className="text-lavender-dark/70 hover:text-coral-dark"
+                >
+                  <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
+                </button>
+              )}
+            </span>
           ))}
         </div>
       )}
