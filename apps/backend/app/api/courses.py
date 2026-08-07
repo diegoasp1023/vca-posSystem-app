@@ -40,12 +40,15 @@ async def list_courses(
 )
 async def list_courses_admin(
     page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=50),
     db: AsyncSession = Depends(get_db),
 ) -> Page[CourseSummaryOut]:
-    return await _paginate(db, page, only_active=False)
+    return await _paginate(db, page, only_active=False, page_size=page_size)
 
 
-async def _paginate(db: AsyncSession, page: int, only_active: bool) -> Page[CourseSummaryOut]:
+async def _paginate(
+    db: AsyncSession, page: int, only_active: bool, page_size: int = PAGE_SIZE
+) -> Page[CourseSummaryOut]:
     base_query = select(Course)
     if only_active:
         base_query = base_query.where(Course.is_active.is_(True))
@@ -54,16 +57,16 @@ async def _paginate(db: AsyncSession, page: int, only_active: bool) -> Page[Cour
     total = total or 0
 
     result = await db.execute(
-        base_query.order_by(Course.id).offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE)
+        base_query.order_by(Course.id).offset((page - 1) * page_size).limit(page_size)
     )
     courses = result.scalars().all()
 
     return Page(
         items=[CourseSummaryOut.from_model(c) for c in courses],
         page=page,
-        page_size=PAGE_SIZE,
+        page_size=page_size,
         total=total,
-        total_pages=max(1, -(-total // PAGE_SIZE)),
+        total_pages=max(1, -(-total // page_size)),
     )
 
 
