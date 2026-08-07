@@ -7,6 +7,7 @@ Este archivo define cómo debe trabajar Claude Code en este repositorio. Léelo 
 ## Contexto del proyecto
 
 Sistema de punto de venta (POS) para Valiente Café, compuesto por:
+
 - `apps/backend` — API en FastAPI (Python, `uv`)
 - `apps/frontend` — Landing pública + panel de administración (React + Vite + TypeScript)
 - `keycloak/` — Configuración de Keycloak (IAM / seguridad)
@@ -100,11 +101,11 @@ React 19 + Vite + TypeScript + Tailwind CSS 4, routing con `react-router-dom`.
 
 ## Estructura de ramas (obligatorio respetar)
 
-| Rama | Ambiente | Notas |
-|------|----------|-------|
-| `dev` | Desarrollo | Se puede romper temporalmente. Todo feature branch nace y regresa aquí. |
-| `staging` | Pre-producción | Espejo casi exacto de prod. Se usa para QA antes de liberar. |
-| `main` | Producción | Protegida. Nunca push directo. Solo vía PR desde `staging`. |
+| Rama        | Ambiente        | Notas                                                                    |
+| ----------- | --------------- | ------------------------------------------------------------------------ |
+| `dev`     | Desarrollo      | Se puede romper temporalmente. Todo feature branch nace y regresa aquí. |
+| `staging` | Pre-producción | Espejo casi exacto de prod. Se usa para QA antes de liberar.             |
+| `main`    | Producción     | Protegida. Nunca push directo. Solo vía PR desde`staging`.            |
 
 - Nunca hacer push directo a `main` o `staging`. Los cambios llegan ahí solo por PR desde la rama anterior en el flujo (`dev` → `staging` → `main`).
 - Los feature branches se crean desde `dev` con el patrón `feature/nombre-corto` o `fix/nombre-corto`, y su PR apunta de vuelta a `dev`.
@@ -128,7 +129,7 @@ Cuando se pida corregir un bug, hacer un ajuste o implementar algo puntual:
    una tarea generó cambios en varios frentes, dividir en varios commits, cada
    uno con su propio mensaje conventional commit, preguntando por la
    aprobación de cada uno (por separado o en bloque, según lo indique el
-   usuario en el momento).
+   usuario en el momento). Los commit deben ser en conventional commit en ingles.
 4. **PR solo después de que el/los commits estén aprobados.** Una vez
    aprobado el último commit de la rama, abrir el PR hacia `dev` (nunca hacia
    `staging` o `main` directamente, ver tabla de ramas arriba). Incluir en la
