@@ -16,14 +16,20 @@ import type { Product } from '../../lib/api'
 import { Pagination } from '../../components/Pagination'
 import { BackToPanelLink } from './BackToPanelLink'
 import { Modal } from './Modal'
+import { MultiSelectDropdown } from './PayrollShared'
 
-const EMPTY_FORM: ProductWrite = {
+type ProductFormState = Omit<ProductWrite, 'weight_grams' | 'price_cop'> & {
+  weight_grams: number | ''
+  price_cop: number | ''
+}
+
+const EMPTY_FORM: ProductFormState = {
   name_es: '',
   name_en: '',
   description_es: '',
   description_en: '',
-  weight_grams: 340,
-  price_cop: 0,
+  weight_grams: '',
+  price_cop: '',
   image_url: null,
   is_active: true,
   presentation_ids: [],
@@ -38,7 +44,7 @@ export function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [presentations, setPresentations] = useState<Lookup[]>([])
   const [editingId, setEditingId] = useState<number | 'new' | null>(null)
-  const [form, setForm] = useState<ProductWrite>(EMPTY_FORM)
+  const [form, setForm] = useState<ProductFormState>(EMPTY_FORM)
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -92,12 +98,17 @@ export function AdminProductsPage() {
       setFormError(t('admin.presentationRequired'))
       return
     }
+    const body: ProductWrite = {
+      ...form,
+      weight_grams: Number(form.weight_grams),
+      price_cop: Number(form.price_cop),
+    }
     try {
       const token = await getToken()
       if (editingId === 'new') {
-        await createProduct(token, form)
+        await createProduct(token, body)
       } else if (editingId !== null) {
-        await updateProduct(token, editingId, form)
+        await updateProduct(token, editingId, body)
       }
       setEditingId(null)
       reload()
@@ -111,15 +122,6 @@ export function AdminProductsPage() {
     const token = await getToken()
     await deleteProduct(token, id)
     reload()
-  }
-
-  const togglePresentation = (id: number) => {
-    setForm((f) => ({
-      ...f,
-      presentation_ids: f.presentation_ids.includes(id)
-        ? f.presentation_ids.filter((p) => p !== id)
-        : [...f.presentation_ids, id],
-    }))
   }
 
   return (
@@ -225,7 +227,10 @@ export function AdminProductsPage() {
                   placeholder={t('admin.fields.weight')}
                   value={form.weight_grams}
                   onChange={(e) =>
-                    setForm({ ...form, weight_grams: Number(e.target.value) })
+                    setForm({
+                      ...form,
+                      weight_grams: e.target.value === '' ? '' : Number(e.target.value),
+                    })
                   }
                   className="w-full rounded-lg border border-cream px-3 py-2"
                 />
@@ -241,7 +246,10 @@ export function AdminProductsPage() {
                   placeholder={t('admin.fields.price')}
                   value={form.price_cop}
                   onChange={(e) =>
-                    setForm({ ...form, price_cop: Number(e.target.value) })
+                    setForm({
+                      ...form,
+                      price_cop: e.target.value === '' ? '' : Number(e.target.value),
+                    })
                   }
                   className="w-full rounded-lg border border-cream px-3 py-2"
                 />
@@ -249,24 +257,20 @@ export function AdminProductsPage() {
             </div>
 
             <div>
-              <p className="text-sm font-semibold text-lavender-dark">
+              <p className="mb-1 text-sm font-semibold text-lavender-dark">
                 {t('menu.presentations')} *
               </p>
-              <div className="mt-2 flex flex-wrap gap-3">
-                {presentations.map((presentation) => (
-                  <label
-                    key={presentation.id}
-                    className="flex items-center gap-2 text-sm text-gray-700"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={form.presentation_ids.includes(presentation.id)}
-                      onChange={() => togglePresentation(presentation.id)}
-                    />
-                    {presentation.name.es}
-                  </label>
-                ))}
-              </div>
+              <MultiSelectDropdown
+                options={presentations.map((presentation) => ({
+                  id: presentation.id,
+                  label: presentation.name.es,
+                }))}
+                selected={new Set(form.presentation_ids)}
+                onChange={(selected) =>
+                  setForm({ ...form, presentation_ids: [...selected] })
+                }
+                placeholder={t('menu.presentations')}
+              />
             </div>
 
             {formError && (
