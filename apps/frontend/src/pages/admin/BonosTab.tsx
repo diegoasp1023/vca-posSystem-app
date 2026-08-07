@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../context/AuthContext'
 import {
   createBonus,
@@ -12,6 +14,7 @@ import {
   type NominaItem,
   type TipPool,
 } from '../../lib/adminApi'
+import { Modal } from './Modal'
 import {
   MonthYearPicker,
   MultiSelectDropdown,
@@ -44,6 +47,7 @@ export function BonosTab({
 
   const [bonusForm, setBonusForm] = useState(EMPTY_BONUS_FORM)
   const [bonusError, setBonusError] = useState<string | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
 
   const [tipAmount, setTipAmount] = useState('')
   const [tipParticipants, setTipParticipants] = useState<Set<number>>(new Set())
@@ -95,6 +99,7 @@ export function BonosTab({
         concepto: bonusForm.concepto,
       })
       setBonusForm(EMPTY_BONUS_FORM)
+      setShowAddModal(false)
       reload()
     } catch {
       setBonusError(t('admin.saveError'))
@@ -234,72 +239,89 @@ export function BonosTab({
             )}
 
             {isOpen && (
-              <form
-                onSubmit={submitBonus}
-                className="mt-4 flex flex-wrap items-end gap-4 rounded-2xl border border-cream bg-white p-6"
-              >
-                <label className="block text-sm">
-                  <span className="mb-1 block font-semibold text-lavender-dark">
-                    {t('admin.employee')} *
-                  </span>
-                  <select
-                    required
-                    value={bonusForm.employeeId}
-                    onChange={(e) =>
-                      setBonusForm({ ...bonusForm, employeeId: e.target.value })
-                    }
-                    className="rounded-lg border border-cream px-3 py-2"
-                  >
-                    <option value="" disabled>
-                      --
-                    </option>
-                    {employees.map((employee) => (
-                      <option key={employee.employee_id} value={employee.employee_id}>
-                        {employee.nombre} {employee.apellido}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block text-sm">
-                  <span className="mb-1 block font-semibold text-lavender-dark">
-                    {t('admin.bonusAmount')} *
-                  </span>
-                  <input
-                    required
-                    type="number"
-                    min={1}
-                    value={bonusForm.montoCop}
-                    onChange={(e) =>
-                      setBonusForm({ ...bonusForm, montoCop: e.target.value })
-                    }
-                    className="w-40 rounded-lg border border-cream px-3 py-2"
-                  />
-                </label>
-                <label className="block text-sm">
-                  <span className="mb-1 block font-semibold text-lavender-dark">
-                    {t('admin.concept')} *
-                  </span>
-                  <input
-                    required
-                    value={bonusForm.concepto}
-                    onChange={(e) =>
-                      setBonusForm({ ...bonusForm, concepto: e.target.value })
-                    }
-                    className="rounded-lg border border-cream px-3 py-2"
-                  />
-                </label>
+              <div className="mt-4">
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={() => setShowAddModal(true)}
                   className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
                 >
                   {t('admin.addBonus')}
                 </button>
-                {bonusError && (
-                  <p className="w-full text-sm font-semibold text-coral-dark">
-                    {bonusError}
-                  </p>
-                )}
-              </form>
+              </div>
+            )}
+
+            {showAddModal && (
+              <Modal
+                title={t('admin.addBonusModalTitle')}
+                onClose={() => {
+                  setBonusError(null)
+                  setShowAddModal(false)
+                }}
+              >
+                <form onSubmit={submitBonus} className="flex flex-wrap items-end gap-4">
+                  <label className="block text-sm">
+                    <span className="mb-1 block font-semibold text-lavender-dark">
+                      {t('admin.employee')} *
+                    </span>
+                    <select
+                      required
+                      value={bonusForm.employeeId}
+                      onChange={(e) =>
+                        setBonusForm({ ...bonusForm, employeeId: e.target.value })
+                      }
+                      className="rounded-lg border border-cream px-3 py-2"
+                    >
+                      <option value="" disabled>
+                        --
+                      </option>
+                      {employees.map((employee) => (
+                        <option key={employee.employee_id} value={employee.employee_id}>
+                          {employee.nombre} {employee.apellido}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-sm">
+                    <span className="mb-1 block font-semibold text-lavender-dark">
+                      {t('admin.bonusAmount')} *
+                    </span>
+                    <input
+                      required
+                      type="number"
+                      min={1}
+                      value={bonusForm.montoCop}
+                      onChange={(e) =>
+                        setBonusForm({ ...bonusForm, montoCop: e.target.value })
+                      }
+                      className="w-40 rounded-lg border border-cream px-3 py-2"
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="mb-1 block font-semibold text-lavender-dark">
+                      {t('admin.concept')} *
+                    </span>
+                    <input
+                      required
+                      value={bonusForm.concepto}
+                      onChange={(e) =>
+                        setBonusForm({ ...bonusForm, concepto: e.target.value })
+                      }
+                      className="rounded-lg border border-cream px-3 py-2"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
+                  >
+                    {t('admin.addBonus')}
+                  </button>
+                  {bonusError && (
+                    <p className="w-full text-sm font-semibold text-coral-dark">
+                      {bonusError}
+                    </p>
+                  )}
+                </form>
+              </Modal>
             )}
 
             <table className="mt-6 w-full text-left text-sm">
@@ -330,9 +352,11 @@ export function BonosTab({
                           <button
                             type="button"
                             onClick={() => removeBonus(bonus.id)}
-                            className="text-coral-dark hover:underline"
+                            aria-label={t('admin.delete')}
+                            title={t('admin.delete')}
+                            className="text-coral-dark hover:text-coral"
                           >
-                            {t('admin.delete')}
+                            <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
                           </button>
                         )}
                       </td>

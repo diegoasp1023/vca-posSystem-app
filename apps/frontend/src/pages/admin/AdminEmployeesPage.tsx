@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { BackToPanelLink } from './BackToPanelLink'
 import { BonosTab } from './BonosTab'
 import { EmployeesTab } from './EmployeesTab'
 import { TurnosTab } from './TurnosTab'
@@ -19,12 +19,7 @@ export function AdminEmployeesPage() {
   return (
     <section className="px-6 py-16">
       <div className="mx-auto max-w-4xl">
-        <Link
-          to="/admin"
-          className="text-sm font-semibold text-lavender-dark hover:underline"
-        >
-          {t('admin.backToPanel')}
-        </Link>
+        <BackToPanelLink />
 
         <h1 className="mt-4 font-serif text-3xl text-lavender-dark">
           {t('admin.manageEmployees')}

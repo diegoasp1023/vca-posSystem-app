@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../context/AuthContext'
 import {
   createCourse,
@@ -14,6 +15,8 @@ import {
 } from '../../lib/adminApi'
 import type { CourseSummary } from '../../lib/api'
 import { Pagination } from '../../components/Pagination'
+import { BackToPanelLink } from './BackToPanelLink'
+import { Modal } from './Modal'
 
 const EMPTY_FORM: CourseWrite = {
   slug: '',
@@ -120,33 +123,36 @@ export function AdminCoursesPage() {
   return (
     <section className="px-6 py-16">
       <div className="mx-auto max-w-4xl">
-        <Link
-          to="/admin"
-          className="text-sm font-semibold text-lavender-dark hover:underline"
-        >
-          {t('admin.backToPanel')}
-        </Link>
+        <BackToPanelLink />
 
-        <div className="mt-4 flex items-center justify-between">
-          <h1 className="font-serif text-3xl text-lavender-dark">
-            {t('admin.manageCourses')}
-          </h1>
+        <div className="mt-4 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-serif text-3xl text-lavender-dark">
+              {t('admin.manageCourses')}
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">{t('admin.manageCoursesDesc')}</p>
+          </div>
           <button
             type="button"
             onClick={startCreate}
-            className="rounded-full bg-coral px-5 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
+            className="shrink-0 rounded-full bg-coral px-5 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
           >
             {t('admin.newCourse')}
           </button>
         </div>
 
         {editingId !== null && (
+          <Modal
+            title={editingId === 'new' ? t('admin.newCourse') : t('admin.editCourse')}
+            onClose={() => setEditingId(null)}
+            maxWidthClassName="max-w-3xl"
+          >
           <form
             onSubmit={(e) => {
               e.preventDefault()
               submit()
             }}
-            className="mt-6 space-y-6 rounded-2xl border border-cream bg-white p-6"
+            className="space-y-6"
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm">
@@ -365,6 +371,7 @@ export function AdminCoursesPage() {
               </button>
             </div>
           </form>
+          </Modal>
         )}
 
         {status === 'loading' && (
@@ -379,6 +386,7 @@ export function AdminCoursesPage() {
               <thead>
                 <tr className="border-b border-cream text-lavender">
                   <th className="py-2">{t('admin.fields.titleEs')}</th>
+                  <th className="py-2">{t('admin.fields.taglineEs')}</th>
                   <th className="py-2">{t('admin.fields.slug')}</th>
                   <th className="py-2" />
                 </tr>
@@ -387,21 +395,28 @@ export function AdminCoursesPage() {
                 {courses.map((course) => (
                   <tr key={course.id} className="border-b border-cream">
                     <td className="py-3">{course.title.es}</td>
+                    <td className="max-w-xs truncate py-3 text-gray-600">
+                      {course.tagline.es}
+                    </td>
                     <td className="py-3">{course.slug}</td>
-                    <td className="py-3 text-right">
+                    <td className="py-3 text-right whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => startEdit(course)}
-                        className="mr-4 text-lavender-dark hover:underline"
+                        aria-label={t('admin.edit')}
+                        title={t('admin.edit')}
+                        className="mr-3 text-lavender-dark hover:text-lavender"
                       >
-                        {t('admin.edit')}
+                        <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => remove(course.id)}
-                        className="text-coral-dark hover:underline"
+                        aria-label={t('admin.delete')}
+                        title={t('admin.delete')}
+                        className="text-coral-dark hover:text-coral"
                       >
-                        {t('admin.delete')}
+                        <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
                       </button>
                     </td>
                   </tr>

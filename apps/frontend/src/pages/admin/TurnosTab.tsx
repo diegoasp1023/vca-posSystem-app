@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../context/AuthContext'
 import {
   createShift,
@@ -10,6 +12,8 @@ import {
   type NominaItem,
 } from '../../lib/adminApi'
 import { formatDate } from '../../lib/format'
+import { DateField } from './DateField'
+import { Modal } from './Modal'
 import {
   MonthYearPicker,
   PeriodBanner,
@@ -174,6 +178,7 @@ function ShiftsListView({
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
   const [shiftForm, setShiftForm] = useState(EMPTY_SHIFT_FORM)
   const [formError, setFormError] = useState<string | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
 
   const {
     page: shiftsPage,
@@ -211,6 +216,7 @@ function ShiftsListView({
         hora_fin: shiftForm.hora_fin,
       })
       setShiftForm(EMPTY_SHIFT_FORM)
+      setShowAddModal(false)
       reload()
       onShiftsChanged()
     } catch {
@@ -252,82 +258,96 @@ function ShiftsListView({
       )}
 
       {employeeId !== null && isOpen && (
-        <form
-          onSubmit={submitShift}
-          className="mt-6 rounded-2xl border border-cream bg-white p-6"
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
+          >
+            {t('admin.addShift')}
+          </button>
+        </div>
+      )}
+
+      {showAddModal && (
+        <Modal
+          title={t('admin.addShiftModalTitle')}
+          onClose={() => {
+            setFormError(null)
+            setShowAddModal(false)
+          }}
         >
-          <div className="grid gap-4 sm:grid-cols-3">
-            <label className="block text-sm">
-              <span className="mb-1 block font-semibold text-lavender-dark">
-                {t('admin.fields.shiftDate')} *
-              </span>
-              <input
-                required
-                type="date"
-                value={shiftForm.fecha}
-                onChange={(e) =>
-                  setShiftForm({ ...shiftForm, fecha: e.target.value })
-                }
-                className="w-full rounded-lg border border-cream px-3 py-2"
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block font-semibold text-lavender-dark">
-                {t('admin.fields.startTime')} *
-              </span>
-              <select
-                required
-                value={shiftForm.hora_inicio}
-                onChange={(e) =>
-                  setShiftForm({ ...shiftForm, hora_inicio: e.target.value })
-                }
-                className="w-full rounded-lg border border-cream px-3 py-2"
-              >
-                <option value="" disabled>
-                  --:--
-                </option>
-                {HALF_HOUR_OPTIONS.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
+          <form onSubmit={submitShift}>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.shiftDate')} *
+                </span>
+                <DateField
+                  required
+                  value={shiftForm.fecha}
+                  onChange={(iso) => setShiftForm({ ...shiftForm, fecha: iso })}
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.startTime')} *
+                </span>
+                <select
+                  required
+                  value={shiftForm.hora_inicio}
+                  onChange={(e) =>
+                    setShiftForm({ ...shiftForm, hora_inicio: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                >
+                  <option value="" disabled>
+                    --:--
                   </option>
-                ))}
-              </select>
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block font-semibold text-lavender-dark">
-                {t('admin.fields.endTime')} *
-              </span>
-              <select
-                required
-                value={shiftForm.hora_fin}
-                onChange={(e) =>
-                  setShiftForm({ ...shiftForm, hora_fin: e.target.value })
-                }
-                className="w-full rounded-lg border border-cream px-3 py-2"
-              >
-                <option value="" disabled>
-                  --:--
-                </option>
-                {HALF_HOUR_OPTIONS.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
+                  {HALF_HOUR_OPTIONS.map((time) => (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.fields.endTime')} *
+                </span>
+                <select
+                  required
+                  value={shiftForm.hora_fin}
+                  onChange={(e) =>
+                    setShiftForm({ ...shiftForm, hora_fin: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-cream px-3 py-2"
+                >
+                  <option value="" disabled>
+                    --:--
                   </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <div className="mt-4 flex items-center gap-4">
-            <button
-              type="submit"
-              className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
-            >
-              {t('admin.addShift')}
-            </button>
-            {formError && (
-              <p className="text-sm font-semibold text-coral-dark">{formError}</p>
-            )}
-          </div>
-        </form>
+                  {HALF_HOUR_OPTIONS.map((time) => (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="mt-4 flex items-center gap-4">
+              <button
+                type="submit"
+                className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
+              >
+                {t('admin.addShift')}
+              </button>
+              {formError && (
+                <p className="text-sm font-semibold text-coral-dark">{formError}</p>
+              )}
+            </div>
+          </form>
+        </Modal>
       )}
 
       {status === 'loading' && (
@@ -364,9 +384,11 @@ function ShiftsListView({
                       <button
                         type="button"
                         onClick={() => removeShift(shift.id)}
-                        className="text-coral-dark hover:underline"
+                        aria-label={t('admin.delete')}
+                        title={t('admin.delete')}
+                        className="text-coral-dark hover:text-coral"
                       >
-                        {t('admin.delete')}
+                        <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
                       </button>
                     )}
                   </td>
