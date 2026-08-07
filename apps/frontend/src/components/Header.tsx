@@ -14,7 +14,7 @@ const navLinks = [
 
 export function Header() {
   const { t, i18n } = useTranslation()
-  const { initialized, authenticated, openAdmin } = useAuth()
+  const { initialized, openAdmin } = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   const toggleLanguage = () => {
@@ -56,7 +56,7 @@ export function Header() {
             disabled={!initialized}
             className="hidden rounded-full bg-coral px-5 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark disabled:opacity-50 sm:block"
           >
-            {authenticated ? t('header.admin') : t('header.login')}
+            {t('header.login')}
           </button>
 
           <button
@@ -101,7 +101,7 @@ export function Header() {
             disabled={!initialized}
             className="mt-2 rounded-full bg-coral px-5 py-2 text-center text-sm font-semibold text-white transition hover:bg-coral-dark disabled:opacity-50 sm:hidden"
           >
-            {authenticated ? t('header.admin') : t('header.login')}
+            {t('header.login')}
           </button>
 
           <SocialIcons className="mt-2 px-2 sm:hidden" />
