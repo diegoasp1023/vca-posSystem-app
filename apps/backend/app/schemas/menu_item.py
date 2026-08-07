@@ -31,7 +31,6 @@ class MenuItemWrite(BaseModel):
     description_es: str | None = Field(default=None, max_length=500)
     description_en: str | None = Field(default=None, max_length=500)
     price_cop: int | None = Field(default=None, gt=0)
-    image_url: str | None = Field(default=None, max_length=500)
     is_active: bool = True
 
 
@@ -42,7 +41,6 @@ class MenuItemOut(BaseModel):
     name: LocalizedText
     description: LocalizedText | None
     price_cop: int | None
-    image_url: str | None
     is_active: bool
 
     @classmethod
@@ -59,6 +57,5 @@ class MenuItemOut(BaseModel):
                 else None
             ),
             price_cop=item.price_cop,
-            image_url=item.image_url,
             is_active=item.is_active,
         )

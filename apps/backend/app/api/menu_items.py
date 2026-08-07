@@ -5,18 +5,31 @@ from sqlalchemy.orm import selectinload
 
 from app.core.auth import require_admin
 from app.core.database import get_db
-from app.core.uploads import delete_uploaded_file
 from app.models.menu_item import MenuCategory, MenuItem
 from app.schemas.common import Page
 from app.schemas.menu_item import MenuItemOut, MenuItemWrite
 
-router = APIRouter(prefix="/api/menu-items", tags=["menu-items"], dependencies=[Depends(require_admin)])
+router = APIRouter(prefix="/api/menu-items", tags=["menu-items"])
 
 PAGE_SIZE = 10
 
 
-@router.get("", response_model=Page[MenuItemOut])
-async def list_menu_items(
+@router.get("", response_model=list[MenuItemOut])
+async def list_menu_items(db: AsyncSession = Depends(get_db)) -> list[MenuItemOut]:
+    result = await db.execute(
+        select(MenuItem)
+        .where(MenuItem.is_active.is_(True))
+        .options(selectinload(MenuItem.category))
+        .join(MenuCategory)
+        .order_by(MenuCategory.sort_order, MenuItem.name_es)
+    )
+    return [MenuItemOut.from_model(i) for i in result.scalars().all()]
+
+
+@router.get(
+    "/admin", response_model=Page[MenuItemOut], dependencies=[Depends(require_admin)]
+)
+async def list_menu_items_admin(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=PAGE_SIZE, ge=1, le=50),
     category_id: int | None = Query(default=None),
@@ -53,7 +66,9 @@ async def _get_category_or_400(db: AsyncSession, category_id: int) -> MenuCatego
     return category
 
 
-@router.post("", response_model=MenuItemOut, status_code=201)
+@router.post(
+    "", response_model=MenuItemOut, status_code=201, dependencies=[Depends(require_admin)]
+)
 async def create_menu_item(body: MenuItemWrite, db: AsyncSession = Depends(get_db)) -> MenuItemOut:
     await _get_category_or_400(db, body.category_id)
 
@@ -64,7 +79,9 @@ async def create_menu_item(body: MenuItemWrite, db: AsyncSession = Depends(get_d
     return MenuItemOut.from_model(item)
 
 
-@router.put("/{item_id}", response_model=MenuItemOut)
+@router.put(
+    "/{item_id}", response_model=MenuItemOut, dependencies=[Depends(require_admin)]
+)
 async def update_menu_item(
     item_id: int, body: MenuItemWrite, db: AsyncSession = Depends(get_db)
 ) -> MenuItemOut:
@@ -74,23 +91,18 @@ async def update_menu_item(
 
     await _get_category_or_400(db, body.category_id)
 
-    previous_image_url = item.image_url
     for field, value in body.model_dump().items():
         setattr(item, field, value)
 
     await db.commit()
-    if body.image_url != previous_image_url:
-        delete_uploaded_file(previous_image_url)
     await db.refresh(item, attribute_names=["category"])
     return MenuItemOut.from_model(item)
 
 
-@router.delete("/{item_id}", status_code=204)
+@router.delete("/{item_id}", status_code=204, dependencies=[Depends(require_admin)])
 async def delete_menu_item(item_id: int, db: AsyncSession = Depends(get_db)) -> None:
     item = await db.get(MenuItem, item_id)
     if item is None:
         raise HTTPException(status_code=404, detail="Menu item not found")
-    image_url = item.image_url
     await db.delete(item)
     await db.commit()
-    delete_uploaded_file(image_url)

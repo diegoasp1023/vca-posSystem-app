@@ -3,7 +3,6 @@ import os
 from app.core.config import settings
 
 COURSE_IMAGES_SUBDIR = "courses"
-MENU_ITEM_IMAGES_SUBDIR = "menu-items"
 UPLOAD_URL_PREFIX = "/uploads/"
 
 

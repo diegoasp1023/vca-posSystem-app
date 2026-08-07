@@ -193,7 +193,6 @@ export interface MenuItemWrite {
   description_es: string | null
   description_en: string | null
   price_cop: number | null
-  image_url: string | null
   is_active: boolean
 }
 
@@ -204,7 +203,7 @@ export function fetchAdminMenuItems(
 ) {
   const query = new URLSearchParams({ page: String(page) })
   if (categoryId !== undefined) query.set('category_id', String(categoryId))
-  return adminFetch<Page<MenuItem>>(`/api/menu-items?${query}`, token)
+  return adminFetch<Page<MenuItem>>(`/api/menu-items/admin?${query}`, token)
 }
 
 export function createMenuItem(token: string | undefined, body: MenuItemWrite) {
@@ -223,15 +222,6 @@ export function updateMenuItem(token: string | undefined, id: number, body: Menu
 
 export function deleteMenuItem(token: string | undefined, id: number) {
   return adminFetch<void>(`/api/menu-items/${id}`, token, { method: 'DELETE' })
-}
-
-export function uploadMenuItemImage(token: string | undefined, file: File) {
-  const formData = new FormData()
-  formData.append('file', file)
-  return adminFetch<{ url: string }>('/api/uploads/menu-item-images', token, {
-    method: 'POST',
-    body: formData,
-  })
 }
 
 export type TipoDocumento = 'CC' | 'TI' | 'RC' | 'CE' | 'PA'

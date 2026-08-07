@@ -46,12 +46,3 @@ async def _save_image_upload(subdir: str, file: UploadFile) -> UploadOut:
 )
 async def upload_course_image(file: UploadFile = File(...)) -> UploadOut:
     return await _save_image_upload("courses", file)
-
-
-@router.post(
-    "/menu-item-images",
-    response_model=UploadOut,
-    dependencies=[Depends(require_admin)],
-)
-async def upload_menu_item_image(file: UploadFile = File(...)) -> UploadOut:
-    return await _save_image_upload("menu-items", file)

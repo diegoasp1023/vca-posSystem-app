@@ -4,15 +4,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../context/AuthContext'
 import {
-  AdminApiError,
   createMenuItem,
   deleteMenuItem,
   fetchAdminMenuItems,
   updateMenuItem,
-  uploadMenuItemImage,
   type MenuItemWrite,
 } from '../../lib/adminApi'
-import { getMenuItemImageUrl, type MenuCategory, type MenuItem } from '../../lib/api'
+import type { MenuCategory, MenuItem } from '../../lib/api'
 import { Pagination } from '../../components/Pagination'
 import { Modal } from './Modal'
 
@@ -23,7 +21,6 @@ type MenuItemFormState = {
   description_es: string
   description_en: string
   price_cop: number | ''
-  image_url: string | null
   is_active: boolean
 }
 
@@ -34,7 +31,6 @@ const EMPTY_FORM: MenuItemFormState = {
   description_es: '',
   description_en: '',
   price_cop: '',
-  image_url: null,
   is_active: true,
 }
 
@@ -50,7 +46,6 @@ export function MenuItemsTab({ categories }: { categories: MenuCategory[] }) {
   const [form, setForm] = useState<MenuItemFormState>(EMPTY_FORM)
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
   const [formError, setFormError] = useState<string | null>(null)
-  const [uploadingImage, setUploadingImage] = useState(false)
 
   const reload = useCallback(() => {
     setStatus('loading')
@@ -82,28 +77,10 @@ export function MenuItemsTab({ categories }: { categories: MenuCategory[] }) {
       description_es: item.description?.es ?? '',
       description_en: item.description?.en ?? '',
       price_cop: item.price_cop ?? '',
-      image_url: item.image_url,
       is_active: item.is_active,
     })
     setFormError(null)
     setEditingId(item.id)
-  }
-
-  const handleImageSelected = async (file: File | undefined) => {
-    if (!file) return
-    setFormError(null)
-    setUploadingImage(true)
-    try {
-      const token = await getToken()
-      const { url } = await uploadMenuItemImage(token, file)
-      setForm((current) => ({ ...current, image_url: url }))
-    } catch (error) {
-      setFormError(
-        error instanceof AdminApiError ? (error.detail ?? error.message) : String(error),
-      )
-    } finally {
-      setUploadingImage(false)
-    }
   }
 
   const submit = async () => {
@@ -120,7 +97,6 @@ export function MenuItemsTab({ categories }: { categories: MenuCategory[] }) {
       description_es: form.description_es.trim() === '' ? null : form.description_es,
       description_en: form.description_en.trim() === '' ? null : form.description_en,
       price_cop: form.price_cop === '' ? null : Number(form.price_cop),
-      image_url: form.image_url,
       is_active: form.is_active,
     }
 
@@ -279,29 +255,6 @@ export function MenuItemsTab({ categories }: { categories: MenuCategory[] }) {
               </label>
             </div>
 
-            <div className="block text-sm">
-              <span className="mb-1 block font-semibold text-lavender-dark">
-                {t('admin.fields.image')}
-              </span>
-              <div className="flex items-center gap-4">
-                <img
-                  src={getMenuItemImageUrl({ image_url: form.image_url })}
-                  alt=""
-                  className="h-16 w-16 rounded-lg border border-cream object-cover"
-                />
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  disabled={uploadingImage}
-                  onChange={(e) => handleImageSelected(e.target.files?.[0])}
-                  className="text-sm text-lavender-dark file:mr-3 file:rounded-full file:border-0 file:bg-coral file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white file:transition hover:file:bg-coral-dark disabled:opacity-50"
-                />
-              </div>
-              <p className="mt-1 text-xs text-lavender-dark/70">
-                {uploadingImage ? t('admin.fields.imageUploading') : t('admin.fields.imageHint')}
-              </p>
-            </div>
-
             {formError && (
               <p className="text-sm font-semibold text-coral-dark">{formError}</p>
             )}
@@ -309,8 +262,7 @@ export function MenuItemsTab({ categories }: { categories: MenuCategory[] }) {
             <div className="flex gap-3">
               <button
                 type="submit"
-                disabled={uploadingImage}
-                className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark disabled:opacity-50"
+                className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
               >
                 {t('admin.save')}
               </button>
