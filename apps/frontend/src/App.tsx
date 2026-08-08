@@ -8,12 +8,14 @@ import { ContactPage } from './pages/ContactPage'
 import { CoursePage } from './pages/CoursePage'
 import { ProtectedRoute } from './pages/admin/ProtectedRoute'
 import { RequireAdmin } from './pages/admin/RequireAdmin'
+import { RequireGerente } from './pages/admin/RequireGerente'
 import { AdminLayout } from './pages/admin/AdminLayout'
 import { AdminHomePage } from './pages/admin/AdminHomePage'
 import { AdminProductsPage } from './pages/admin/AdminProductsPage'
 import { AdminCoursesPage } from './pages/admin/AdminCoursesPage'
 import { AdminEmployeesPage } from './pages/admin/AdminEmployeesPage'
 import { AdminMenuPage } from './pages/admin/AdminMenuPage'
+import { AdminTabsPage } from './pages/admin/AdminTabsPage'
 
 function App() {
   return (
@@ -37,6 +39,9 @@ function App() {
                 <Route path="cursos" element={<AdminCoursesPage />} />
                 <Route path="menu" element={<AdminMenuPage />} />
                 <Route path="personal" element={<AdminEmployeesPage />} />
+              </Route>
+              <Route element={<RequireGerente />}>
+                <Route path="cuentas" element={<AdminTabsPage />} />
               </Route>
             </Route>
           </Route>
