@@ -143,14 +143,23 @@ Detalle y comandos equivalentes por servicio en
 
 ## Staging / Producción
 
-- El frontend se sirve como build estático vía `nginx`, construido por
+En estos ambientes tanto el backend como el frontend corren dockerizados vía
+`infra/docker-compose.yml` (perfiles `staging`/`prod`); solo Postgres y
+Keycloak quedan fuera del compose (ver más abajo).
+
+- **Backend**: se construye desde `apps/backend/Dockerfile`. Al arrancar el
+  contenedor corre `alembic upgrade head` y luego levanta `uvicorn` en el
+  puerto `8000` (expuesto en el host vía `${BACKEND_PORT}`). Sube archivos a
+  `UPLOAD_DIR=/data/uploads`, persistido en el volumen nombrado
+  `backend-uploads`.
+- **Frontend**: se sirve como build estático vía `nginx`, construido por
   Docker (`apps/frontend/Dockerfile`, multi-stage). Las variables `VITE_*`
   se compilan en build time — no se puede promover la misma imagen de
   staging a prod sin rebuildear.
 
   ```bash
-  docker compose -f infra/docker-compose.yml --env-file .env.staging --profile staging up -d frontend
-  docker compose -f infra/docker-compose.yml --env-file .env.prod --profile prod up -d frontend
+  docker compose -f infra/docker-compose.yml --env-file .env.staging --profile staging up -d --build backend frontend
+  docker compose -f infra/docker-compose.yml --env-file .env.prod --profile prod up -d --build backend frontend
   ```
 
 - Keycloak arranca con `KC_COMMAND=start --optimized` (nunca `start-dev`) en
