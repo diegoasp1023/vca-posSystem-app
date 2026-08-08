@@ -18,6 +18,7 @@ from app.models.course import (
 )
 from app.models.menu_item import MenuCategory, MenuItem
 from app.models.product import Presentation, Product
+from app.models.tab import TabPaymentMethod
 
 PAYMENT_METHODS = [
     {
@@ -31,6 +32,14 @@ PAYMENT_METHODS = [
         "name_es": "Pago 100% por adelantado al inscribirte",
         "name_en": "100% payment required upon enrollment",
     },
+]
+
+TAB_PAYMENT_METHODS = [
+    {"name_es": "Efectivo", "name_en": "Cash"},
+    {"name_es": "Tarjeta de crédito o débito", "name_en": "Credit or debit card"},
+    {"name_es": "Nequi", "name_en": "Nequi"},
+    {"name_es": "Daviplata", "name_en": "Daviplata"},
+    {"name_es": "Transferencia", "name_en": "Bank transfer"},
 ]
 
 PRESENTATIONS = [
@@ -626,9 +635,24 @@ async def _seed_menu() -> None:
         print(f"Seed complete: {len(MENU_CATEGORIES)} menu categories, {len(MENU_ITEMS)} menu items.")
 
 
+async def _seed_tab_payment_methods() -> None:
+    async with async_session_factory() as session:
+        existing = await session.scalar(select(TabPaymentMethod.id).limit(1))
+        if existing is not None:
+            print("Seed skipped: tab payment methods already exist.")
+            return
+
+        for i, method_data in enumerate(TAB_PAYMENT_METHODS):
+            session.add(TabPaymentMethod(**method_data, sort_order=i))
+
+        await session.commit()
+        print(f"Seed complete: {len(TAB_PAYMENT_METHODS)} tab payment methods.")
+
+
 async def seed() -> None:
     await _seed_products_and_courses()
     await _seed_menu()
+    await _seed_tab_payment_methods()
 
 
 if __name__ == "__main__":
