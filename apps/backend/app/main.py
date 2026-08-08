@@ -16,6 +16,8 @@ from app.api import (
     payroll,
     products,
     shifts,
+    tab_payment_methods,
+    tabs,
     uploads,
 )
 from app.core.config import settings
@@ -54,6 +56,8 @@ app.include_router(payroll.router)
 app.include_router(uploads.router)
 app.include_router(menu_categories.router)
 app.include_router(menu_items.router)
+app.include_router(tabs.router)
+app.include_router(tab_payment_methods.router)
 
 
 @app.get("/api/health")

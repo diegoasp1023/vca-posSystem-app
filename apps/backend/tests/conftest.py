@@ -6,7 +6,12 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from app.core.auth import AuthenticatedUser, require_admin
+from app.core.auth import (
+    AuthenticatedUser,
+    get_current_user,
+    require_admin,
+    require_gerente_or_admin,
+)
 from app.core.config import settings
 from app.core.database import Base, get_db
 from app.main import app
@@ -14,6 +19,7 @@ from app.models.course import Course, CourseContentModule, CourseCost, CourseObj
 from app.models.employee import Employee
 from app.models.menu_item import MenuCategory, MenuItem
 from app.models.product import Presentation, Product
+from app.models.tab import Tab, TabItem, TabPaymentMethod
 
 
 @pytest.fixture(autouse=True)
@@ -56,13 +62,38 @@ async def client(db_session) -> AsyncGenerator[AsyncClient]:
 
 @pytest.fixture
 async def admin_client(db_session) -> AsyncGenerator[AsyncClient]:
-    app.dependency_overrides[require_admin] = lambda: AuthenticatedUser(
+    admin_user = AuthenticatedUser(
         subject="test-admin", username="admin@example.com", roles=["Administrador"]
     )
+    app.dependency_overrides[require_admin] = lambda: admin_user
+    app.dependency_overrides[require_gerente_or_admin] = lambda: admin_user
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     del app.dependency_overrides[require_admin]
+    del app.dependency_overrides[require_gerente_or_admin]
+
+
+@pytest.fixture
+async def gerente_client(db_session) -> AsyncGenerator[AsyncClient]:
+    app.dependency_overrides[get_current_user] = lambda: AuthenticatedUser(
+        subject="test-gerente", username="gerente@example.com", roles=["Gerente"]
+    )
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+    del app.dependency_overrides[get_current_user]
+
+
+@pytest.fixture
+async def employee_client(db_session) -> AsyncGenerator[AsyncClient]:
+    app.dependency_overrides[get_current_user] = lambda: AuthenticatedUser(
+        subject="test-employee", username="empleado@example.com", roles=["Empleado"]
+    )
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+    del app.dependency_overrides[get_current_user]
 
 
 async def make_product(session, **overrides) -> Product:
@@ -166,6 +197,42 @@ async def make_menu_item(session, category=None, **overrides) -> MenuItem:
     }
     defaults.update(overrides)
     item = MenuItem(**defaults)
+    session.add(item)
+    await session.commit()
+    return item
+
+
+async def make_tab_payment_method(session, **overrides) -> TabPaymentMethod:
+    defaults = {"name_es": "Efectivo", "name_en": "Cash", "is_active": True, "sort_order": 0}
+    defaults.update(overrides)
+    method = TabPaymentMethod(**defaults)
+    session.add(method)
+    await session.commit()
+    return method
+
+
+async def make_tab(session, **overrides) -> Tab:
+    defaults = {"table_number": None, "reference_note": None, "status": "open"}
+    defaults.update(overrides)
+    tab = Tab(**defaults)
+    session.add(tab)
+    await session.commit()
+    return tab
+
+
+async def make_tab_item(session, tab, **overrides) -> TabItem:
+    defaults = {
+        "tab_id": tab.id,
+        "source_type": "menu_item",
+        "menu_item_id": None,
+        "product_id": None,
+        "name_es": "Café Latte 9 Oz",
+        "name_en": "Café Latte 9 oz",
+        "unit_price_cop": 9900,
+        "quantity": 1,
+    }
+    defaults.update(overrides)
+    item = TabItem(**defaults)
     session.add(item)
     await session.commit()
     return item

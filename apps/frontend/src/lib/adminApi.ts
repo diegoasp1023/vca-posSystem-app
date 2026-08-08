@@ -1,4 +1,12 @@
-import type { CourseDetail, CourseSummary, MenuCategory, MenuItem, Page, Product } from './api'
+import type {
+  CourseDetail,
+  CourseSummary,
+  LocalizedText,
+  MenuCategory,
+  MenuItem,
+  Page,
+  Product,
+} from './api'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string
 
@@ -481,4 +489,135 @@ export function fetchPayrollSummary(
     `/api/payroll/summary?year=${year}&month=${month}`,
     token,
   )
+}
+
+export interface TabPaymentMethodWrite {
+  name_es: string
+  name_en: string
+  is_active: boolean
+  sort_order: number
+}
+
+export interface TabPaymentMethod {
+  id: number
+  name: LocalizedText
+  is_active: boolean
+  sort_order: number
+}
+
+export function fetchTabPaymentMethods(token: string | undefined) {
+  return adminFetch<TabPaymentMethod[]>('/api/tab-payment-methods', token)
+}
+
+export function createTabPaymentMethod(token: string | undefined, body: TabPaymentMethodWrite) {
+  return adminFetch<TabPaymentMethod>('/api/tab-payment-methods', token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateTabPaymentMethod(
+  token: string | undefined,
+  id: number,
+  body: TabPaymentMethodWrite,
+) {
+  return adminFetch<TabPaymentMethod>(`/api/tab-payment-methods/${id}`, token, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+}
+
+export function deleteTabPaymentMethod(token: string | undefined, id: number) {
+  return adminFetch<void>(`/api/tab-payment-methods/${id}`, token, { method: 'DELETE' })
+}
+
+export type TabStatus = 'open' | 'paid'
+export type TabSourceType = 'menu_item' | 'product'
+
+export interface TabItem {
+  id: number
+  source_type: TabSourceType
+  menu_item_id: number | null
+  product_id: number | null
+  name: LocalizedText
+  unit_price_cop: number
+  quantity: number
+  subtotal_cop: number
+}
+
+export interface Tab {
+  id: number
+  table_number: string | null
+  reference_note: string | null
+  status: TabStatus
+  payment_method: TabPaymentMethod | null
+  opened_at: string
+  paid_at: string | null
+  items: TabItem[]
+  total_cop: number
+}
+
+export interface TabCreate {
+  table_number: string | null
+  reference_note: string | null
+}
+
+export function fetchTabs(token: string | undefined) {
+  return adminFetch<Tab[]>('/api/tabs', token)
+}
+
+export function createTab(token: string | undefined, body: TabCreate) {
+  return adminFetch<Tab>('/api/tabs', token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateTab(token: string | undefined, id: number, body: TabCreate) {
+  return adminFetch<Tab>(`/api/tabs/${id}`, token, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+}
+
+export function deleteTab(token: string | undefined, id: number) {
+  return adminFetch<void>(`/api/tabs/${id}`, token, { method: 'DELETE' })
+}
+
+export function addTabItem(
+  token: string | undefined,
+  tabId: number,
+  body: { source_type: TabSourceType; source_id: number; quantity: number },
+) {
+  return adminFetch<Tab>(`/api/tabs/${tabId}/items`, token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateTabItem(
+  token: string | undefined,
+  tabId: number,
+  itemId: number,
+  quantity: number,
+) {
+  return adminFetch<Tab>(`/api/tabs/${tabId}/items/${itemId}`, token, {
+    method: 'PATCH',
+    body: JSON.stringify({ quantity }),
+  })
+}
+
+export function removeTabItem(token: string | undefined, tabId: number, itemId: number) {
+  return adminFetch<Tab>(`/api/tabs/${tabId}/items/${itemId}`, token, { method: 'DELETE' })
+}
+
+export function payTab(token: string | undefined, tabId: number, paymentMethodId: number) {
+  return adminFetch<Tab>(`/api/tabs/${tabId}/pay`, token, {
+    method: 'POST',
+    body: JSON.stringify({ payment_method_id: paymentMethodId }),
+  })
+}
+
+export function reopenTab(token: string | undefined, tabId: number) {
+  return adminFetch<Tab>(`/api/tabs/${tabId}/reopen`, token, { method: 'POST' })
 }
