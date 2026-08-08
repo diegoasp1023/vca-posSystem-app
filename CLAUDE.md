@@ -137,6 +137,8 @@ Cuando se pida corregir un bug, hacer un ajuste o implementar algo puntual:
 5. Si a mitad de la tarea surge la necesidad de un cambio no relacionado al
    ajuste original, avisar y sugerir manejarlo en una rama/PR aparte en vez de
    mezclarlo.
+6. No crear specs de una vez al desarrollo, y no usar el mcp de claude-chrome
+   para ver el frontend yo lo verificare.
 
 ---
 
