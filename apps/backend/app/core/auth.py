@@ -58,3 +58,14 @@ def require_admin(
             detail="Administrador role required",
         )
     return user
+
+
+def require_gerente_or_admin(
+    user: AuthenticatedUser = Depends(get_current_user),
+) -> AuthenticatedUser:
+    if not (user.has_role("Gerente") or user.has_role("Administrador")):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Gerente or Administrador role required",
+        )
+    return user
