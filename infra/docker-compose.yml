@@ -1,4 +1,28 @@
 services:
+  postgres:
+    image: postgres:16.14
+    container_name: postgres-${APP_ENV}
+    profiles:
+      - dev
+    environment:
+      POSTGRES_USER: ${DB_ROOT_USER}
+      POSTGRES_PASSWORD: ${DB_ROOT_PASSWORD}
+      POSTGRES_DB: postgres
+      APP_DB_NAME: ${APP_DB_NAME}
+      APP_DB_USERNAME: ${APP_DB_USERNAME}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+      KC_DB_NAME: ${KC_DB_NAME}
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      - vca-net
+
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak-${APP_ENV}
@@ -20,6 +44,53 @@ services:
     networks:
       - vca-net
 
+  backend:
+    build:
+      context: ../apps/backend
+    container_name: backend-${APP_ENV}
+    profiles:
+      - staging
+      - prod
+    environment:
+      APP_DB_HOST: ${APP_DB_HOST}
+      APP_DB_NAME: ${APP_DB_NAME}
+      APP_DB_USERNAME: ${APP_DB_USERNAME}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+      KC_HOSTNAME: ${KC_HOSTNAME}
+      KC_PORT: ${KC_PORT}
+      KC_REALM: ${KC_REALM}
+      CORS_ORIGINS: ${BACKEND_CORS_ORIGINS}
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - backend-uploads:/data/uploads
+    ports:
+      - "${BACKEND_PORT}:8000"
+    restart: unless-stopped
+    networks:
+      - vca-net
+
+  frontend:
+    build:
+      context: ../apps/frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL}
+        VITE_KEYCLOAK_REALM: ${VITE_KEYCLOAK_REALM}
+        VITE_KEYCLOAK_CLIENT_ID: ${VITE_KEYCLOAK_CLIENT_ID}
+    container_name: frontend-${APP_ENV}
+    profiles:
+      - staging
+      - prod
+    ports:
+      - "${FRONTEND_PORT}:80"
+    restart: unless-stopped
+    networks:
+      - vca-net
+
 networks:
   vca-net:
     driver: bridge
+
+volumes:
+  postgres-data:
+  backend-uploads:
