@@ -40,6 +40,8 @@ services:
       KC_HTTP_ENABLED: "true"
     ports:
       - "${KC_PORT}:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     networks:
       - vca-net
@@ -65,6 +67,8 @@ services:
       - backend-uploads:/data/uploads
     ports:
       - "${BACKEND_PORT}:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     networks:
       - vca-net
