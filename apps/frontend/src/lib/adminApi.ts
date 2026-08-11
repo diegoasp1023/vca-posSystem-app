@@ -62,6 +62,33 @@ export function fetchPaymentMethods(): Promise<Lookup[]> {
   return adminFetch('/api/payment-methods', undefined)
 }
 
+export interface PresentationWrite {
+  name_es: string
+  name_en: string
+}
+
+export function createPresentation(token: string | undefined, body: PresentationWrite) {
+  return adminFetch<Lookup>('/api/presentations', token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function updatePresentation(
+  token: string | undefined,
+  id: number,
+  body: PresentationWrite,
+) {
+  return adminFetch<Lookup>(`/api/presentations/${id}`, token, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+}
+
+export function deletePresentation(token: string | undefined, id: number) {
+  return adminFetch<void>(`/api/presentations/${id}`, token, { method: 'DELETE' })
+}
+
 export interface ProductWrite {
   name_es: string
   name_en: string
