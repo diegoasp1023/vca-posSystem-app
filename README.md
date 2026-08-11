@@ -18,7 +18,7 @@ reglas completas de arquitectura y flujo de trabajo de este repo.
 
 - [Docker](https://docs.docker.com/get-docker/) y Docker Compose (para Postgres y Keycloak en dev).
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) (backend).
-- [Node.js](https://nodejs.org/) 20+ y npm (frontend).
+- [Node.js](https://nodejs.org/) 20+ y [pnpm](https://pnpm.io/installation) (frontend).
 
 ## Desplegar en dev (paso a paso)
 
@@ -83,8 +83,8 @@ script — no queda guardada en ningún archivo.
 
 ```bash
 cd apps/frontend
-npm install
-npm run dev      # http://localhost:5173
+pnpm install
+pnpm dev      # http://localhost:5173
 ```
 
 ### Resultado
@@ -101,7 +101,7 @@ Más detalle por app: [`apps/backend/README.md`](apps/backend/README.md),
 
 ## Bajar recursos y limpiar (dev)
 
-Backend (`fastapi dev`) y frontend (`npm run dev`) se detienen con `Ctrl+C`
+Backend (`fastapi dev`) y frontend (`pnpm dev`) se detienen con `Ctrl+C`
 en su propia terminal.
 
 Si en cambio quedaron corriendo en background (por ejemplo, se lanzaron con
