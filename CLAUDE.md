@@ -12,7 +12,7 @@ Sistema de punto de venta (POS) para Valiente Café, compuesto por:
 - `apps/frontend` — Landing pública + panel de administración (React + Vite + TypeScript)
 - `keycloak/` — Configuración de Keycloak (IAM / seguridad)
 - `infra/` — Docker Compose, configuración de despliegue
-- `docs/` — Documentación del proyecto (`docs/database.md` es la referencia completa de las bases de datos)
+- `docs/` — Documentación del proyecto; empieza en `docs/README.md`. `docs/deployment.md` es la guía paso a paso de despliegue (dev/staging/prod), `docs/database.md` la referencia de bases de datos, `docs/keycloak.md` la de Keycloak y `docs/security.md` la de seguridad operativa.
 
 La seguridad (autenticación/autorización) se maneja con **Keycloak**, no se implementa login propio en el backend ni en el frontend.
 
@@ -50,19 +50,22 @@ Necesita el backend corriendo (`http://localhost:8000`) para mostrar cafés/curs
 
 ### Base de datos y Keycloak (dev)
 
-```bash
-# Levantar solo Postgres (dev)
-docker compose -f infra/docker-compose.yml --env-file .env.dev --profile dev up -d postgres
+Postgres y Keycloak viven en dos archivos de compose distintos (ver sección
+"Docker Compose" más abajo), siempre en ese orden:
 
-# Levantar Postgres + Keycloak
-docker compose -f infra/docker-compose.yml --env-file .env.dev --profile dev up -d
+```bash
+# 1. Postgres (crea la red vca-net)
+docker compose -f infra/docker-compose.db.yml --env-file .env.dev up -d
+
+# 2. Keycloak
+docker compose -f infra/docker-compose.yml --env-file .env.dev up -d
 
 # Provisionar realm/clients/roles de Keycloak (una vez, idempotente)
 cd apps/backend
 uv run python scripts/setup_keycloak.py --with-test-user
 ```
 
-Ver `docs/database.md` para el detalle completo (cómo se crean las dos bases dentro del mismo contenedor, requisitos de `.env.dev`, verificación, etc.) y `keycloak/README.md` para Keycloak.
+Ver `docs/database.md` para el detalle completo (cómo se crean las dos bases dentro del mismo contenedor, requisitos de `.env.dev`, verificación, etc.), `docs/keycloak.md` para Keycloak y `docs/deployment.md` para el paso a paso completo de los tres ambientes.
 
 ---
 
@@ -93,7 +96,7 @@ React 19 + Vite + TypeScript + Tailwind CSS 4, routing con `react-router-dom`.
 
 ### Ambientes y despliegue
 
-- `dev`: backend y frontend corren locales (`uv`/`pnpm`); solo Postgres (+ opcionalmente Keycloak) corren en Docker, bajo el profile `dev`.
+- `dev`: backend y frontend corren locales (`uv`/`pnpm`); Postgres (`infra/docker-compose.db.yml`) y Keycloak (`infra/docker-compose.yml`, sin profile) corren en Docker.
 - `staging`/`prod`: el frontend se sirve como build estático vía `nginx` (`apps/frontend/Dockerfile`, multi-stage); las variables `VITE_*` se compilan en build time (build ARG), así que **no se puede promover la misma imagen de staging a prod** sin rebuildear.
 - Keycloak arranca con `KC_COMMAND=start-dev` en dev y `start --optimized` en staging/prod — nunca intercambiar estos modos entre ambientes.
 
@@ -163,10 +166,13 @@ Cuando se pida corregir un bug, hacer un ajuste o implementar algo puntual:
 
 ## Docker Compose
 
-- El archivo principal vive en `infra/docker-compose.yml` y funciona para los 3 ambientes vía `--env-file` (`.env.dev`, `.env.staging`, `.env.prod`) más el `--profile` correspondiente (`dev`, `staging`, `prod`).
+- Dos archivos, separados por responsabilidad (no por ambiente):
+  - `infra/docker-compose.db.yml` — solo Postgres. Se levanta primero (crea la red externa `vca-net`) y su ciclo de vida es independiente del resto: un redeploy de la app nunca lo debe tocar.
+  - `infra/docker-compose.yml` — Keycloak, backend y frontend. Se conecta a `vca-net` como red externa.
+- Ambos funcionan para los 3 ambientes vía `--env-file` (`.env.dev`, `.env.staging`, `.env.prod`); `infra/docker-compose.yml` además necesita `--profile staging`/`--profile prod` para levantar backend/frontend (en dev corren locales, no en Docker).
 - No hardcodear valores de host, puertos, credenciales o nombres de contenedor directamente en el YAML — todo debe venir de variables de entorno (`${VARIABLE}`).
-- No agregar `docker-compose.prod.yml` u otros archivos separados por ambiente salvo que se solicite; el patrón actual es un solo compose + distintos `.env`.
-- Al probar cambios en `infra/docker-compose.yml`, usar `-p <nombre>` para aislar el stack de pruebas del stack de dev real del usuario.
+- No agregar `docker-compose.prod.yml` u otros archivos separados por ambiente salvo que se solicite; la única separación válida es por responsabilidad (base de datos vs. resto de la app), no por ambiente.
+- Al probar cambios en `infra/docker-compose*.yml`, usar `-p <nombre>` para aislar el stack de pruebas del stack de dev real del usuario.
 
 ---
 
@@ -182,6 +188,6 @@ Cuando se pida corregir un bug, hacer un ajuste o implementar algo puntual:
 
 - Antes de crear carpetas o archivos nuevos, revisar si ya existe una convención establecida en este documento o en `docs/`.
 - Si una tarea implica una decisión de arquitectura no cubierta aquí (ej. nueva base de datos, nuevo servicio, cambio de flujo de auth), preguntar antes de implementar en lugar de asumir.
-- Mantener consistencia entre `.env.example`, `docker-compose.yml` y cualquier documentación en `keycloak/README.md` o `docs/` — si se cambia una variable en un lado, actualizar los demás en el mismo cambio.
+- Mantener consistencia entre `.env.example`, los `docker-compose*.yml` y la documentación en `docs/` (`keycloak/README.md` es solo un puntero corto a `docs/keycloak.md`) — si se cambia una variable en un lado, actualizar los demás en el mismo cambio.
 - No incluir trailers de Claude (`Co-Authored-By`, `Claude-Session`) en los mensajes de commit.
 - Se debe usar conventional commit en cada commit (ver detalle de tamaño y aprobación de commits en "Flujo de trabajo con Claude Code" arriba).

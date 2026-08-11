@@ -1,31 +1,33 @@
 # Bases de datos (backend/POS y Keycloak)
 
-Este documento explica cómo desplegar y conectar las bases de datos que usa
-el sistema:
+Este documento explica cómo se despliegan y conectan las bases de datos que
+usa el sistema:
 
 - **`APP_DB_*`** — datos de negocio del backend (productos, ventas,
   inventario, etc.), consumidos por `apps/backend`.
 - **`KC_DB_*`** — datos propios de Keycloak (realms, usuarios, clients,
-  sesiones de IAM). Ver también `keycloak/README.md`.
+  sesiones de IAM). Ver también [`docs/keycloak.md`](keycloak.md).
 
 **Importante:** son dos bases de datos separadas (nombres, usuarios y
 credenciales distintos) y nunca deben compartirse ni mezclarse entre sí ni
-entre ambientes, aunque en dev convivan en el mismo contenedor.
+entre ambientes, aunque convivan dentro del mismo contenedor Postgres.
 
 Motor: **PostgreSQL 16.14** en todos los ambientes.
 
 ---
 
-## Dev — un solo contenedor Docker para ambas bases
+## Un solo modelo de despliegue para los tres ambientes
 
-En desarrollo, ambas bases viven dentro de **un único contenedor Postgres**
-(servicio `postgres` en `infra/docker-compose.yml`, profile `dev`), para
-usar un solo puerto expuesto en vez de levantar dos contenedores. Cada base
-mantiene su propio nombre, usuario y password — internamente son bases
-distintas dentro del mismo servidor Postgres, no una base compartida.
+Dev, staging y prod despliegan la base de datos de la **misma forma**:
+`infra/docker-compose.db.yml`, cambiando únicamente el `--env-file`. No hay
+un camino distinto para dev y otro para producción — eso es intencional,
+para que el mismo runbook sirva en los tres casos (ver
+[`docs/deployment.md`](deployment.md) para el paso a paso completo).
 
-Este servicio está bajo el profile `dev`, por lo que **solo se levanta
-cuando se pide explícitamente** y nunca se activa en staging/prod.
+Este archivo está separado de `infra/docker-compose.yml` (que trae Keycloak,
+backend y frontend) a propósito: la base de datos tiene su propio ciclo de
+vida y **nunca debe poder caerse por un redeploy de la aplicación** — un
+`docker compose -f infra/docker-compose.yml down` nunca toca este stack.
 
 ### Cómo se crean las dos bases
 
@@ -49,121 +51,86 @@ las de la aplicación.
 
 Si el volumen ya tiene datos, este script **no vuelve a correr** (comportamiento
 estándar de `/docker-entrypoint-initdb.d`). Si cambias `APP_DB_*`/`KC_DB_*`
-después del primer arranque, hay que resetear el volumen
-(`docker compose ... down -v`) para que se vuelva a ejecutar.
+después del primer arranque, hay que resetear el volumen (ver
+"Detener / reiniciar" abajo) para que se vuelva a ejecutar.
 
 ### Requisitos
 
-- Docker y Docker Compose instalados localmente.
-- Un archivo `.env.dev` (no versionado) basado en `.env.example`, con al
-  menos estas variables completas:
-  - `APP_ENV=dev`
+- Docker y Docker Compose instalados (local en dev, en la VPS en staging/prod).
+- Un archivo `.env.<ambiente>` (no versionado) basado en `.env.example`, con
+  al menos estas variables completas:
+  - `APP_ENV=dev|staging|prod`
   - `DB_ROOT_USER` / `DB_ROOT_PASSWORD` (superusuario, solo para el init)
-  - `DB_PORT=5432` (único puerto expuesto al host)
-  - `APP_DB_HOST=localhost`, `APP_DB_NAME=vca_pos_dev`, `APP_DB_USERNAME`, `APP_DB_PASSWORD`
-  - `KC_DB_HOST=postgres`, `KC_DB_NAME=keycloak_dev`, `KC_DB_USERNAME`, `KC_DB_PASSWORD`
+  - `DB_PORT=5432` (único puerto expuesto, y solo a `127.0.0.1`)
+  - `APP_DB_NAME`, `APP_DB_USERNAME`, `APP_DB_PASSWORD`
+  - `KC_DB_NAME`, `KC_DB_USERNAME`, `KC_DB_PASSWORD`
 
-`KC_DB_HOST` vale `postgres` porque Keycloak corre en Docker y se conecta al
-servicio por su nombre en la red `vca-net` (DNS interno de Docker). `APP_DB_HOST`
-en cambio vale `localhost`: el backend (`apps/backend`) corre local en dev, no
-en Docker (ver `apps/backend/README.md`), así que llega a Postgres por el
-puerto expuesto al host (`DB_PORT`), no por la red interna.
+### Cómo se conectan Keycloak y el backend
+
+`infra/docker-compose.db.yml` publica el contenedor de Postgres en la red
+`vca-net` con el alias `postgres` — así **el mismo valor** `KC_DB_HOST=postgres`
+funciona en dev, staging y prod, sin variar por ambiente.
+
+`APP_DB_HOST` sí cambia según dónde corre el backend:
+
+| Ambiente | Backend corre en | `APP_DB_HOST` |
+|---|---|---|
+| dev | Local (`uv run fastapi dev`, ver `apps/backend/README.md`) | `localhost` (vía el puerto publicado `DB_PORT`) |
+| staging / prod | Contenedor (`infra/docker-compose.yml`, servicio `backend`) | `postgres` (alias de red, igual que Keycloak) |
 
 ### Levantar la base de datos
 
-Desde la raíz del repo:
+Desde la raíz del repo, para cualquier ambiente:
 
 ```bash
-docker compose -f infra/docker-compose.yml --env-file .env.dev --profile dev up -d postgres
+docker compose -f infra/docker-compose.db.yml --env-file .env.<ambiente> up -d
 ```
 
-Esto crea un contenedor `postgres-dev` con Postgres 16.14, expuesto en
-`localhost:${DB_PORT}` (5432 por defecto) y con los datos persistidos en el
-volumen `postgres-data` (sobrevive a reinicios y a `docker compose down`,
-pero no a `docker compose down -v`).
+Esto crea un contenedor `postgres-<ambiente>` con Postgres 16.14, expuesto
+en `127.0.0.1:${DB_PORT}` (solo loopback, nunca a la red) y con los datos
+persistidos en el volumen `postgres-data-<ambiente>` (sobrevive a reinicios
+y a `docker compose down`, pero no a `docker compose down -v`).
 
-Si en el mismo paso quieres levantar también Keycloak:
-
-```bash
-docker compose -f infra/docker-compose.yml --env-file .env.dev --profile dev up -d
-```
-
-(Keycloak no tiene profile, así que siempre se levanta; `postgres` solo se
-suma cuando se pasa `--profile dev`.)
+Este comando también crea la red `vca-net` si no existe todavía — por eso
+**la base de datos siempre se levanta primero**, antes que
+`infra/docker-compose.yml` (que la referencia como red externa). El paso a
+paso completo, en orden, está en [`docs/deployment.md`](deployment.md).
 
 ### Verificar que está arriba
 
 ```bash
-docker compose -f infra/docker-compose.yml --env-file .env.dev ps
+docker compose -f infra/docker-compose.db.yml --env-file .env.<ambiente> ps
 
 # Base de la app
-docker exec -it postgres-dev psql -U vca_pos_user -d vca_pos_dev
+docker exec -it postgres-<ambiente> psql -U vca_pos_user -d vca_pos_<ambiente>
 
 # Base de Keycloak
-docker exec -it postgres-dev psql -U keycloak_user -d keycloak_dev
+docker exec -it postgres-<ambiente> psql -U keycloak_user -d keycloak_<ambiente>
 ```
 
 ### Detener / reiniciar
 
 ```bash
 # Detener sin borrar datos
-docker compose -f infra/docker-compose.yml --env-file .env.dev stop postgres
+docker compose -f infra/docker-compose.db.yml --env-file .env.<ambiente> stop
 
-# Borrar el contenedor pero conservar los datos (volumen persiste)
-docker compose -f infra/docker-compose.yml --env-file .env.dev rm -f postgres
+# Borrar el contenedor pero conservar los datos (el volumen persiste)
+docker compose -f infra/docker-compose.db.yml --env-file .env.<ambiente> rm -f
 
 # Borrar TODO incluyendo los datos (destructivo: resetea AMBAS bases,
 # app y Keycloak, ya que comparten un solo volumen)
-docker compose -f infra/docker-compose.yml --env-file .env.dev down -v
+docker compose -f infra/docker-compose.db.yml --env-file .env.<ambiente> down -v
 ```
 
 El backend debe apuntar a su base usando las variables `APP_DB_*` de
-`.env.dev` (o la `DATABASE_URL`/config equivalente que arme a partir de
-ellas), nunca con credenciales hardcodeadas. Keycloak usa las `KC_DB_*` de
-la misma forma.
+`.env.<ambiente>` (o la config equivalente que arme a partir de ellas),
+nunca con credenciales hardcodeadas. Keycloak usa las `KC_DB_*` de la misma
+forma.
 
----
+### Backups
 
-## Staging / Prod — bases de datos ya desplegadas en la VPS
-
-En staging y prod, **ambas bases ya están desplegadas y gestionadas
-directamente en la VPS** (no vía este `docker-compose.yml`). No hay que
-instalar ni levantar nada: solo apuntar backend y Keycloak a las instancias
-existentes mediante variables de entorno.
-
-Cada ambiente tiene sus propias bases aisladas — nunca se comparte la misma
-base de datos ni las mismas credenciales entre `staging` y `prod`, ni entre
-la base de la app y la de Keycloak.
-
-### Variables requeridas
-
-En `.env.staging` / `.env.prod` (no versionados, creados a partir de
-`.env.example`):
-
-| Variable | Descripción |
-|---|---|
-| `APP_DB_HOST` | Host/IP o DNS interno de la VPS donde corre la base de la app |
-| `APP_DB_NAME` | `vca_pos_staging` o `vca_pos_prod` según el ambiente |
-| `APP_DB_USERNAME` / `APP_DB_PASSWORD` | Credenciales del usuario de aplicación |
-| `KC_DB_HOST` | Host/IP o DNS interno de la VPS donde corre la base de Keycloak |
-| `KC_DB_NAME` | `keycloak_staging` o `keycloak_prod` según el ambiente |
-| `KC_DB_USERNAME` / `KC_DB_PASSWORD` | Credenciales del usuario de Keycloak |
-
-`DB_ROOT_USER`, `DB_ROOT_PASSWORD` y `DB_PORT` **no aplican** en staging/prod
-— solo existen para el bootstrap del contenedor `postgres` de dev.
-
-El servicio `postgres` de `infra/docker-compose.yml` tiene
-`profiles: [dev]`, por lo que al correr
-`docker compose --env-file .env.staging up -d` (sin `--profile dev`)
-**no intentará levantar ninguna base de datos** — solo arrancará Keycloak y
-los demás servicios que no dependan de ese profile.
-
-### Responsabilidad de las bases ya desplegadas
-
-- La creación de las bases (`vca_pos_staging`/`prod`,
-  `keycloak_staging`/`prod`), los usuarios y sus permisos se gestionan
-  manualmente en la VPS (fuera de este repo).
-- Si en algún momento se documenta el proceso de instalación/configuración
-  de Postgres directamente en la VPS (fuera de Docker), debe agregarse como
-  una sección aparte en este mismo archivo — hoy no está cubierto porque el
-  despliegue ya existe y se gestiona fuera de este repositorio.
+No hay backup automático incluido en el compose — en staging/prod, programa
+un `pg_dumpall` periódico contra el contenedor y sube el resultado fuera de
+la VPS (ver [`docs/security.md`](security.md#backups)). Prueba el restore al
+menos una vez por trimestre: un backup nunca verificado no es, en la
+práctica, un backup.
