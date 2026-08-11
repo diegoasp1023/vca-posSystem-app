@@ -65,8 +65,8 @@ se corren como `deploy`, no como `root`.
   estar abierto al público en general.
 - `KC_HOSTNAME_STRICT` puede pasar a `"true"` una vez que `KC_HOSTNAME`
   esté fijo en el dominio real de ese ambiente.
-- Confirma que `vca-pos-frontend` siga siendo público + PKCE y
-  `vca-pos-backend` confidential — nunca agregarle client secret al de
+- Confirma que `valiente-cafe-app-frontend` siga siendo público + PKCE y
+  `valiente-cafe-app-backend` confidential — nunca agregarle client secret al de
   frontend (ver [`docs/keycloak.md`](keycloak.md)).
 
 ## 5. Backend / CORS

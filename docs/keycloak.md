@@ -20,8 +20,8 @@ mismo contenedor Postgres. Desplegar y conectarse: [`docs/database.md`](database
 
 | Client | Tipo | Uso |
 |---|---|---|
-| `vca-pos-frontend` | Público + PKCE (S256) | Login del panel de administración vía `keycloak-js`. **Nunca** agregarle client secret. |
-| `vca-pos-backend` | Confidential (client secret) | Reservado para uso server-to-server futuro. |
+| `valiente-cafe-app-frontend` | Público + PKCE (S256) | Login del panel de administración vía `keycloak-js`. **Nunca** agregarle client secret. |
+| `valiente-cafe-app-backend` | Confidential (client secret) | Reservado para uso server-to-server futuro. |
 
 ## Roles de realm
 

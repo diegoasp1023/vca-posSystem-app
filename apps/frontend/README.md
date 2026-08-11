@@ -15,7 +15,7 @@ locales (dirección, WhatsApp, redes).
 ## Login y panel de administración
 
 El botón "Ingresa" del header dispara el login real vía `keycloak-js`
-(client `vca-pos-frontend`, público + PKCE). Tras loguearse, redirige a
+(client `valiente-cafe-app-frontend`, público + PKCE). Tras loguearse, redirige a
 `/admin`:
 
 - Cualquier usuario autenticado ve "Bienvenido, {usuario}".
@@ -52,8 +52,8 @@ docker-compose y el backend) — para el frontend, crea
 ```
 VITE_API_BASE_URL=http://localhost:8000
 VITE_KEYCLOAK_URL=http://localhost:8080
-VITE_KEYCLOAK_REALM=vca-pos
-VITE_KEYCLOAK_CLIENT_ID=vca-pos-frontend
+VITE_KEYCLOAK_REALM=valiente-cafe
+VITE_KEYCLOAK_CLIENT_ID=valiente-cafe-app-frontend
 ```
 
 ## Staging / Prod

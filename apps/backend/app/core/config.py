@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     kc_hostname: str = "localhost"
     kc_port: int = 8080
-    kc_realm: str = "vca-pos"
+    kc_realm: str = "valiente-cafe"
     keycloak_admin_user: str = "admin"
     keycloak_admin_password: str = "changeme"
 

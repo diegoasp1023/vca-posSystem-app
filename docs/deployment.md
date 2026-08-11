@@ -66,8 +66,8 @@ raíz):
 ```
 VITE_API_BASE_URL=http://localhost:8000
 VITE_KEYCLOAK_URL=http://localhost:8080
-VITE_KEYCLOAK_REALM=vca-pos
-VITE_KEYCLOAK_CLIENT_ID=vca-pos-frontend
+VITE_KEYCLOAK_REALM=valiente-cafe
+VITE_KEYCLOAK_CLIENT_ID=valiente-cafe-app-frontend
 ```
 
 ### 3.2 Base de datos

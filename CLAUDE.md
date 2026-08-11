@@ -89,7 +89,7 @@ FastAPI + SQLAlchemy 2.0 async + Alembic, contra Postgres (`vca_pos_dev`/`stagin
 React 19 + Vite + TypeScript + Tailwind CSS 4, routing con `react-router-dom`.
 
 - `lib/api.ts` — cliente para los endpoints públicos del backend; `lib/adminApi.ts` — cliente para los endpoints protegidos (adjunta el bearer token).
-- `lib/keycloak.ts` + `context/AuthContext.tsx` — login vía `keycloak-js` (client `vca-pos-frontend`, público + PKCE). El token vive en memoria, nunca en `localStorage`.
+- `lib/keycloak.ts` + `context/AuthContext.tsx` — login vía `keycloak-js` (client `valiente-cafe-app-frontend`, público + PKCE). El token vive en memoria, nunca en `localStorage`.
 - `pages/admin/` — panel de administración: `ProtectedRoute.tsx` exige sesión, `RequireAdmin.tsx` exige el rol `Administrador`. `AdminProductsPage`/`AdminCoursesPage`/`AdminEmployeesPage` son las vistas CRUD; `TurnosTab`/`ShiftsCalendar` (turnos) y `BonosTab`/`ResumenTab`/`PayrollShared` (nómina) viven bajo el mismo panel.
 - `data/location.ts` y `data/social.ts` siguen siendo placeholders locales (no vienen del backend).
 - `i18n.ts` — configuración de `react-i18next`; el contenido bilingüe de productos/cursos llega ya resuelto desde el backend en la forma `Localized<T>`, no se traduce en el cliente.
@@ -159,7 +159,7 @@ Cuando se pida corregir un bug, hacer un ajuste o implementar algo puntual:
 - **No se está usando import automático de realms todavía** (`--import-realm`). La configuración de realms, clients y roles se hace manualmente desde la consola admin en cada ambiente, o vía `apps/backend/scripts/setup_keycloak.py` en dev (idempotente).
 - No crear archivos en `keycloak/realm-export/` ni agregar `--import-realm`/volúmenes de import al `docker-compose.yml` a menos que se pida explícitamente.
 - `keycloak/themes/vca-pos/login` es el tema de login con la marca de Valiente Café (logo, colores coral/lavender, tipografía) — montado en el contenedor vía `infra/docker-compose.yml` (`../keycloak/themes:/opt/keycloak/themes:ro`) y aplicado por `scripts/setup_keycloak.py` (`loginTheme`). No crear otras subcarpetas (`providers/`, `realm-export/`) de forma anticipada.
-- El client `vca-pos-backend` es **confidential** (usa client secret, corre en servidor). El client `vca-pos-frontend` es **public + PKCE** — nunca agregarle client secret.
+- El client `valiente-cafe-app-backend` es **confidential** (usa client secret, corre en servidor). El client `valiente-cafe-app-frontend` es **public + PKCE** — nunca agregarle client secret.
 - Cada ambiente tiene su propia base de datos aislada de Keycloak (`keycloak_dev`, `keycloak_staging`, `keycloak_prod`) y su propio realm — nunca compartir entre ambientes.
 
 ---
