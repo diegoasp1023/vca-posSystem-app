@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import foxLogo from '../assets/fox-logo.svg'
 import { SocialIcons } from './SocialIcons'
@@ -30,9 +31,20 @@ export function Header() {
 
         <nav className="hidden gap-8 text-sm font-medium text-lavender-dark md:flex">
           {navLinks.map(({ to, key }) => (
-            <Link key={to} to={to} className="hover:text-coral-dark">
-              {t(`header.${key}`)}
-            </Link>
+            <NavLink key={to} to={to} end={to === '/'} className="relative pb-1 hover:text-coral-dark">
+              {({ isActive }) => (
+                <>
+                  {t(`header.${key}`)}
+                  {isActive && (
+                    <motion.span
+                      layoutId="nav-indicator"
+                      className="absolute inset-x-0 -bottom-1 h-0.5 rounded-full bg-coral"
+                      transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                    />
+                  )}
+                </>
+              )}
+            </NavLink>
           ))}
         </nav>
 

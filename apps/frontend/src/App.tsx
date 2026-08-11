@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { MotionConfig } from 'framer-motion'
 import { AuthProvider } from './context/AuthContext'
 import { Layout } from './components/Layout'
 import { Home } from './pages/Home'
@@ -19,35 +20,37 @@ import { AdminTabsPage } from './pages/admin/AdminTabsPage'
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route index element={<Home />} />
-            <Route path="menu" element={<MenuPage />} />
-            <Route path="nosotros" element={<AboutPage />} />
-            <Route path="contacto" element={<ContactPage />} />
-            <Route path="cursos/:slug" element={<CoursePage />} />
-          </Route>
+    <MotionConfig reducedMotion="user">
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route index element={<Home />} />
+              <Route path="menu" element={<MenuPage />} />
+              <Route path="nosotros" element={<AboutPage />} />
+              <Route path="contacto" element={<ContactPage />} />
+              <Route path="cursos/:slug" element={<CoursePage />} />
+            </Route>
 
-          {/* Admin panel: its own layout, no public header/nav/social icons. */}
-          <Route path="admin" element={<ProtectedRoute />}>
-            <Route element={<AdminLayout />}>
-              <Route index element={<AdminHomePage />} />
-              <Route element={<RequireAdmin />}>
-                <Route path="cafes" element={<AdminProductsPage />} />
-                <Route path="cursos" element={<AdminCoursesPage />} />
-                <Route path="menu" element={<AdminMenuPage />} />
-                <Route path="personal" element={<AdminEmployeesPage />} />
-              </Route>
-              <Route element={<RequireCajero />}>
-                <Route path="cuentas" element={<AdminTabsPage />} />
+            {/* Admin panel: its own layout, no public header/nav/social icons. */}
+            <Route path="admin" element={<ProtectedRoute />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<AdminHomePage />} />
+                <Route element={<RequireAdmin />}>
+                  <Route path="cafes" element={<AdminProductsPage />} />
+                  <Route path="cursos" element={<AdminCoursesPage />} />
+                  <Route path="menu" element={<AdminMenuPage />} />
+                  <Route path="personal" element={<AdminEmployeesPage />} />
+                </Route>
+                <Route element={<RequireCajero />}>
+                  <Route path="cuentas" element={<AdminTabsPage />} />
+                </Route>
               </Route>
             </Route>
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </MotionConfig>
   )
 }
 

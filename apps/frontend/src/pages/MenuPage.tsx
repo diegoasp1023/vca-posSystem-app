@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChevronUp } from '@fortawesome/free-solid-svg-icons'
+import { AnimatePresence, motion } from 'framer-motion'
 import foxLogo from '../assets/fox-logo.svg'
 import { fetchMenuCategories, fetchMenuItems, type MenuCategory, type MenuItem } from '../lib/api'
 
@@ -114,31 +114,33 @@ export function MenuPage() {
                 ))}
               </nav>
 
-              <div className="mt-12 space-y-16">
-                {visibleCategories.map((category) => (
-                  <section key={category.id}>
-                    <h2 className="border-b border-cream pb-3 font-serif text-3xl text-lavender-dark">
-                      {category.name[lang]}
-                    </h2>
-                    <div className="mt-6 grid gap-x-10 gap-y-7 sm:grid-cols-2">
-                      {(itemsByCategory.get(category.id) ?? []).map((item) => (
-                        <MenuItemRow key={item.id} item={item} lang={lang} />
-                      ))}
-                    </div>
-                  </section>
-                ))}
+              <div className="relative mt-12 overflow-hidden">
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <motion.div
+                    key={selectedCategoryId}
+                    className="w-full space-y-16"
+                    initial={{ opacity: 0, x: 60 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -60 }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                  >
+                    {visibleCategories.map((category) => (
+                      <section key={category.id}>
+                        <h2 className="border-b border-cream pb-3 font-serif text-3xl text-lavender-dark">
+                          {category.name[lang]}
+                        </h2>
+                        <div className="mt-6 grid gap-x-10 gap-y-7 sm:grid-cols-2">
+                          {(itemsByCategory.get(category.id) ?? []).map((item) => (
+                            <MenuItemRow key={item.id} item={item} lang={lang} />
+                          ))}
+                        </div>
+                      </section>
+                    ))}
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </>
           )}
-
-          <div className="mt-20 text-center">
-            <Link
-              to="/"
-              className="inline-block rounded-full bg-coral px-8 py-3 font-semibold text-white transition hover:bg-coral-dark"
-            >
-              {t('menuPage.back')}
-            </Link>
-          </div>
         </div>
       )}
 
