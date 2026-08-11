@@ -16,6 +16,8 @@ services:
       KC_HTTP_ENABLED: "true"
     ports:
       - "${KC_PORT}:8080"
+    volumes:
+      - ../keycloak/themes:/opt/keycloak/themes:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
