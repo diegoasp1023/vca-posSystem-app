@@ -17,6 +17,9 @@ import { Pagination } from '../../components/Pagination'
 import { BackToPanelLink } from './BackToPanelLink'
 import { Modal } from './Modal'
 import { MultiSelectDropdown } from './PayrollShared'
+import { PresentationsTab } from './PresentationsTab'
+
+type Tab = 'products' | 'presentations'
 
 type ProductFormState = Omit<ProductWrite, 'weight_grams' | 'price_cop'> & {
   weight_grams: number | ''
@@ -39,6 +42,7 @@ export function AdminProductsPage() {
   const { t } = useTranslation()
   const { getToken } = useAuth()
 
+  const [tab, setTab] = useState<Tab>('products')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [products, setProducts] = useState<Product[]>([])
@@ -60,10 +64,12 @@ export function AdminProductsPage() {
       .catch(() => setStatus('error'))
   }, [page, getToken])
 
-  useEffect(reload, [reload])
-  useEffect(() => {
+  const reloadPresentations = useCallback(() => {
     fetchPresentations().then(setPresentations)
   }, [])
+
+  useEffect(reload, [reload])
+  useEffect(reloadPresentations, [reloadPresentations])
 
   const startCreate = () => {
     setForm(EMPTY_FORM)
@@ -149,215 +155,259 @@ export function AdminProductsPage() {
           </button>
         </div>
 
-        {editingId !== null && (
-          <Modal
-            title={
-              editingId === 'new' ? t('admin.newProduct') : t('admin.editProduct')
-            }
-            onClose={() => {
-              setFormError(null)
-              setEditingId(null)
-            }}
-            maxWidthClassName="max-w-2xl"
-          >
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              submit()
-            }}
-            className="space-y-4"
-          >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm">
-                <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.nameEs')} *
-                </span>
-                <input
-                  required
-                  placeholder={t('admin.fields.nameEs')}
-                  value={form.name_es}
-                  onChange={(e) => setForm({ ...form, name_es: e.target.value })}
-                  className="w-full rounded-lg border border-cream px-3 py-2"
-                />
-              </label>
-              <label className="block text-sm">
-                <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.nameEn')} *
-                </span>
-                <input
-                  required
-                  placeholder={t('admin.fields.nameEn')}
-                  value={form.name_en}
-                  onChange={(e) => setForm({ ...form, name_en: e.target.value })}
-                  className="w-full rounded-lg border border-cream px-3 py-2"
-                />
-              </label>
-              <label className="block text-sm sm:col-span-2">
-                <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.descriptionEs')} *
-                </span>
-                <textarea
-                  required
-                  placeholder={t('admin.fields.descriptionEs')}
-                  value={form.description_es}
-                  onChange={(e) =>
-                    setForm({ ...form, description_es: e.target.value })
-                  }
-                  className="w-full rounded-lg border border-cream px-3 py-2"
-                />
-              </label>
-              <label className="block text-sm sm:col-span-2">
-                <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.descriptionEn')} *
-                </span>
-                <textarea
-                  required
-                  placeholder={t('admin.fields.descriptionEn')}
-                  value={form.description_en}
-                  onChange={(e) =>
-                    setForm({ ...form, description_en: e.target.value })
-                  }
-                  className="w-full rounded-lg border border-cream px-3 py-2"
-                />
-              </label>
-              <label className="block text-sm">
-                <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.weight')} *
-                </span>
-                <input
-                  required
-                  type="number"
-                  min={1}
-                  placeholder={t('admin.fields.weight')}
-                  value={form.weight_grams}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      weight_grams: e.target.value === '' ? '' : Number(e.target.value),
-                    })
-                  }
-                  className="w-full rounded-lg border border-cream px-3 py-2"
-                />
-              </label>
-              <label className="block text-sm">
-                <span className="mb-1 block font-semibold text-lavender-dark">
-                  {t('admin.fields.price')} *
-                </span>
-                <input
-                  required
-                  type="number"
-                  min={1}
-                  placeholder={t('admin.fields.price')}
-                  value={form.price_cop}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      price_cop: e.target.value === '' ? '' : Number(e.target.value),
-                    })
-                  }
-                  className="w-full rounded-lg border border-cream px-3 py-2"
-                />
-              </label>
-            </div>
+        <div className="mt-6 flex flex-wrap gap-2 border-b border-cream">
+          <TabButton active={tab === 'products'} onClick={() => setTab('products')}>
+            {t('admin.productsTab')}
+          </TabButton>
+          <TabButton active={tab === 'presentations'} onClick={() => setTab('presentations')}>
+            {t('admin.presentationsTab')}
+          </TabButton>
+        </div>
 
-            <div>
-              <p className="mb-1 text-sm font-semibold text-lavender-dark">
-                {t('menu.presentations')} *
-              </p>
-              <MultiSelectDropdown
-                options={presentations.map((presentation) => ({
-                  id: presentation.id,
-                  label: presentation.name.es,
-                }))}
-                selected={new Set(form.presentation_ids)}
-                onChange={(selected) =>
-                  setForm({ ...form, presentation_ids: [...selected] })
+        {tab === 'presentations' && (
+          <PresentationsTab
+            presentations={presentations}
+            onPresentationsChange={reloadPresentations}
+          />
+        )}
+
+        {tab === 'products' && (
+          <>
+            {editingId !== null && (
+              <Modal
+                title={
+                  editingId === 'new' ? t('admin.newProduct') : t('admin.editProduct')
                 }
-                placeholder={t('menu.presentations')}
-              />
-            </div>
-
-            {formError && (
-              <p className="text-sm font-semibold text-coral-dark">{formError}</p>
-            )}
-
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
-              >
-                {t('admin.save')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
+                onClose={() => {
                   setFormError(null)
                   setEditingId(null)
                 }}
-                className="rounded-full border border-lavender px-6 py-2 text-sm font-semibold text-lavender-dark"
+                maxWidthClassName="max-w-2xl"
               >
-                {t('admin.cancel')}
-              </button>
-            </div>
-          </form>
-          </Modal>
-        )}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    submit()
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="block text-sm">
+                      <span className="mb-1 block font-semibold text-lavender-dark">
+                        {t('admin.fields.nameEs')} *
+                      </span>
+                      <input
+                        required
+                        placeholder={t('admin.fields.nameEs')}
+                        value={form.name_es}
+                        onChange={(e) => setForm({ ...form, name_es: e.target.value })}
+                        className="w-full rounded-lg border border-cream px-3 py-2"
+                      />
+                    </label>
+                    <label className="block text-sm">
+                      <span className="mb-1 block font-semibold text-lavender-dark">
+                        {t('admin.fields.nameEn')} *
+                      </span>
+                      <input
+                        required
+                        placeholder={t('admin.fields.nameEn')}
+                        value={form.name_en}
+                        onChange={(e) => setForm({ ...form, name_en: e.target.value })}
+                        className="w-full rounded-lg border border-cream px-3 py-2"
+                      />
+                    </label>
+                    <label className="block text-sm sm:col-span-2">
+                      <span className="mb-1 block font-semibold text-lavender-dark">
+                        {t('admin.fields.descriptionEs')} *
+                      </span>
+                      <textarea
+                        required
+                        placeholder={t('admin.fields.descriptionEs')}
+                        value={form.description_es}
+                        onChange={(e) =>
+                          setForm({ ...form, description_es: e.target.value })
+                        }
+                        className="w-full rounded-lg border border-cream px-3 py-2"
+                      />
+                    </label>
+                    <label className="block text-sm sm:col-span-2">
+                      <span className="mb-1 block font-semibold text-lavender-dark">
+                        {t('admin.fields.descriptionEn')} *
+                      </span>
+                      <textarea
+                        required
+                        placeholder={t('admin.fields.descriptionEn')}
+                        value={form.description_en}
+                        onChange={(e) =>
+                          setForm({ ...form, description_en: e.target.value })
+                        }
+                        className="w-full rounded-lg border border-cream px-3 py-2"
+                      />
+                    </label>
+                    <label className="block text-sm">
+                      <span className="mb-1 block font-semibold text-lavender-dark">
+                        {t('admin.fields.weight')} *
+                      </span>
+                      <input
+                        required
+                        type="number"
+                        min={1}
+                        placeholder={t('admin.fields.weight')}
+                        value={form.weight_grams}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            weight_grams: e.target.value === '' ? '' : Number(e.target.value),
+                          })
+                        }
+                        className="w-full rounded-lg border border-cream px-3 py-2"
+                      />
+                    </label>
+                    <label className="block text-sm">
+                      <span className="mb-1 block font-semibold text-lavender-dark">
+                        {t('admin.fields.price')} *
+                      </span>
+                      <input
+                        required
+                        type="number"
+                        min={1}
+                        placeholder={t('admin.fields.price')}
+                        value={form.price_cop}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            price_cop: e.target.value === '' ? '' : Number(e.target.value),
+                          })
+                        }
+                        className="w-full rounded-lg border border-cream px-3 py-2"
+                      />
+                    </label>
+                  </div>
 
-        {status === 'loading' && (
-          <p className="mt-10 text-gray-500">{t('common.loading')}</p>
-        )}
-        {status === 'error' && (
-          <p className="mt-10 text-gray-500">{t('common.error')}</p>
-        )}
-        {status === 'ready' && (
-          <>
-            <table className="mt-8 w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-cream text-lavender">
-                  <th className="py-2">{t('admin.fields.name')}</th>
-                  <th className="py-2">{t('admin.fields.description')}</th>
-                  <th className="py-2">{t('admin.fields.weight')}</th>
-                  <th className="py-2">{t('admin.fields.price')}</th>
-                  <th className="py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((product) => (
-                  <tr key={product.id} className="border-b border-cream">
-                    <td className="py-3">{product.name.es}</td>
-                    <td className="max-w-xs truncate py-3 text-gray-600">
-                      {product.description.es}
-                    </td>
-                    <td className="py-3">{product.weight_grams}gr</td>
-                    <td className="py-3">${product.price_cop.toLocaleString('es-CO')}</td>
-                    <td className="py-3 text-right whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(product)}
-                        aria-label={t('admin.edit')}
-                        title={t('admin.edit')}
-                        className="mr-3 text-lavender-dark hover:text-lavender"
-                      >
-                        <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => remove(product.id)}
-                        aria-label={t('admin.delete')}
-                        title={t('admin.delete')}
-                        className="text-coral-dark hover:text-coral"
-                      >
-                        <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                  <div>
+                    <p className="mb-1 text-sm font-semibold text-lavender-dark">
+                      {t('menu.presentations')} *
+                    </p>
+                    <MultiSelectDropdown
+                      options={presentations.map((presentation) => ({
+                        id: presentation.id,
+                        label: presentation.name.es,
+                      }))}
+                      selected={new Set(form.presentation_ids)}
+                      onChange={(selected) =>
+                        setForm({ ...form, presentation_ids: [...selected] })
+                      }
+                      placeholder={t('menu.presentations')}
+                    />
+                  </div>
+
+                  {formError && (
+                    <p className="text-sm font-semibold text-coral-dark">{formError}</p>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      type="submit"
+                      className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
+                    >
+                      {t('admin.save')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormError(null)
+                        setEditingId(null)
+                      }}
+                      className="rounded-full border border-lavender px-6 py-2 text-sm font-semibold text-lavender-dark"
+                    >
+                      {t('admin.cancel')}
+                    </button>
+                  </div>
+                </form>
+              </Modal>
+            )}
+
+            {status === 'loading' && (
+              <p className="mt-10 text-gray-500">{t('common.loading')}</p>
+            )}
+            {status === 'error' && (
+              <p className="mt-10 text-gray-500">{t('common.error')}</p>
+            )}
+            {status === 'ready' && (
+              <>
+                <table className="mt-8 w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-cream text-lavender">
+                      <th className="py-2">{t('admin.fields.name')}</th>
+                      <th className="py-2">{t('admin.fields.description')}</th>
+                      <th className="py-2">{t('admin.fields.weight')}</th>
+                      <th className="py-2">{t('admin.fields.price')}</th>
+                      <th className="py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map((product) => (
+                      <tr key={product.id} className="border-b border-cream">
+                        <td className="py-3">{product.name.es}</td>
+                        <td className="max-w-xs truncate py-3 text-gray-600">
+                          {product.description.es}
+                        </td>
+                        <td className="py-3">{product.weight_grams}gr</td>
+                        <td className="py-3">${product.price_cop.toLocaleString('es-CO')}</td>
+                        <td className="py-3 text-right whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(product)}
+                            aria-label={t('admin.edit')}
+                            title={t('admin.edit')}
+                            className="mr-3 text-lavender-dark hover:text-lavender"
+                          >
+                            <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => remove(product.id)}
+                            aria-label={t('admin.delete')}
+                            title={t('admin.delete')}
+                            className="text-coral-dark hover:text-coral"
+                          >
+                            <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+              </>
+            )}
           </>
         )}
       </div>
     </section>
+  )
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition ${
+        active
+          ? 'border-coral text-coral-dark'
+          : 'border-transparent text-gray-500 hover:text-lavender-dark'
+      }`}
+    >
+      {children}
+    </button>
   )
 }
