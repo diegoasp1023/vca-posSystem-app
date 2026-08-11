@@ -23,7 +23,7 @@ class TabPaymentMethod(Base):
 
 
 class Tab(Base):
-    """A customer tab (open account) managed by Gerente/Administrador."""
+    """A customer tab (open account) managed by Cajero/Administrador."""
 
     __tablename__ = "tabs"
 

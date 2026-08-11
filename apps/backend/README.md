@@ -54,7 +54,7 @@ Crea:
 - Realm `vca-pos`
 - Client `vca-pos-frontend` (público, PKCE S256, redirect URI de dev `http://localhost:5173/*`)
 - Client `vca-pos-backend` (confidential, reservado — no se usa todavía)
-- Roles de realm `Administrador` y `Gerente`
+- Roles de realm `Administrador` y `Cajero`
 - Opcionalmente, un usuario de prueba con rol `Administrador`
 
 ```bash

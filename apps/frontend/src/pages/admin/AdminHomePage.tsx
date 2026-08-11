@@ -6,7 +6,7 @@ export function AdminHomePage() {
   const { t } = useTranslation()
   const { username, roles } = useAuth()
   const isAdmin = roles.includes('Administrador')
-  const isGerente = roles.includes('Gerente')
+  const isCajero = roles.includes('Cajero')
 
   return (
     <section className="px-6 py-24">
@@ -15,9 +15,9 @@ export function AdminHomePage() {
           {t('admin.welcome', { username })}
         </h1>
 
-        {isAdmin || isGerente ? (
+        {isAdmin || isCajero ? (
           <div className="mt-12 grid gap-6 sm:grid-cols-2">
-            {(isAdmin || isGerente) && (
+            {(isAdmin || isCajero) && (
               <Link
                 to="/admin/cuentas"
                 className="rounded-2xl border border-cream bg-white p-8 text-left shadow-sm transition hover:shadow-md"

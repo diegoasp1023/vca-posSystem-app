@@ -5,7 +5,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.auth import require_gerente_or_admin
+from app.core.auth import require_cajero_or_admin
 from app.core.database import get_db
 from app.models.menu_item import MenuItem
 from app.models.product import Product
@@ -13,7 +13,7 @@ from app.models.tab import Tab, TabItem, TabPaymentMethod
 from app.schemas.tab import TabCreate, TabItemAdd, TabItemUpdate, TabOut, TabPay, TabUpdate
 
 router = APIRouter(
-    prefix="/api/tabs", tags=["tabs"], dependencies=[Depends(require_gerente_or_admin)]
+    prefix="/api/tabs", tags=["tabs"], dependencies=[Depends(require_cajero_or_admin)]
 )
 
 TAB_LOAD_OPTIONS = (selectinload(Tab.items), selectinload(Tab.payment_method))
