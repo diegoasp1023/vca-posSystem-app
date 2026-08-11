@@ -158,7 +158,7 @@ Cuando se pida corregir un bug, hacer un ajuste o implementar algo puntual:
 
 - **No se está usando import automático de realms todavía** (`--import-realm`). La configuración de realms, clients y roles se hace manualmente desde la consola admin en cada ambiente, o vía `apps/backend/scripts/setup_keycloak.py` en dev (idempotente).
 - No crear archivos en `keycloak/realm-export/` ni agregar `--import-realm`/volúmenes de import al `docker-compose.yml` a menos que se pida explícitamente.
-- `keycloak/` solo debe contener documentación (`README.md`) por ahora — no crear subcarpetas vacías (`themes/`, `providers/`, `scripts/`, `realm-export/`) de forma anticipada.
+- `keycloak/themes/vca-pos/login` es el tema de login con la marca de Valiente Café (logo, colores coral/lavender, tipografía) — montado en el contenedor vía `infra/docker-compose.yml` (`../keycloak/themes:/opt/keycloak/themes:ro`) y aplicado por `scripts/setup_keycloak.py` (`loginTheme`). No crear otras subcarpetas (`providers/`, `realm-export/`) de forma anticipada.
 - El client `vca-pos-backend` es **confidential** (usa client secret, corre en servidor). El client `vca-pos-frontend` es **public + PKCE** — nunca agregarle client secret.
 - Cada ambiente tiene su propia base de datos aislada de Keycloak (`keycloak_dev`, `keycloak_staging`, `keycloak_prod`) y su propio realm — nunca compartir entre ambientes.
 

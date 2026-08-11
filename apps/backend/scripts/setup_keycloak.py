@@ -6,7 +6,7 @@ intentionally not used yet, see CLAUDE.md). Safe to re-run: every step
 checks whether the resource already exists before creating it.
 
 Creates:
-  - Realm "vca-pos"
+  - Realm "vca-pos", with the "vca-pos" login theme (keycloak/themes/vca-pos)
   - Client "vca-pos-frontend" (public, PKCE S256)
   - Client "vca-pos-backend" (confidential, reserved for future use)
   - Realm roles: Administrador, Cajero
@@ -25,6 +25,7 @@ sys.path.insert(0, ".")
 from app.core.config import settings  # noqa: E402
 
 REALM = "vca-pos"
+LOGIN_THEME = "vca-pos"
 FRONTEND_CLIENT_ID = "vca-pos-frontend"
 BACKEND_CLIENT_ID = "vca-pos-backend"
 ROLES = ["Administrador", "Cajero"]
@@ -52,14 +53,22 @@ def get_admin_token(client: httpx.Client) -> str:
 def ensure_realm(client: httpx.Client) -> None:
     response = client.get(f"{KC_BASE_URL}/admin/realms/{REALM}")
     if response.status_code == 200:
-        print(f"Realm '{REALM}' already exists, skipping.")
+        realm = response.json()
+        if realm.get("loginTheme") != LOGIN_THEME:
+            client.put(
+                f"{KC_BASE_URL}/admin/realms/{REALM}",
+                json={**realm, "loginTheme": LOGIN_THEME},
+            ).raise_for_status()
+            print(f"Realm '{REALM}' already exists, set loginTheme to '{LOGIN_THEME}'.")
+        else:
+            print(f"Realm '{REALM}' already exists, skipping.")
         return
 
     client.post(
         f"{KC_BASE_URL}/admin/realms",
-        json={"realm": REALM, "enabled": True},
+        json={"realm": REALM, "enabled": True, "loginTheme": LOGIN_THEME},
     ).raise_for_status()
-    print(f"Created realm '{REALM}'.")
+    print(f"Created realm '{REALM}' with loginTheme '{LOGIN_THEME}'.")
 
 
 def find_client_uuid(client: httpx.Client, client_id: str) -> str | None:
