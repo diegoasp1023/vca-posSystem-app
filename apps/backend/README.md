@@ -25,7 +25,7 @@ frontend con `pnpm dev`. Se conecta a la Postgres compartida (ver
 
 Requisitos:
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) instalado.
-- La base de datos de dev corriendo (`docker compose ... --profile dev up -d postgres`, ver `docs/database.md`).
+- La base de datos de dev corriendo (`docker compose -f infra/docker-compose.db.yml --env-file .env.dev up -d`, ver `docs/database.md`).
 - Un archivo `.env.dev` o `.env.dev.local` en la raíz del repo (no versionado, basado en `.env.example`) con `APP_DB_HOST=localhost`, `DB_PORT`, `APP_DB_NAME`, `APP_DB_USERNAME`, `APP_DB_PASSWORD` completos. El backend lee ese archivo automáticamente (busca `.env.dev.local`, luego `.env.dev`, luego `.env` en la raíz del repo).
 
 ```bash
@@ -58,7 +58,7 @@ Crea:
 - Opcionalmente, un usuario de prueba con rol `Administrador`
 
 ```bash
-# Con Keycloak corriendo (docker compose ... --profile dev up -d keycloak)
+# Con Keycloak corriendo (docker compose -f infra/docker-compose.yml --env-file .env.dev up -d)
 uv run python scripts/setup_keycloak.py --with-test-user
 ```
 

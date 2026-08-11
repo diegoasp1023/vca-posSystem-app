@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16.14
+    container_name: postgres-${APP_ENV}
+    environment:
+      POSTGRES_USER: ${DB_ROOT_USER}
+      POSTGRES_PASSWORD: ${DB_ROOT_PASSWORD}
+      POSTGRES_DB: postgres
+      APP_DB_NAME: ${APP_DB_NAME}
+      APP_DB_USERNAME: ${APP_DB_USERNAME}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+      KC_DB_NAME: ${KC_DB_NAME}
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+    ports:
+      # Bound to loopback only: reachable from this host (psql, a GUI
+      # client, an SSH tunnel) but never from the network, in any
+      # environment — the app containers reach it via "vca-net" instead.
+      - "127.0.0.1:${DB_PORT}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      vca-net:
+        # Lets keycloak/backend reach this container as "postgres" in every
+        # environment, regardless of APP_ENV, so KC_DB_HOST/APP_DB_HOST stay
+        # a fixed value across dev/staging/prod instead of one per env.
+        aliases:
+          - postgres
+
+networks:
+  vca-net:
+    name: vca-net
+    driver: bridge
+
+volumes:
+  postgres-data:
+    name: postgres-data-${APP_ENV}
