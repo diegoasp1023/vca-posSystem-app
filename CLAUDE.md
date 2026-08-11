@@ -40,10 +40,10 @@ Los tests corren contra SQLite en memoria (`tests/conftest.py`), no requieren Po
 
 ```bash
 cd apps/frontend
-npm install
-npm run dev        # servidor de desarrollo (HMR), http://localhost:5173
-npm run build       # tsc -b && vite build
-npm run lint         # oxlint
+pnpm install
+pnpm dev        # servidor de desarrollo (HMR), http://localhost:5173
+pnpm build       # tsc -b && vite build
+pnpm lint         # oxlint
 ```
 
 Necesita el backend corriendo (`http://localhost:8000`) para mostrar cafés/cursos reales, y su propio `apps/frontend/.env.local` (gitignored) con `VITE_API_BASE_URL`, `VITE_KEYCLOAK_URL`, `VITE_KEYCLOAK_REALM`, `VITE_KEYCLOAK_CLIENT_ID` — Vite **no** lee los `.env.dev*` de la raíz del repo.
@@ -93,7 +93,7 @@ React 19 + Vite + TypeScript + Tailwind CSS 4, routing con `react-router-dom`.
 
 ### Ambientes y despliegue
 
-- `dev`: backend y frontend corren locales (`uv`/`npm`); solo Postgres (+ opcionalmente Keycloak) corren en Docker, bajo el profile `dev`.
+- `dev`: backend y frontend corren locales (`uv`/`pnpm`); solo Postgres (+ opcionalmente Keycloak) corren en Docker, bajo el profile `dev`.
 - `staging`/`prod`: el frontend se sirve como build estático vía `nginx` (`apps/frontend/Dockerfile`, multi-stage); las variables `VITE_*` se compilan en build time (build ARG), así que **no se puede promover la misma imagen de staging a prod** sin rebuildear.
 - Keycloak arranca con `KC_COMMAND=start-dev` en dev y `start --optimized` en staging/prod — nunca intercambiar estos modos entre ambientes.
 

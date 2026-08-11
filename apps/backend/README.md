@@ -20,7 +20,7 @@ válido con el rol de realm `Administrador`.
 ## Desarrollo (dev)
 
 El backend **no corre en Docker** — se levanta local con `uv`, igual que el
-frontend con `npm run dev`. Se conecta a la Postgres compartida (ver
+frontend con `pnpm dev`. Se conecta a la Postgres compartida (ver
 `docs/database.md`) vía `localhost:${DB_PORT}`.
 
 Requisitos:

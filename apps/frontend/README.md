@@ -37,10 +37,10 @@ Los comandos se corren parados en `apps/frontend`, no en la raíz del repo:
 
 ```bash
 cd apps/frontend
-npm install
-npm run dev      # servidor de desarrollo (HMR)
-npm run build    # build de producción (tsc + vite build)
-npm run lint      # oxlint
+pnpm install
+pnpm dev      # servidor de desarrollo (HMR)
+pnpm build    # build de producción (tsc + vite build)
+pnpm lint      # oxlint
 ```
 
 Necesita el backend corriendo para mostrar cafés/cursos reales (ver
@@ -59,7 +59,7 @@ VITE_KEYCLOAK_CLIENT_ID=vca-pos-frontend
 ## Staging / Prod
 
 En staging y prod el frontend se sirve como estáticos vía `nginx`, construido
-por Docker desde `apps/frontend/Dockerfile` (build multi-stage: `npm run
+por Docker desde `apps/frontend/Dockerfile` (build multi-stage: `pnpm
 build` en la etapa de build, `nginx:1.27-alpine` para servir `dist/`). Se
 despliega junto al resto de `infra/docker-compose.yml`, en el servicio
 `frontend` (`profiles: [staging, prod]`).
