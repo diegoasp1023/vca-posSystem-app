@@ -69,7 +69,7 @@ uv run fastapi dev app/main.py              # http://localhost:8000 (docs en /do
 
 Con Keycloak ya arriba, crea el realm `vca-pos`, los clients
 (`vca-pos-frontend` público+PKCE, `vca-pos-backend` confidential) y los
-roles (`Administrador`, `Gerente`):
+roles (`Administrador`, `Cajero`):
 
 ```bash
 cd apps/backend

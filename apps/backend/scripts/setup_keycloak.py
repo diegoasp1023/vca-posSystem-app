@@ -9,7 +9,7 @@ Creates:
   - Realm "vca-pos"
   - Client "vca-pos-frontend" (public, PKCE S256)
   - Client "vca-pos-backend" (confidential, reserved for future use)
-  - Realm roles: Administrador, Gerente
+  - Realm roles: Administrador, Cajero
   - A test user with the Administrador role (only if --with-test-user is passed)
 
 Usage: uv run python scripts/setup_keycloak.py [--with-test-user]
@@ -27,7 +27,7 @@ from app.core.config import settings  # noqa: E402
 REALM = "vca-pos"
 FRONTEND_CLIENT_ID = "vca-pos-frontend"
 BACKEND_CLIENT_ID = "vca-pos-backend"
-ROLES = ["Administrador", "Gerente"]
+ROLES = ["Administrador", "Cajero"]
 TEST_USER_EMAIL = "admin@valientecafe.co"
 DEV_REDIRECT_URI = "http://localhost:5173/*"
 DEV_WEB_ORIGIN = "http://localhost:5173"

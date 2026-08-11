@@ -17,8 +17,8 @@ async def test_list_tab_payment_methods_ordered_by_sort_order(db_session, client
     assert [m["name"]["es"] for m in response] == ["Primero", "Segundo"]
 
 
-async def test_create_tab_payment_method_requires_admin(gerente_client):
-    response = await gerente_client.post(
+async def test_create_tab_payment_method_requires_admin(cajero_client):
+    response = await cajero_client.post(
         "/api/tab-payment-methods", json={"name_es": "Efectivo", "name_en": "Cash"}
     )
 

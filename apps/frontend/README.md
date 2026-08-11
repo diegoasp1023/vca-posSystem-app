@@ -23,7 +23,7 @@ El botón "Ingresa" del header dispara el login real vía `keycloak-js`
   Cafés de especialidad" (`/admin/cafes`) y "Gestión de Cursos y Talleres"
   (`/admin/cursos`) — tablas con crear/editar/eliminar contra los endpoints
   protegidos del backend.
-- El rol `Gerente` solo ve la bienvenida, sin esos menús.
+- El rol `Cajero` solo ve la bienvenida, sin esos menús.
 
 El token vive en memoria (el propio `keycloak-js`), nunca en `localStorage`.
 Antes de usar el login en dev, hay que correr

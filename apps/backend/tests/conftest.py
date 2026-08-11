@@ -10,7 +10,7 @@ from app.core.auth import (
     AuthenticatedUser,
     get_current_user,
     require_admin,
-    require_gerente_or_admin,
+    require_cajero_or_admin,
 )
 from app.core.config import settings
 from app.core.database import Base, get_db
@@ -66,18 +66,18 @@ async def admin_client(db_session) -> AsyncGenerator[AsyncClient]:
         subject="test-admin", username="admin@example.com", roles=["Administrador"]
     )
     app.dependency_overrides[require_admin] = lambda: admin_user
-    app.dependency_overrides[require_gerente_or_admin] = lambda: admin_user
+    app.dependency_overrides[require_cajero_or_admin] = lambda: admin_user
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     del app.dependency_overrides[require_admin]
-    del app.dependency_overrides[require_gerente_or_admin]
+    del app.dependency_overrides[require_cajero_or_admin]
 
 
 @pytest.fixture
-async def gerente_client(db_session) -> AsyncGenerator[AsyncClient]:
+async def cajero_client(db_session) -> AsyncGenerator[AsyncClient]:
     app.dependency_overrides[get_current_user] = lambda: AuthenticatedUser(
-        subject="test-gerente", username="gerente@example.com", roles=["Gerente"]
+        subject="test-cajero", username="cajero@example.com", roles=["Cajero"]
     )
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:

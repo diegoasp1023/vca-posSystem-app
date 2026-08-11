@@ -8,7 +8,7 @@ import { ContactPage } from './pages/ContactPage'
 import { CoursePage } from './pages/CoursePage'
 import { ProtectedRoute } from './pages/admin/ProtectedRoute'
 import { RequireAdmin } from './pages/admin/RequireAdmin'
-import { RequireGerente } from './pages/admin/RequireGerente'
+import { RequireCajero } from './pages/admin/RequireCajero'
 import { AdminLayout } from './pages/admin/AdminLayout'
 import { AdminHomePage } from './pages/admin/AdminHomePage'
 import { AdminProductsPage } from './pages/admin/AdminProductsPage'
@@ -40,7 +40,7 @@ function App() {
                 <Route path="menu" element={<AdminMenuPage />} />
                 <Route path="personal" element={<AdminEmployeesPage />} />
               </Route>
-              <Route element={<RequireGerente />}>
+              <Route element={<RequireCajero />}>
                 <Route path="cuentas" element={<AdminTabsPage />} />
               </Route>
             </Route>
