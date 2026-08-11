@@ -6,9 +6,9 @@ intentionally not used yet, see CLAUDE.md). Safe to re-run: every step
 checks whether the resource already exists before creating it.
 
 Creates:
-  - Realm "vca-pos", with the "vca-pos" login theme (keycloak/themes/vca-pos)
-  - Client "vca-pos-frontend" (public, PKCE S256)
-  - Client "vca-pos-backend" (confidential, reserved for future use)
+  - Realm "valiente-cafe", with the "vca-pos" login theme (keycloak/themes/vca-pos)
+  - Client "valiente-cafe-app-frontend" (public, PKCE S256)
+  - Client "valiente-cafe-app-backend" (confidential, reserved for future use)
   - Realm roles: Administrador, Cajero
   - A test user with the Administrador role (only if --with-test-user is passed)
 
@@ -24,10 +24,10 @@ import httpx
 sys.path.insert(0, ".")
 from app.core.config import settings  # noqa: E402
 
-REALM = "vca-pos"
+REALM = "valiente-cafe"
 LOGIN_THEME = "vca-pos"
-FRONTEND_CLIENT_ID = "vca-pos-frontend"
-BACKEND_CLIENT_ID = "vca-pos-backend"
+FRONTEND_CLIENT_ID = "valiente-cafe-app-frontend"
+BACKEND_CLIENT_ID = "valiente-cafe-app-backend"
 ROLES = ["Administrador", "Cajero"]
 TEST_USER_EMAIL = "admin@valientecafe.co"
 DEV_REDIRECT_URI = "http://localhost:5173/*"
