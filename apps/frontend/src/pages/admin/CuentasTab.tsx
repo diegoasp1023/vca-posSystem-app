@@ -409,7 +409,7 @@ export function CuentasTab({ cashSessionOpen }: { cashSessionOpen: boolean }) {
                 </option>
                 {paymentMethods.map((method) => (
                   <option key={method.id} value={method.id}>
-                    {method.name.es}
+                    {method.name}
                   </option>
                 ))}
               </select>

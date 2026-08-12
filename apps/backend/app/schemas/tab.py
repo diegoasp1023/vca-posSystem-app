@@ -10,25 +10,21 @@ SourceType = Literal["menu_item", "product"]
 
 
 class TabPaymentMethodWrite(BaseModel):
-    name_es: str = Field(min_length=1, max_length=50)
-    name_en: str = Field(min_length=1, max_length=50)
+    name: str = Field(min_length=1, max_length=50)
     is_active: bool = True
-    sort_order: int = 0
 
 
 class TabPaymentMethodOut(BaseModel):
     id: int
-    name: LocalizedText
+    name: str
     is_active: bool
-    sort_order: int
 
     @classmethod
     def from_model(cls, method: TabPaymentMethod) -> "TabPaymentMethodOut":
         return cls(
             id=method.id,
-            name=LocalizedText(es=method.name_es, en=method.name_en),
+            name=method.name,
             is_active=method.is_active,
-            sort_order=method.sort_order,
         )
 
 

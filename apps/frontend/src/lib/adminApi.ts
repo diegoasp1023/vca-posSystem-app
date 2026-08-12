@@ -519,17 +519,14 @@ export function fetchPayrollSummary(
 }
 
 export interface TabPaymentMethodWrite {
-  name_es: string
-  name_en: string
+  name: string
   is_active: boolean
-  sort_order: number
 }
 
 export interface TabPaymentMethod {
   id: number
-  name: LocalizedText
+  name: string
   is_active: boolean
-  sort_order: number
 }
 
 export function fetchTabPaymentMethods(token: string | undefined) {
