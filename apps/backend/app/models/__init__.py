@@ -19,6 +19,7 @@ from app.models.payroll import (
 from app.models.product import Presentation, Product, product_presentations
 from app.models.shift import Shift
 from app.models.tab import Tab, TabItem, TabPaymentMethod
+from app.models.table import Table
 
 __all__ = [
     "Bonus",
@@ -37,6 +38,7 @@ __all__ = [
     "Tab",
     "TabItem",
     "TabPaymentMethod",
+    "Table",
     "TipPool",
     "TipPoolParticipant",
     "course_payment_methods",

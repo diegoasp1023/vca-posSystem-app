@@ -21,6 +21,7 @@ from app.models.employee import Employee
 from app.models.menu_item import MenuCategory, MenuItem
 from app.models.product import Presentation, Product
 from app.models.tab import Tab, TabItem, TabPaymentMethod
+from app.models.table import Table
 
 
 @pytest.fixture(autouse=True)
@@ -221,8 +222,25 @@ async def make_tab_payment_method(session, **overrides) -> TabPaymentMethod:
     return method
 
 
+async def make_table(session, **overrides) -> Table:
+    defaults = {
+        "name": "Mesa 1",
+        "shape": "circle",
+        "pos_x": 0.0,
+        "pos_y": 0.0,
+        "width": 70.0,
+        "height": 70.0,
+        "capacity": None,
+    }
+    defaults.update(overrides)
+    table = Table(**defaults)
+    session.add(table)
+    await session.commit()
+    return table
+
+
 async def make_tab(session, **overrides) -> Tab:
-    defaults = {"table_number": None, "reference_note": None, "status": "open"}
+    defaults = {"account_type": "custom", "table_id": None, "reference_note": None, "status": "open"}
     defaults.update(overrides)
     tab = Tab(**defaults)
     session.add(tab)

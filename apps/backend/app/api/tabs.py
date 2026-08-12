@@ -11,13 +11,18 @@ from app.models.cash_session import CashSession
 from app.models.menu_item import MenuItem
 from app.models.product import Product
 from app.models.tab import Tab, TabItem, TabPaymentMethod
+from app.models.table import Table
 from app.schemas.tab import TabCreate, TabItemAdd, TabItemUpdate, TabOut, TabPay, TabUpdate
 
 router = APIRouter(
     prefix="/api/tabs", tags=["tabs"], dependencies=[Depends(require_cajero_or_admin)]
 )
 
-TAB_LOAD_OPTIONS = (selectinload(Tab.items), selectinload(Tab.payment_method))
+TAB_LOAD_OPTIONS = (
+    selectinload(Tab.items),
+    selectinload(Tab.payment_method),
+    selectinload(Tab.table),
+)
 
 
 async def _get_open_session(db: AsyncSession) -> CashSession | None:
@@ -75,8 +80,19 @@ async def create_tab(body: TabCreate, db: AsyncSession = Depends(get_db)) -> Tab
     if session is None:
         raise HTTPException(status_code=400, detail="No cash session is open")
 
+    if body.table_id is not None:
+        table = await db.get(Table, body.table_id)
+        if table is None or table.kind != "table":
+            raise HTTPException(status_code=400, detail="Unknown table_id")
+        occupied = await db.scalar(
+            select(Tab.id).where(Tab.table_id == body.table_id, Tab.status == "open")
+        )
+        if occupied is not None:
+            raise HTTPException(status_code=400, detail="Table already has an open tab")
+
     tab = Tab(
-        table_number=body.table_number,
+        account_type=body.account_type,
+        table_id=body.table_id,
         reference_note=body.reference_note,
         cash_session_id=session.id,
     )
@@ -94,7 +110,6 @@ async def update_tab(
     if tab.status != "open":
         raise HTTPException(status_code=400, detail="Cannot edit a paid tab")
 
-    tab.table_number = body.table_number
     tab.reference_note = body.reference_note
     await db.commit()
     tab = await _get_tab_or_404(db, tab_id)
@@ -112,12 +127,18 @@ async def delete_tab(tab_id: int, db: AsyncSession = Depends(get_db)) -> None:
 
 
 async def _resolve_source(
-    db: AsyncSession, source_type: str, source_id: int
+    db: AsyncSession, source_type: str, source_id: int, unit_price_cop: int | None
 ) -> tuple[str, str, int]:
     if source_type == "menu_item":
         item = await db.get(MenuItem, source_id)
-        if item is None or not item.is_active or item.price_cop is None:
+        if item is None or not item.is_active:
             raise HTTPException(status_code=400, detail="Unknown or unavailable menu item")
+        if item.price_cop is None:
+            if unit_price_cop is None:
+                raise HTTPException(
+                    status_code=400, detail="unit_price_cop is required for this menu item"
+                )
+            return item.name_es, item.name_en, unit_price_cop
         return item.name_es, item.name_en, item.price_cop
 
     item_product = await db.get(Product, source_id)
@@ -143,13 +164,19 @@ async def add_tab_item(
                 (body.source_type == "menu_item" and i.menu_item_id == body.source_id)
                 or (body.source_type == "product" and i.product_id == body.source_id)
             )
+            # A priceless menu item can be re-added at a different price/description each
+            # time, so only merge quantities when those match an existing line exactly.
+            and (body.unit_price_cop is None or i.unit_price_cop == body.unit_price_cop)
+            and i.description == body.description
         ),
         None,
     )
     if existing is not None:
         existing.quantity += body.quantity
     else:
-        name_es, name_en, price_cop = await _resolve_source(db, body.source_type, body.source_id)
+        name_es, name_en, price_cop = await _resolve_source(
+            db, body.source_type, body.source_id, body.unit_price_cop
+        )
         db.add(
             TabItem(
                 tab_id=tab.id,
@@ -160,6 +187,7 @@ async def add_tab_item(
                 name_en=name_en,
                 unit_price_cop=price_cop,
                 quantity=body.quantity,
+                description=body.description,
             )
         )
 

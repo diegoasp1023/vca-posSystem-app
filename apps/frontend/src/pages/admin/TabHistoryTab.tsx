@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { fetchTabHistory, type Tab } from '../../lib/adminApi'
+import { formatDuration, tabTitle } from './TabCard'
 
 function toIsoDate(d: Date): string {
   return d.toISOString().slice(0, 10)
@@ -131,13 +132,18 @@ export function TabHistoryTab() {
             <div key={tab.id} className="rounded-2xl border border-cream bg-white p-5 shadow-sm">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-semibold text-lavender-dark">
-                    {tab.table_number ?? tab.reference_note ?? t('adminTabs.untitledTab')}
-                  </p>
+                  <p className="font-semibold text-lavender-dark">{tabTitle(tab, t)}</p>
                   {tab.paid_at && (
                     <p className="text-xs text-gray-500">
                       {t('adminTabs.paidOn', {
                         date: new Date(tab.paid_at).toLocaleString('es-CO'),
+                      })}
+                    </p>
+                  )}
+                  {tab.paid_at && (
+                    <p className="text-xs text-gray-500">
+                      {t('adminTabs.wasOpenForDuration', {
+                        duration: formatDuration(tab.opened_at, new Date(tab.paid_at)),
                       })}
                     </p>
                   )}

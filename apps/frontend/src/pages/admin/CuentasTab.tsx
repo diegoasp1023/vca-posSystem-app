@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faTrash, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../context/AuthContext'
 import {
   AdminApiError,
@@ -10,6 +10,7 @@ import {
   createTab,
   deleteTab,
   fetchTabPaymentMethods,
+  fetchTables,
   fetchTabs,
   openCashSession,
   payTab,
@@ -20,15 +21,23 @@ import {
   type Tab,
   type TabPaymentMethod,
   type TabSourceType,
+  type Table as FloorTable,
 } from '../../lib/adminApi'
 import { fetchMenuItems, fetchProducts, type MenuItem, type Product } from '../../lib/api'
+import { FloorPlan } from './FloorPlan'
 import { Modal } from './Modal'
+import { TabCard } from './TabCard'
 
 interface PickerEntry {
   source_type: TabSourceType
   source_id: number
   label: string
-  price_cop: number
+  price_cop: number | null
+  category: string
+}
+
+function pickerKey(entry: PickerEntry): string {
+  return `${entry.source_type}-${entry.source_id}`
 }
 
 async function loadAllProducts(): Promise<Product[]> {
@@ -52,16 +61,23 @@ export function CuentasTab({
   const { getToken } = useAuth()
 
   const [tabs, setTabs] = useState<Tab[]>([])
+  const [rawTables, setRawTables] = useState<FloorTable[]>([])
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [paymentMethods, setPaymentMethods] = useState<TabPaymentMethod[]>([])
 
-  const [newTabOpen, setNewTabOpen] = useState(false)
-  const [newTabForm, setNewTabForm] = useState({ table_number: '', reference_note: '' })
+  const [selectedTabId, setSelectedTabId] = useState<number | null>(null)
+
+  const [newAccountType, setNewAccountType] = useState<'takeaway' | 'custom' | null>(null)
+  const [newAccountNote, setNewAccountNote] = useState('')
 
   const [pickerTabId, setPickerTabId] = useState<number | null>(null)
   const [pickerSearch, setPickerSearch] = useState('')
+  const [pickerCategory, setPickerCategory] = useState<string>('all')
+  const [pickerQuantities, setPickerQuantities] = useState<Record<string, number>>({})
+  const [pricingEntry, setPricingEntry] = useState<PickerEntry | null>(null)
+  const [pricingForm, setPricingForm] = useState({ price: '', description: '' })
 
   const [payTabId, setPayTabId] = useState<number | null>(null)
   const [payMethodId, setPayMethodId] = useState<number | ''>('')
@@ -69,9 +85,10 @@ export function CuentasTab({
   const reload = useCallback(() => {
     setStatus('loading')
     getToken()
-      .then(fetchTabs)
-      .then((result) => {
-        setTabs(result)
+      .then((token) => Promise.all([fetchTabs(token), fetchTables(token)]))
+      .then(([tabResult, tableResult]) => {
+        setTabs(tabResult)
+        setRawTables(tableResult)
         setStatus('ready')
       })
       .catch(() => setStatus('error'))
@@ -91,46 +108,147 @@ export function CuentasTab({
     setTabs((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
   }
 
-  const pickerEntries = useMemo<PickerEntry[]>(() => {
-    const search = pickerSearch.trim().toLowerCase()
-    const fromMenu: PickerEntry[] = menuItems
-      .filter((item) => item.price_cop !== null)
-      .map((item) => ({
-        source_type: 'menu_item',
-        source_id: item.id,
-        label: item.name.es,
-        price_cop: item.price_cop as number,
-      }))
+  const openDineInByTableId = useMemo(() => {
+    const map = new Map<number, Tab>()
+    for (const tab of tabs) {
+      if (tab.status === 'open' && tab.table) map.set(tab.table.id, tab)
+    }
+    return map
+  }, [tabs])
+
+  const tables = useMemo(
+    () =>
+      rawTables.map((table) => {
+        const openTab = openDineInByTableId.get(table.id)
+        return {
+          ...table,
+          open_tab: openTab
+            ? { tab_id: openTab.id, total_cop: openTab.total_cop, opened_at: openTab.opened_at }
+            : null,
+        }
+      }),
+    [rawTables, openDineInByTableId],
+  )
+
+  const otherTabs = useMemo(
+    () => tabs.filter((tab) => tab.account_type !== 'dine_in' || tab.status === 'paid'),
+    [tabs],
+  )
+
+  const selectedTab = tabs.find((t) => t.id === selectedTabId) ?? null
+
+  const productsCategoryLabel = t('adminTabs.productsCategory')
+
+  const allPickerEntries = useMemo<PickerEntry[]>(() => {
+    const fromMenu: PickerEntry[] = menuItems.map((item) => ({
+      source_type: 'menu_item' as const,
+      source_id: item.id,
+      label: item.name.es,
+      price_cop: item.price_cop,
+      category: item.category.es,
+    }))
     const fromProducts: PickerEntry[] = products.map((product) => ({
-      source_type: 'product',
+      source_type: 'product' as const,
       source_id: product.id,
       label: product.name.es,
       price_cop: product.price_cop,
+      category: productsCategoryLabel,
     }))
-    return [...fromMenu, ...fromProducts].filter((entry) =>
-      search === '' ? true : entry.label.toLowerCase().includes(search),
-    )
-  }, [menuItems, products, pickerSearch])
+    return [...fromMenu, ...fromProducts]
+  }, [menuItems, products, productsCategoryLabel])
 
-  const submitNewTab = async () => {
-    const token = await getToken()
-    await createTab(token, {
-      table_number: newTabForm.table_number.trim() === '' ? null : newTabForm.table_number,
-      reference_note: newTabForm.reference_note.trim() === '' ? null : newTabForm.reference_note,
+  const pickerCategories = useMemo(
+    () => Array.from(new Set(allPickerEntries.map((entry) => entry.category))),
+    [allPickerEntries],
+  )
+
+  const pickerEntries = useMemo<PickerEntry[]>(() => {
+    const search = pickerSearch.trim().toLowerCase()
+    return allPickerEntries.filter((entry) => {
+      if (pickerCategory !== 'all' && entry.category !== pickerCategory) return false
+      return search === '' ? true : entry.label.toLowerCase().includes(search)
     })
-    setNewTabForm({ table_number: '', reference_note: '' })
-    setNewTabOpen(false)
-    reload()
+  }, [allPickerEntries, pickerCategory, pickerSearch])
+
+  const openPicker = (tabId: number) => {
+    setPickerTabId(tabId)
+    setPickerSearch('')
+    setPickerCategory('all')
+    setPickerQuantities({})
   }
 
-  const addItem = async (tabId: number, entry: PickerEntry) => {
+  const getPickerQuantity = (entry: PickerEntry) => pickerQuantities[pickerKey(entry)] ?? 1
+
+  const setPickerQuantity = (entry: PickerEntry, quantity: number) => {
+    if (quantity < 1) return
+    setPickerQuantities((prev) => ({ ...prev, [pickerKey(entry)]: quantity }))
+  }
+
+  const handleTableClick = async (table: FloorTable) => {
+    if (table.open_tab) {
+      setSelectedTabId(table.open_tab.tab_id)
+      return
+    }
+    const token = await getToken()
+    const created = await createTab(token, {
+      account_type: 'dine_in',
+      table_id: table.id,
+      reference_note: null,
+    })
+    setTabs((prev) => [created, ...prev])
+    setSelectedTabId(created.id)
+  }
+
+  const submitNewAccount = async () => {
+    if (!newAccountType) return
+    const token = await getToken()
+    const created = await createTab(token, {
+      account_type: newAccountType,
+      table_id: null,
+      reference_note: newAccountNote.trim() === '' ? null : newAccountNote.trim(),
+    })
+    setTabs((prev) => [created, ...prev])
+    setNewAccountType(null)
+    setNewAccountNote('')
+  }
+
+  const addItem = async (
+    tabId: number,
+    entry: PickerEntry,
+    quantity: number,
+    priced?: { price: number; description: string | null },
+  ) => {
     const token = await getToken()
     const updated = await addTabItem(token, tabId, {
       source_type: entry.source_type,
       source_id: entry.source_id,
-      quantity: 1,
+      quantity,
+      ...(priced ? { unit_price_cop: priced.price, description: priced.description ?? undefined } : {}),
     })
     replaceTab(updated)
+    setPickerQuantities((prev) => ({ ...prev, [pickerKey(entry)]: 1 }))
+  }
+
+  const handlePickEntry = (entry: PickerEntry) => {
+    if (pickerTabId === null) return
+    if (entry.price_cop === null) {
+      setPricingEntry(entry)
+      setPricingForm({ price: '', description: '' })
+      return
+    }
+    addItem(pickerTabId, entry, getPickerQuantity(entry))
+  }
+
+  const submitPricing = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (pickerTabId === null || !pricingEntry) return
+    const price = Number(pricingForm.price)
+    if (!price || price <= 0) return
+    await addItem(pickerTabId, pricingEntry, getPickerQuantity(pricingEntry), {
+      price,
+      description: pricingForm.description.trim() === '' ? null : pricingForm.description.trim(),
+    })
+    setPricingEntry(null)
   }
 
   const changeQuantity = async (tabId: number, itemId: number, quantity: number) => {
@@ -166,6 +284,7 @@ export function CuentasTab({
     const token = await getToken()
     await deleteTab(token, tabId)
     setTabs((prev) => prev.filter((t) => t.id !== tabId))
+    if (selectedTabId === tabId) setSelectedTabId(null)
   }
 
   const handleOpenSession = async () => {
@@ -234,169 +353,81 @@ export function CuentasTab({
   return (
     <div className="mt-6 space-y-6">
       {cashSessionBanner}
-      <div className="flex justify-end">
+
+      <div className="flex flex-wrap justify-end gap-2">
         <button
           type="button"
-          onClick={() => setNewTabOpen(true)}
-          className="rounded-full bg-coral px-5 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
+          onClick={() => setNewAccountType('takeaway')}
+          className="rounded-full border border-lavender px-5 py-2 text-sm font-semibold text-lavender-dark hover:bg-lavender hover:text-white"
         >
-          {t('adminTabs.newTab')}
+          {t('adminTabs.newTakeaway')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setNewAccountType('custom')}
+          className="rounded-full border border-lavender px-5 py-2 text-sm font-semibold text-lavender-dark hover:bg-lavender hover:text-white"
+        >
+          {t('adminTabs.newCustom')}
         </button>
       </div>
 
       {status === 'loading' && <p className="mt-10 text-gray-500">{t('common.loading')}</p>}
       {status === 'error' && <p className="mt-10 text-gray-500">{t('common.error')}</p>}
-      {status === 'ready' && tabs.length === 0 && (
-        <p className="mt-10 text-gray-500">{t('adminTabs.noTabs')}</p>
+
+      {status === 'ready' && (
+        <FloorPlan tables={tables} editable={false} onTableClick={handleTableClick} />
       )}
 
-      {status === 'ready' && tabs.length > 0 && (
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          {tabs.map((tab) => (
-            <div key={tab.id} className="rounded-2xl border border-cream bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold text-lavender-dark">
-                    {tab.table_number ?? tab.reference_note ?? t('adminTabs.untitledTab')}
-                  </p>
-                  {tab.table_number && tab.reference_note && (
-                    <p className="text-xs text-gray-500">{tab.reference_note}</p>
-                  )}
-                </div>
-                <span
-                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-                    tab.status === 'open'
-                      ? 'bg-lavender/20 text-lavender-dark'
-                      : 'bg-green-100 text-green-700'
-                  }`}
-                >
-                  {tab.status === 'open' ? t('adminTabs.statusOpen') : t('adminTabs.statusPaid')}
-                </span>
-              </div>
-
-              <ul className="mt-4 space-y-2 text-sm">
-                {tab.items.length === 0 && (
-                  <li className="text-gray-500">{t('adminTabs.noItems')}</li>
-                )}
-                {tab.items.map((item) => (
-                  <li key={item.id} className="flex items-center justify-between gap-2">
-                    <span className="flex-1">{item.name.es}</span>
-                    {tab.status === 'open' ? (
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => changeQuantity(tab.id, item.id, item.quantity - 1)}
-                          className="h-6 w-6 rounded-full border border-cream text-lavender-dark"
-                        >
-                          −
-                        </button>
-                        <span className="w-6 text-center">{item.quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => changeQuantity(tab.id, item.id, item.quantity + 1)}
-                          className="h-6 w-6 rounded-full border border-cream text-lavender-dark"
-                        >
-                          +
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="text-gray-500">×{item.quantity}</span>
-                    )}
-                    <span className="w-20 text-right">
-                      ${item.subtotal_cop.toLocaleString('es-CO')}
-                    </span>
-                    {tab.status === 'open' && (
-                      <button
-                        type="button"
-                        onClick={() => removeItem(tab.id, item.id)}
-                        aria-label={t('admin.delete')}
-                        className="text-coral-dark hover:text-coral"
-                      >
-                        <FontAwesomeIcon icon={faXmark} className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-4 flex items-center justify-between border-t border-cream pt-3 font-semibold text-lavender-dark">
-                <span>{t('adminTabs.total')}</span>
-                <span>${tab.total_cop.toLocaleString('es-CO')}</span>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                {tab.status === 'open' && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPickerTabId(tab.id)
-                        setPickerSearch('')
-                      }}
-                      className="rounded-full border border-lavender px-4 py-1.5 text-xs font-semibold text-lavender-dark hover:bg-lavender hover:text-white"
-                    >
-                      <FontAwesomeIcon icon={faPlus} className="mr-1 h-3 w-3" />
-                      {t('adminTabs.addItems')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPayTabId(tab.id)}
-                      disabled={tab.items.length === 0}
-                      className="rounded-full bg-coral px-4 py-1.5 text-xs font-semibold text-white hover:bg-coral-dark disabled:opacity-50"
-                    >
-                      {t('adminTabs.markPaid')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => remove(tab.id)}
-                      aria-label={t('admin.delete')}
-                      className="rounded-full border border-cream px-3 py-1.5 text-xs text-coral-dark hover:bg-coral/10"
-                    >
-                      <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />
-                    </button>
-                  </>
-                )}
-                {tab.status === 'paid' && (
-                  <button
-                    type="button"
-                    onClick={() => reopen(tab.id)}
-                    className="rounded-full border border-lavender px-4 py-1.5 text-xs font-semibold text-lavender-dark hover:bg-lavender hover:text-white"
-                  >
-                    {t('adminTabs.reopen')}
-                  </button>
-                )}
-              </div>
-            </div>
+      {status === 'ready' && otherTabs.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {otherTabs.map((tab) => (
+            <TabCard
+              key={tab.id}
+              tab={tab}
+              onAddItems={openPicker}
+              onChangeQuantity={changeQuantity}
+              onRemoveItem={removeItem}
+              onPay={(id) => setPayTabId(id)}
+              onDelete={remove}
+              onReopen={reopen}
+            />
           ))}
         </div>
       )}
 
-      {newTabOpen && (
-        <Modal title={t('adminTabs.newTab')} onClose={() => setNewTabOpen(false)}>
+      {selectedTab && (
+        <Modal title={t('adminTabs.tableAccount')} onClose={() => setSelectedTabId(null)}>
+          <TabCard
+            tab={selectedTab}
+            onAddItems={openPicker}
+            onChangeQuantity={changeQuantity}
+            onRemoveItem={removeItem}
+            onPay={(id) => setPayTabId(id)}
+            onDelete={remove}
+            onReopen={reopen}
+          />
+        </Modal>
+      )}
+
+      {newAccountType && (
+        <Modal
+          title={newAccountType === 'takeaway' ? t('adminTabs.newTakeaway') : t('adminTabs.newCustom')}
+          onClose={() => setNewAccountType(null)}
+        >
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              submitNewTab()
+              submitNewAccount()
             }}
             className="space-y-4"
           >
             <label className="block text-sm">
               <span className="mb-1 block font-semibold text-lavender-dark">
-                {t('adminTabs.fields.tableNumber')}
-              </span>
-              <input
-                value={newTabForm.table_number}
-                onChange={(e) => setNewTabForm({ ...newTabForm, table_number: e.target.value })}
-                className="w-full rounded-lg border border-cream px-3 py-2"
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block font-semibold text-lavender-dark">
                 {t('adminTabs.fields.referenceNote')}
               </span>
               <input
-                value={newTabForm.reference_note}
-                onChange={(e) => setNewTabForm({ ...newTabForm, reference_note: e.target.value })}
+                value={newAccountNote}
+                onChange={(e) => setNewAccountNote(e.target.value)}
                 className="w-full rounded-lg border border-cream px-3 py-2"
               />
             </label>
@@ -409,7 +440,7 @@ export function CuentasTab({
               </button>
               <button
                 type="button"
-                onClick={() => setNewTabOpen(false)}
+                onClick={() => setNewAccountType(null)}
                 className="rounded-full border border-lavender px-6 py-2 text-sm font-semibold text-lavender-dark"
               >
                 {t('admin.cancel')}
@@ -420,36 +451,141 @@ export function CuentasTab({
       )}
 
       {pickerTabId !== null && (
-        <Modal title={t('adminTabs.addItems')} onClose={() => setPickerTabId(null)}>
+        <Modal
+          title={t('adminTabs.addItems')}
+          onClose={() => setPickerTabId(null)}
+          maxWidthClassName="max-w-xl"
+        >
           <input
             value={pickerSearch}
             onChange={(e) => setPickerSearch(e.target.value)}
             placeholder={t('adminTabs.searchPlaceholder')}
-            className="mb-4 w-full rounded-lg border border-cream px-3 py-2 text-sm"
+            className="mb-3 w-full rounded-lg border border-cream px-3 py-2 text-sm"
           />
-          <ul className="max-h-80 space-y-1 overflow-y-auto">
-            {pickerEntries.map((entry) => (
-              <li
-                key={`${entry.source_type}-${entry.source_id}`}
-                className="flex items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm hover:bg-cream/60"
+          <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+            <button
+              type="button"
+              onClick={() => setPickerCategory('all')}
+              className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+                pickerCategory === 'all'
+                  ? 'bg-coral text-white'
+                  : 'bg-cream/60 text-lavender-dark hover:bg-cream'
+              }`}
+            >
+              {t('adminTabs.allCategories')}
+            </button>
+            {pickerCategories.map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setPickerCategory(category)}
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+                  pickerCategory === category
+                    ? 'bg-coral text-white'
+                    : 'bg-cream/60 text-lavender-dark hover:bg-cream'
+                }`}
               >
-                <span className="flex-1">{entry.label}</span>
-                <span className="text-gray-500">${entry.price_cop.toLocaleString('es-CO')}</span>
-                <button
-                  type="button"
-                  onClick={() => addItem(pickerTabId, entry)}
-                  className="rounded-full bg-coral px-3 py-1 text-xs font-semibold text-white hover:bg-coral-dark"
-                >
-                  <FontAwesomeIcon icon={faPlus} className="h-3 w-3" />
-                </button>
-              </li>
+                {category}
+              </button>
             ))}
+          </div>
+          <ul className="max-h-80 space-y-1 overflow-y-auto">
+            {pickerEntries.map((entry) => {
+              const quantity = getPickerQuantity(entry)
+              return (
+                <li
+                  key={pickerKey(entry)}
+                  className="flex items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm hover:bg-cream/60"
+                >
+                  <span className="flex-1">{entry.label}</span>
+                  <span className="w-20 text-right text-gray-500">
+                    {entry.price_cop === null
+                      ? t('adminTabs.noPrice')
+                      : `$${entry.price_cop.toLocaleString('es-CO')}`}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setPickerQuantity(entry, quantity - 1)}
+                      aria-label="-"
+                      className="flex h-6 w-6 items-center justify-center rounded-full border border-cream text-lavender-dark"
+                    >
+                      <FontAwesomeIcon icon={faMinus} className="h-2.5 w-2.5" />
+                    </button>
+                    <span className="w-5 text-center">{quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() => setPickerQuantity(entry, quantity + 1)}
+                      aria-label="+"
+                      className="flex h-6 w-6 items-center justify-center rounded-full border border-cream text-lavender-dark"
+                    >
+                      <FontAwesomeIcon icon={faPlus} className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handlePickEntry(entry)}
+                    className="rounded-full bg-coral px-3 py-1 text-xs font-semibold text-white hover:bg-coral-dark"
+                  >
+                    {t('adminTabs.add')}
+                  </button>
+                </li>
+              )
+            })}
             {pickerEntries.length === 0 && (
               <li className="py-4 text-center text-sm text-gray-500">
                 {t('adminTabs.noResults')}
               </li>
             )}
           </ul>
+        </Modal>
+      )}
+
+      {pricingEntry && (
+        <Modal title={pricingEntry.label} onClose={() => setPricingEntry(null)}>
+          <form onSubmit={submitPricing} className="space-y-4">
+            <p className="text-sm text-gray-500">
+              {t('adminTabs.fields.quantity')}: {getPickerQuantity(pricingEntry)}
+            </p>
+            <label className="block text-sm">
+              <span className="mb-1 block font-semibold text-lavender-dark">
+                {t('adminTabs.fields.price')} *
+              </span>
+              <input
+                required
+                type="number"
+                min={1}
+                value={pricingForm.price}
+                onChange={(e) => setPricingForm({ ...pricingForm, price: e.target.value })}
+                className="w-full rounded-lg border border-cream px-3 py-2"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-semibold text-lavender-dark">
+                {t('adminTabs.fields.description')}
+              </span>
+              <input
+                value={pricingForm.description}
+                onChange={(e) => setPricingForm({ ...pricingForm, description: e.target.value })}
+                className="w-full rounded-lg border border-cream px-3 py-2"
+              />
+            </label>
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
+              >
+                {t('adminTabs.addItems')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPricingEntry(null)}
+                className="rounded-full border border-lavender px-6 py-2 text-sm font-semibold text-lavender-dark"
+              >
+                {t('admin.cancel')}
+              </button>
+            </div>
+          </form>
         </Modal>
       )}
 
