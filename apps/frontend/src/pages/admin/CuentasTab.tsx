@@ -4,15 +4,19 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faTrash, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../context/AuthContext'
 import {
+  AdminApiError,
   addTabItem,
+  closeCashSession,
   createTab,
   deleteTab,
   fetchTabPaymentMethods,
   fetchTabs,
+  openCashSession,
   payTab,
   removeTabItem,
   reopenTab,
   updateTabItem,
+  type CashSession,
   type Tab,
   type TabPaymentMethod,
   type TabSourceType,
@@ -37,7 +41,13 @@ async function loadAllProducts(): Promise<Product[]> {
   return [first, ...rest].flatMap((page) => page.items)
 }
 
-export function CuentasTab({ cashSessionOpen }: { cashSessionOpen: boolean }) {
+export function CuentasTab({
+  cashSession,
+  onCashSessionChange,
+}: {
+  cashSession: CashSession | null | undefined
+  onCashSessionChange: () => void
+}) {
   const { t } = useTranslation()
   const { getToken } = useAuth()
 
@@ -158,14 +168,72 @@ export function CuentasTab({ cashSessionOpen }: { cashSessionOpen: boolean }) {
     setTabs((prev) => prev.filter((t) => t.id !== tabId))
   }
 
-  if (!cashSessionOpen) {
+  const handleOpenSession = async () => {
+    const token = await getToken()
+    await openCashSession(token)
+    onCashSessionChange()
+  }
+
+  const handleCloseSession = async () => {
+    if (!window.confirm(t('adminTabs.confirmCloseCashSession'))) return
+    const token = await getToken()
+    try {
+      await closeCashSession(token)
+      onCashSessionChange()
+    } catch (error) {
+      const message =
+        error instanceof AdminApiError && error.status === 400
+          ? t('adminTabs.closeCashSessionUnpaidError')
+          : t('admin.saveError')
+      window.alert(message)
+    }
+  }
+
+  const cashSessionBanner = cashSession !== undefined && (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cream bg-white p-4">
+      <span className="text-sm font-semibold text-lavender-dark">
+        {cashSession
+          ? t('adminTabs.cashSessionOpenLabel', {
+              time: new Date(cashSession.opened_at).toLocaleTimeString('es-CO', {
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+              username: cashSession.opened_by,
+            })
+          : t('adminTabs.cashSessionClosedLabel')}
+      </span>
+      {cashSession ? (
+        <button
+          type="button"
+          onClick={handleCloseSession}
+          className="rounded-full border border-coral px-5 py-2 text-sm font-semibold text-coral-dark hover:bg-coral/10"
+        >
+          {t('adminTabs.closeCashSession')}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={handleOpenSession}
+          className="rounded-full bg-coral px-5 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
+        >
+          {t('adminTabs.openCashSession')}
+        </button>
+      )}
+    </div>
+  )
+
+  if (!cashSession) {
     return (
-      <p className="mt-10 text-center text-gray-500">{t('adminTabs.cashSessionClosedNotice')}</p>
+      <div className="mt-6 space-y-6">
+        {cashSessionBanner}
+        <p className="text-center text-gray-500">{t('adminTabs.cashSessionClosedNotice')}</p>
+      </div>
     )
   }
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 space-y-6">
+      {cashSessionBanner}
       <div className="flex justify-end">
         <button
           type="button"

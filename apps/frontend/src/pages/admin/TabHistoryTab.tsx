@@ -166,7 +166,7 @@ export function TabHistoryTab() {
 
               {tab.payment_method && (
                 <p className="mt-2 text-xs text-gray-500">
-                  {t('adminTabs.fields.paymentMethod')}: {tab.payment_method.name.es}
+                  {t('adminTabs.fields.paymentMethod')}: {tab.payment_method.name}
                 </p>
               )}
             </div>
