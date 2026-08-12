@@ -47,10 +47,17 @@ export function MenuSection() {
   return (
     <section id="menu" className="px-6 py-20">
       <div className="mx-auto max-w-5xl">
-        <h2 className="text-center font-serif text-3xl text-lavender-dark">
-          {t('menu.heading')}
-        </h2>
-        <p className="mt-3 text-center text-gray-600">{t('menu.note')}</p>
+        <div className="grid items-center gap-10 sm:grid-cols-2">
+          <div>
+            <h2 className="font-serif text-3xl text-lavender-dark">{t('menu.heading')}</h2>
+            <p className="mt-4 text-gray-600">{t('menu.note')}</p>
+          </div>
+          <img
+            src="/images/cafe-empaque.jpg"
+            alt={t('menu.heading')}
+            className="h-64 w-full rounded-2xl object-cover sm:h-80"
+          />
+        </div>
 
         {status === 'loading' && (
           <p className="mt-10 text-center text-gray-500">{t('common.loading')}</p>
