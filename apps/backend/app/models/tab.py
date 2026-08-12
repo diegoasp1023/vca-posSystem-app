@@ -34,6 +34,9 @@ class Tab(Base):
     payment_method_id: Mapped[int | None] = mapped_column(
         ForeignKey("tab_payment_methods.id", ondelete="RESTRICT"), nullable=True
     )
+    cash_session_id: Mapped[int | None] = mapped_column(
+        ForeignKey("cash_sessions.id"), nullable=True
+    )
     opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

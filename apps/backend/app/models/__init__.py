@@ -1,3 +1,4 @@
+from app.models.cash_session import CashSession
 from app.models.course import (
     Course,
     CourseContentModule,
@@ -21,6 +22,7 @@ from app.models.tab import Tab, TabItem, TabPaymentMethod
 
 __all__ = [
     "Bonus",
+    "CashSession",
     "Course",
     "CourseContentModule",
     "CourseCost",

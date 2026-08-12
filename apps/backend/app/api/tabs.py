@@ -1,12 +1,13 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.auth import require_cajero_or_admin
 from app.core.database import get_db
+from app.models.cash_session import CashSession
 from app.models.menu_item import MenuItem
 from app.models.product import Product
 from app.models.tab import Tab, TabItem, TabPaymentMethod
@@ -19,9 +20,9 @@ router = APIRouter(
 TAB_LOAD_OPTIONS = (selectinload(Tab.items), selectinload(Tab.payment_method))
 
 
-def _today_start_utc() -> datetime:
-    now = datetime.now(timezone.utc)
-    return now.replace(hour=0, minute=0, second=0, microsecond=0)
+async def _get_open_session(db: AsyncSession) -> CashSession | None:
+    result = await db.execute(select(CashSession).where(CashSession.status == "open"))
+    return result.scalars().first()
 
 
 async def _get_tab_or_404(db: AsyncSession, tab_id: int) -> Tab:
@@ -33,23 +34,52 @@ async def _get_tab_or_404(db: AsyncSession, tab_id: int) -> Tab:
 
 @router.get("", response_model=list[TabOut])
 async def list_tabs(db: AsyncSession = Depends(get_db)) -> list[TabOut]:
+    session = await _get_open_session(db)
+    if session is None:
+        return []
+
     result = await db.execute(
         select(Tab)
-        .where(
-            or_(
-                Tab.status == "open",
-                Tab.paid_at >= _today_start_utc(),
-            )
-        )
+        .where(Tab.cash_session_id == session.id)
         .options(*TAB_LOAD_OPTIONS)
         .order_by(Tab.opened_at.desc())
     )
     return [TabOut.from_model(t) for t in result.scalars().all()]
 
 
+@router.get("/history", response_model=list[TabOut])
+async def list_tab_history(
+    start_date: date | None = None,
+    end_date: date | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> list[TabOut]:
+    query = (
+        select(Tab)
+        .join(CashSession, Tab.cash_session_id == CashSession.id)
+        .where(CashSession.status == "closed", Tab.status == "paid")
+        .options(*TAB_LOAD_OPTIONS)
+        .order_by(Tab.paid_at.desc())
+    )
+    if start_date is not None:
+        query = query.where(Tab.paid_at >= datetime.combine(start_date, time.min, tzinfo=timezone.utc))
+    if end_date is not None:
+        query = query.where(Tab.paid_at <= datetime.combine(end_date, time.max, tzinfo=timezone.utc))
+
+    result = await db.execute(query)
+    return [TabOut.from_model(t) for t in result.scalars().all()]
+
+
 @router.post("", response_model=TabOut, status_code=201)
 async def create_tab(body: TabCreate, db: AsyncSession = Depends(get_db)) -> TabOut:
-    tab = Tab(table_number=body.table_number, reference_note=body.reference_note)
+    session = await _get_open_session(db)
+    if session is None:
+        raise HTTPException(status_code=400, detail="No cash session is open")
+
+    tab = Tab(
+        table_number=body.table_number,
+        reference_note=body.reference_note,
+        cash_session_id=session.id,
+    )
     db.add(tab)
     await db.commit()
     tab = await _get_tab_or_404(db, tab.id)
