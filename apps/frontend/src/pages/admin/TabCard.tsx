@@ -25,6 +25,47 @@ export function formatDuration(fromIso: string, until: Date): string {
   return hours > 0 ? `${hours}h ${minutes}min` : `${minutes} min`
 }
 
+export function PaymentsSummary({ tab }: { tab: Tab }) {
+  const { t } = useTranslation()
+  if (tab.payments.length === 0) return null
+
+  return (
+    <div className="mt-2 space-y-1 border-t border-cream pt-2 text-xs text-gray-500">
+      {tab.payments.length > 1 ? (
+        tab.payments.map((payment) => (
+          <div key={payment.id} className="flex items-center justify-between">
+            <span>{payment.payment_method.name}</span>
+            <span>
+              ${payment.amount_cop.toLocaleString('es-CO')}
+              {payment.tip_cop > 0 && (
+                <span className="text-lavender-dark">
+                  {' '}
+                  + ${payment.tip_cop.toLocaleString('es-CO')} {t('adminTabs.fields.tip')}
+                </span>
+              )}
+            </span>
+          </div>
+        ))
+      ) : (
+        <div className="flex items-center justify-between">
+          <span>{tab.payments[0].payment_method.name}</span>
+          {tab.tip_total_cop > 0 && (
+            <span>
+              {t('adminTabs.fields.tip')}: ${tab.tip_total_cop.toLocaleString('es-CO')}
+            </span>
+          )}
+        </div>
+      )}
+      {tab.tip_total_cop > 0 && (
+        <div className="flex items-center justify-between font-semibold text-lavender-dark">
+          <span>{t('adminTabs.grandTotal')}</span>
+          <span>${tab.grand_total_cop.toLocaleString('es-CO')}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function TabCard({
   tab,
   onAddItems,
@@ -140,6 +181,8 @@ export function TabCard({
         <span>{t('adminTabs.total')}</span>
         <span>${tab.total_cop.toLocaleString('es-CO')}</span>
       </div>
+
+      {tab.status === 'paid' && <PaymentsSummary tab={tab} />}
 
       <div className="mt-4 flex flex-wrap gap-2">
         {tab.status === 'open' && (
