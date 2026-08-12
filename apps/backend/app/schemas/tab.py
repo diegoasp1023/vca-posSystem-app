@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.tab import Tab, TabItem, TabPaymentMethod
 from app.schemas.common import LocalizedText
 
 SourceType = Literal["menu_item", "product"]
+AccountType = Literal["dine_in", "takeaway", "custom"]
 
 
 class TabPaymentMethodWrite(BaseModel):
@@ -29,12 +30,20 @@ class TabPaymentMethodOut(BaseModel):
 
 
 class TabCreate(BaseModel):
-    table_number: str | None = Field(default=None, max_length=50)
+    account_type: AccountType
+    table_id: int | None = None
     reference_note: str | None = Field(default=None, max_length=200)
+
+    @model_validator(mode="after")
+    def _check_fields_match_account_type(self) -> "TabCreate":
+        if self.account_type == "dine_in" and self.table_id is None:
+            raise ValueError("dine_in accounts require a table_id")
+        if self.account_type != "dine_in" and self.table_id is not None:
+            raise ValueError("only dine_in accounts can have a table_id")
+        return self
 
 
 class TabUpdate(BaseModel):
-    table_number: str | None = Field(default=None, max_length=50)
     reference_note: str | None = Field(default=None, max_length=200)
 
 
@@ -42,6 +51,8 @@ class TabItemAdd(BaseModel):
     source_type: SourceType
     source_id: int
     quantity: int = Field(default=1, gt=0)
+    unit_price_cop: int | None = Field(default=None, gt=0)
+    description: str | None = Field(default=None, max_length=200)
 
 
 class TabItemUpdate(BaseModel):
@@ -60,6 +71,7 @@ class TabItemOut(BaseModel):
     name: LocalizedText
     unit_price_cop: int
     quantity: int
+    description: str | None
     subtotal_cop: int
 
     @classmethod
@@ -72,13 +84,20 @@ class TabItemOut(BaseModel):
             name=LocalizedText(es=item.name_es, en=item.name_en),
             unit_price_cop=item.unit_price_cop,
             quantity=item.quantity,
+            description=item.description,
             subtotal_cop=item.unit_price_cop * item.quantity,
         )
 
 
+class TabTableInfo(BaseModel):
+    id: int
+    name: str
+
+
 class TabOut(BaseModel):
     id: int
-    table_number: str | None
+    account_type: AccountType
+    table: TabTableInfo | None
     reference_note: str | None
     status: Literal["open", "paid"]
     payment_method: TabPaymentMethodOut | None
@@ -92,7 +111,8 @@ class TabOut(BaseModel):
         items = [TabItemOut.from_model(item) for item in tab.items]
         return cls(
             id=tab.id,
-            table_number=tab.table_number,
+            account_type=tab.account_type,  # type: ignore[arg-type]
+            table=TabTableInfo(id=tab.table.id, name=tab.table.name) if tab.table else None,
             reference_note=tab.reference_note,
             status=tab.status,  # type: ignore[arg-type]
             payment_method=(

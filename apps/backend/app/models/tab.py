@@ -4,6 +4,7 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.models.table import Table
 
 
 class TabPaymentMethod(Base):
@@ -26,7 +27,10 @@ class Tab(Base):
     __tablename__ = "tabs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    table_number: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    account_type: Mapped[str] = mapped_column(String(20), nullable=False, default="dine_in")
+    table_id: Mapped[int | None] = mapped_column(
+        ForeignKey("tables.id", ondelete="RESTRICT"), nullable=True
+    )
     reference_note: Mapped[str | None] = mapped_column(String(200), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="open")
     payment_method_id: Mapped[int | None] = mapped_column(
@@ -38,6 +42,7 @@ class Tab(Base):
     opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    table: Mapped[Table | None] = relationship()
     payment_method: Mapped[TabPaymentMethod | None] = relationship()
     items: Mapped[list["TabItem"]] = relationship(
         back_populates="tab", cascade="all, delete-orphan", order_by="TabItem.id"
@@ -62,5 +67,6 @@ class TabItem(Base):
     name_en: Mapped[str] = mapped_column(String(150), nullable=False)
     unit_price_cop: Mapped[int] = mapped_column(Integer, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    description: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
     tab: Mapped[Tab] = relationship(back_populates="items")

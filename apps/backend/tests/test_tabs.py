@@ -5,6 +5,7 @@ from tests.conftest import (
     make_tab,
     make_tab_item,
     make_tab_payment_method,
+    make_table,
 )
 
 
@@ -54,24 +55,92 @@ async def test_list_tabs_excludes_tabs_from_other_sessions(db_session, cajero_cl
     assert other_tab.id not in ids
 
 
-async def test_create_tab(db_session, cajero_client):
+async def test_create_dine_in_tab(db_session, cajero_client):
     await make_cash_session(db_session)
+    table = await make_table(db_session, name="Mesa 3")
 
     response = await cajero_client.post(
-        "/api/tabs", json={"table_number": "Mesa 3", "reference_note": "Juan"}
+        "/api/tabs", json={"account_type": "dine_in", "table_id": table.id}
     )
 
     assert response.status_code == 201
     body = response.json()
-    assert body["table_number"] == "Mesa 3"
+    assert body["account_type"] == "dine_in"
+    assert body["table"] == {"id": table.id, "name": "Mesa 3"}
     assert body["status"] == "open"
     assert body["items"] == []
     assert body["total_cop"] == 0
 
 
+async def test_create_takeaway_tab(db_session, cajero_client):
+    await make_cash_session(db_session)
+
+    response = await cajero_client.post(
+        "/api/tabs", json={"account_type": "takeaway", "reference_note": "Juan"}
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["account_type"] == "takeaway"
+    assert body["table"] is None
+
+
+async def test_create_custom_tab_without_reference_note(db_session, cajero_client):
+    await make_cash_session(db_session)
+
+    response = await cajero_client.post("/api/tabs", json={"account_type": "custom"})
+
+    assert response.status_code == 201
+    assert response.json()["reference_note"] is None
+
+
+async def test_create_dine_in_tab_requires_table_id(db_session, cajero_client):
+    await make_cash_session(db_session)
+
+    response = await cajero_client.post("/api/tabs", json={"account_type": "dine_in"})
+
+    assert response.status_code == 422
+
+
+async def test_create_takeaway_tab_rejects_table_id(db_session, cajero_client):
+    await make_cash_session(db_session)
+    table = await make_table(db_session)
+
+    response = await cajero_client.post(
+        "/api/tabs", json={"account_type": "takeaway", "table_id": table.id}
+    )
+
+    assert response.status_code == 422
+
+
+async def test_create_dine_in_tab_rejects_occupied_table(db_session, cajero_client):
+    session = await make_cash_session(db_session)
+    table = await make_table(db_session)
+    await make_tab(
+        db_session, account_type="dine_in", table_id=table.id, cash_session_id=session.id
+    )
+
+    response = await cajero_client.post(
+        "/api/tabs", json={"account_type": "dine_in", "table_id": table.id}
+    )
+
+    assert response.status_code == 400
+
+
+async def test_create_dine_in_tab_rejects_landmark(db_session, cajero_client):
+    await make_cash_session(db_session)
+    landmark = await make_table(db_session, kind="entrance")
+
+    response = await cajero_client.post(
+        "/api/tabs", json={"account_type": "dine_in", "table_id": landmark.id}
+    )
+
+    assert response.status_code == 400
+
+
 async def test_create_tab_without_open_session_is_rejected(cajero_client):
     response = await cajero_client.post(
-        "/api/tabs", json={"table_number": "Mesa 3", "reference_note": "Juan"}
+        "/api/tabs", json={"account_type": "custom", "reference_note": "Juan"}
     )
 
     assert response.status_code == 400
@@ -81,11 +150,11 @@ async def test_update_open_tab(db_session, cajero_client):
     tab = await make_tab(db_session)
 
     response = await cajero_client.patch(
-        f"/api/tabs/{tab.id}", json={"table_number": "Mesa 5", "reference_note": None}
+        f"/api/tabs/{tab.id}", json={"reference_note": "Mesa 5"}
     )
 
     assert response.status_code == 200
-    assert response.json()["table_number"] == "Mesa 5"
+    assert response.json()["reference_note"] == "Mesa 5"
 
 
 async def test_delete_open_tab(db_session, cajero_client):
@@ -175,7 +244,7 @@ async def test_add_item_rejects_inactive_menu_item(db_session, cajero_client):
     assert response.status_code == 400
 
 
-async def test_add_item_rejects_menu_item_without_price(db_session, cajero_client):
+async def test_add_item_rejects_menu_item_without_price_and_no_override(db_session, cajero_client):
     tab = await make_tab(db_session)
     menu_item = await make_menu_item(db_session, price_cop=None)
 
@@ -185,6 +254,45 @@ async def test_add_item_rejects_menu_item_without_price(db_session, cajero_clien
     )
 
     assert response.status_code == 400
+
+
+async def test_add_priceless_menu_item_with_price_and_description(db_session, cajero_client):
+    tab = await make_tab(db_session)
+    menu_item = await make_menu_item(db_session, price_cop=None)
+
+    response = await cajero_client.post(
+        f"/api/tabs/{tab.id}/items",
+        json={
+            "source_type": "menu_item",
+            "source_id": menu_item.id,
+            "quantity": 1,
+            "unit_price_cop": 8000,
+            "description": "Combo especial",
+        },
+    )
+
+    assert response.status_code == 201
+    item = response.json()["items"][0]
+    assert item["unit_price_cop"] == 8000
+    assert item["description"] == "Combo especial"
+
+
+async def test_add_priced_menu_item_ignores_price_override(db_session, cajero_client):
+    tab = await make_tab(db_session)
+    menu_item = await make_menu_item(db_session, price_cop=9900)
+
+    response = await cajero_client.post(
+        f"/api/tabs/{tab.id}/items",
+        json={
+            "source_type": "menu_item",
+            "source_id": menu_item.id,
+            "quantity": 1,
+            "unit_price_cop": 1,
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["items"][0]["unit_price_cop"] == 9900
 
 
 async def test_update_tab_item_quantity(db_session, cajero_client):
