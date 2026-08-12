@@ -323,7 +323,7 @@ const resources = {
         confirmCloseCashSession: '¿Seguro que querés cerrar la caja?',
         closeCashSessionUnpaidError:
           'No se puede cerrar la caja: todavía hay cuentas sin pagar.',
-        cashSessionClosedNotice: 'La caja está cerrada. Abrila para poder gestionar cuentas.',
+        cashSessionClosedNotice: 'La caja está cerrada. Abrela para poder gestionar cuentas.',
         historyFilterToday: 'Hoy',
         historyFilterThisMonth: 'Este mes',
         historyFilterThisYear: 'Este año',
