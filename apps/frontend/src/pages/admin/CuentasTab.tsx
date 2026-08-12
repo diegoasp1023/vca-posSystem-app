@@ -403,7 +403,7 @@ export function CuentasTab() {
                 </option>
                 {paymentMethods.map((method) => (
                   <option key={method.id} value={method.id}>
-                    {method.name.es}
+                    {method.name}
                   </option>
                 ))}
               </select>
