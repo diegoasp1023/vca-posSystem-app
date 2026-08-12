@@ -15,6 +15,7 @@ from app.core.auth import (
 from app.core.config import settings
 from app.core.database import Base, get_db
 from app.main import app
+from app.models.cash_session import CashSession
 from app.models.course import Course, CourseContentModule, CourseCost, CourseObjective
 from app.models.employee import Employee
 from app.models.menu_item import MenuCategory, MenuItem
@@ -200,6 +201,15 @@ async def make_menu_item(session, category=None, **overrides) -> MenuItem:
     session.add(item)
     await session.commit()
     return item
+
+
+async def make_cash_session(session, **overrides) -> CashSession:
+    defaults = {"status": "open", "opened_by": "cajero@example.com"}
+    defaults.update(overrides)
+    cash_session = CashSession(**defaults)
+    session.add(cash_session)
+    await session.commit()
+    return cash_session
 
 
 async def make_tab_payment_method(session, **overrides) -> TabPaymentMethod:

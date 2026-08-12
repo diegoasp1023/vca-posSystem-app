@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
 from app.api import (
+    cash_sessions,
     courses,
     employees,
     lookups,
@@ -58,6 +59,7 @@ app.include_router(menu_categories.router)
 app.include_router(menu_items.router)
 app.include_router(tabs.router)
 app.include_router(tab_payment_methods.router)
+app.include_router(cash_sessions.router)
 
 
 @app.get("/api/health")
