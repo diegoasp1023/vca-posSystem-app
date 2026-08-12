@@ -4,6 +4,7 @@ from tests.conftest import (
     make_product,
     make_tab,
     make_tab_item,
+    make_tab_payment,
     make_tab_payment_method,
     make_table,
 )
@@ -334,14 +335,116 @@ async def test_pay_tab(db_session, cajero_client):
     method = await make_tab_payment_method(db_session)
 
     response = await cajero_client.post(
-        f"/api/tabs/{tab.id}/pay", json={"payment_method_id": method.id}
+        f"/api/tabs/{tab.id}/pay",
+        json={"parts": [{"payment_method_id": method.id, "amount_cop": 9900, "tip_cop": 990}]},
     )
 
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "paid"
-    assert body["payment_method"]["id"] == method.id
+    assert len(body["payments"]) == 1
+    assert body["payments"][0]["payment_method"]["id"] == method.id
+    assert body["payments"][0]["amount_cop"] == 9900
+    assert body["tip_total_cop"] == 990
+    assert body["grand_total_cop"] == 9900 + 990
     assert body["paid_at"] is not None
+
+
+async def test_pay_tab_split_equally_with_different_methods(db_session, cajero_client):
+    tab = await make_tab(db_session)
+    await make_tab_item(db_session, tab, unit_price_cop=10000, quantity=1)
+    cash = await make_tab_payment_method(db_session, name="Efectivo")
+    card = await make_tab_payment_method(db_session, name="Tarjeta")
+
+    response = await cajero_client.post(
+        f"/api/tabs/{tab.id}/pay",
+        json={
+            "parts": [
+                {"payment_method_id": cash.id, "amount_cop": 5000, "tip_cop": 500},
+                {"payment_method_id": card.id, "amount_cop": 5000, "tip_cop": 0},
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["payments"]) == 2
+    assert body["tip_total_cop"] == 500
+
+
+async def test_pay_tab_split_amounts_must_match_total(db_session, cajero_client):
+    tab = await make_tab(db_session)
+    await make_tab_item(db_session, tab, unit_price_cop=10000, quantity=1)
+    method = await make_tab_payment_method(db_session)
+
+    response = await cajero_client.post(
+        f"/api/tabs/{tab.id}/pay",
+        json={"parts": [{"payment_method_id": method.id, "amount_cop": 4000, "tip_cop": 0}]},
+    )
+
+    assert response.status_code == 400
+
+
+async def test_pay_tab_split_by_items(db_session, cajero_client):
+    tab = await make_tab(db_session)
+    item_a = await make_tab_item(
+        db_session, tab, name_es="Café", unit_price_cop=5000, quantity=2
+    )
+    item_b = await make_tab_item(
+        db_session,
+        tab,
+        source_type="product",
+        menu_item_id=None,
+        name_es="Torta",
+        unit_price_cop=8000,
+        quantity=1,
+    )
+    method = await make_tab_payment_method(db_session)
+
+    response = await cajero_client.post(
+        f"/api/tabs/{tab.id}/pay",
+        json={
+            "parts": [
+                {
+                    "payment_method_id": method.id,
+                    "tip_cop": 500,
+                    "item_allocations": [{"item_id": item_a.id, "quantity": 2}],
+                },
+                {
+                    "payment_method_id": method.id,
+                    "tip_cop": 800,
+                    "item_allocations": [{"item_id": item_b.id, "quantity": 1}],
+                },
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    amounts = sorted(p["amount_cop"] for p in body["payments"])
+    assert amounts == [8000, 10000]
+    assert body["tip_total_cop"] == 1300
+
+
+async def test_pay_tab_split_by_items_requires_full_allocation(db_session, cajero_client):
+    tab = await make_tab(db_session)
+    item = await make_tab_item(db_session, tab, unit_price_cop=5000, quantity=2)
+    method = await make_tab_payment_method(db_session)
+
+    response = await cajero_client.post(
+        f"/api/tabs/{tab.id}/pay",
+        json={
+            "parts": [
+                {
+                    "payment_method_id": method.id,
+                    "tip_cop": 0,
+                    "item_allocations": [{"item_id": item.id, "quantity": 1}],
+                }
+            ]
+        },
+    )
+
+    assert response.status_code == 400
 
 
 async def test_pay_tab_with_no_items_is_rejected(db_session, cajero_client):
@@ -349,7 +452,8 @@ async def test_pay_tab_with_no_items_is_rejected(db_session, cajero_client):
     method = await make_tab_payment_method(db_session)
 
     response = await cajero_client.post(
-        f"/api/tabs/{tab.id}/pay", json={"payment_method_id": method.id}
+        f"/api/tabs/{tab.id}/pay",
+        json={"parts": [{"payment_method_id": method.id, "amount_cop": 100, "tip_cop": 0}]},
     )
 
     assert response.status_code == 400
@@ -360,22 +464,24 @@ async def test_pay_already_paid_tab_is_rejected(db_session, cajero_client):
     method = await make_tab_payment_method(db_session)
 
     response = await cajero_client.post(
-        f"/api/tabs/{tab.id}/pay", json={"payment_method_id": method.id}
+        f"/api/tabs/{tab.id}/pay",
+        json={"parts": [{"payment_method_id": method.id, "amount_cop": 100, "tip_cop": 0}]},
     )
 
     assert response.status_code == 400
 
 
-async def test_reopen_paid_tab(db_session, cajero_client):
+async def test_reopen_paid_tab_clears_payments(db_session, cajero_client):
     method = await make_tab_payment_method(db_session)
-    tab = await make_tab(db_session, status="paid", payment_method_id=method.id)
+    tab = await make_tab(db_session, status="paid")
+    await make_tab_payment(db_session, tab, payment_method_id=method.id)
 
     response = await cajero_client.post(f"/api/tabs/{tab.id}/reopen")
 
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "open"
-    assert body["payment_method"] is None
+    assert body["payments"] == []
     assert body["paid_at"] is None
 
 
@@ -387,19 +493,17 @@ async def test_reopen_open_tab_is_rejected(db_session, cajero_client):
     assert response.status_code == 400
 
 
-async def test_history_only_includes_paid_tabs_from_closed_sessions(db_session, cajero_client):
+async def test_history_includes_paid_tabs_from_open_and_closed_sessions(db_session, cajero_client):
     closed_session = await make_cash_session(db_session, status="closed")
     open_session = await make_cash_session(db_session)
-    archived_paid = await make_tab(
-        db_session, status="paid", cash_session_id=closed_session.id
-    )
+    archived_paid = await make_tab(db_session, status="paid", cash_session_id=closed_session.id)
+    current_paid = await make_tab(db_session, status="paid", cash_session_id=open_session.id)
     await make_tab(db_session, status="open", cash_session_id=closed_session.id)
-    await make_tab(db_session, status="paid", cash_session_id=open_session.id)
 
     response = await cajero_client.get("/api/tabs/history")
 
-    ids = [t["id"] for t in response.json()]
-    assert ids == [archived_paid.id]
+    ids = {t["id"] for t in response.json()}
+    assert ids == {archived_paid.id, current_paid.id}
 
 
 async def test_history_filters_by_date_range(db_session, cajero_client):

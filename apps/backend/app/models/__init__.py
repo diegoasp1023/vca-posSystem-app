@@ -18,7 +18,13 @@ from app.models.payroll import (
 )
 from app.models.product import Presentation, Product, product_presentations
 from app.models.shift import Shift
-from app.models.tab import Tab, TabItem, TabPaymentMethod
+from app.models.tab import (
+    Tab,
+    TabItem,
+    TabPayment,
+    TabPaymentItemAllocation,
+    TabPaymentMethod,
+)
 from app.models.table import Table
 
 __all__ = [
@@ -37,6 +43,8 @@ __all__ = [
     "Shift",
     "Tab",
     "TabItem",
+    "TabPayment",
+    "TabPaymentItemAllocation",
     "TabPaymentMethod",
     "Table",
     "TipPool",

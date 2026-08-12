@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.models.tab import Tab, TabItem, TabPaymentMethod
+from app.models.tab import Tab, TabItem, TabPayment, TabPaymentMethod
 from app.schemas.common import LocalizedText
 
 SourceType = Literal["menu_item", "product"]
@@ -59,8 +59,31 @@ class TabItemUpdate(BaseModel):
     quantity: int = Field(gt=0)
 
 
-class TabPay(BaseModel):
+class TabPaymentItemAllocationIn(BaseModel):
+    item_id: int
+    quantity: int = Field(gt=0)
+
+
+class TabPaymentPartIn(BaseModel):
     payment_method_id: int
+    tip_cop: int = Field(default=0, ge=0)
+    amount_cop: int | None = Field(default=None, gt=0)
+    item_allocations: list[TabPaymentItemAllocationIn] | None = None
+
+
+class TabPay(BaseModel):
+    parts: list[TabPaymentPartIn] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _check_parts_consistent(self) -> "TabPay":
+        by_items = [p.item_allocations is not None for p in self.parts]
+        if any(by_items) and not all(by_items):
+            raise ValueError("all parts must use item_allocations, or none of them")
+        if not any(by_items):
+            for part in self.parts:
+                if part.amount_cop is None:
+                    raise ValueError("amount_cop is required when not splitting by items")
+        return self
 
 
 class TabItemOut(BaseModel):
@@ -94,34 +117,62 @@ class TabTableInfo(BaseModel):
     name: str
 
 
+class TabPaymentItemAllocationOut(BaseModel):
+    item_id: int
+    quantity: int
+
+
+class TabPaymentOut(BaseModel):
+    id: int
+    payment_method: TabPaymentMethodOut
+    amount_cop: int
+    tip_cop: int
+    item_allocations: list[TabPaymentItemAllocationOut]
+
+    @classmethod
+    def from_model(cls, payment: TabPayment) -> "TabPaymentOut":
+        return cls(
+            id=payment.id,
+            payment_method=TabPaymentMethodOut.from_model(payment.payment_method),
+            amount_cop=payment.amount_cop,
+            tip_cop=payment.tip_cop,
+            item_allocations=[
+                TabPaymentItemAllocationOut(item_id=a.tab_item_id, quantity=a.quantity)
+                for a in payment.item_allocations
+            ],
+        )
+
+
 class TabOut(BaseModel):
     id: int
     account_type: AccountType
     table: TabTableInfo | None
     reference_note: str | None
     status: Literal["open", "paid"]
-    payment_method: TabPaymentMethodOut | None
+    payments: list[TabPaymentOut]
     opened_at: datetime
     paid_at: datetime | None
     items: list[TabItemOut]
     total_cop: int
+    tip_total_cop: int
+    grand_total_cop: int
 
     @classmethod
     def from_model(cls, tab: Tab) -> "TabOut":
         items = [TabItemOut.from_model(item) for item in tab.items]
+        total_cop = sum(item.subtotal_cop for item in items)
+        tip_total_cop = sum(payment.tip_cop for payment in tab.payments)
         return cls(
             id=tab.id,
             account_type=tab.account_type,  # type: ignore[arg-type]
             table=TabTableInfo(id=tab.table.id, name=tab.table.name) if tab.table else None,
             reference_note=tab.reference_note,
             status=tab.status,  # type: ignore[arg-type]
-            payment_method=(
-                TabPaymentMethodOut.from_model(tab.payment_method)
-                if tab.payment_method is not None
-                else None
-            ),
+            payments=[TabPaymentOut.from_model(p) for p in tab.payments],
             opened_at=tab.opened_at,
             paid_at=tab.paid_at,
             items=items,
-            total_cop=sum(item.subtotal_cop for item in items),
+            total_cop=total_cop,
+            tip_total_cop=tip_total_cop,
+            grand_total_cop=total_cop + tip_total_cop,
         )
