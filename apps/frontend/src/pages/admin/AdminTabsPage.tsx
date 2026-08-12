@@ -4,10 +4,11 @@ import { useAuth } from '../../context/AuthContext'
 import { fetchCurrentCashSession, type CashSession } from '../../lib/adminApi'
 import { BackToPanelLink } from './BackToPanelLink'
 import { CuentasTab } from './CuentasTab'
+import { FloorPlanEditorTab } from './FloorPlanEditorTab'
 import { TabHistoryTab } from './TabHistoryTab'
 import { TabPaymentMethodsTab } from './TabPaymentMethodsTab'
 
-type PageTab = 'cuentas' | 'historico' | 'metodos'
+type PageTab = 'cuentas' | 'plano' | 'historico' | 'metodos'
 
 export function AdminTabsPage() {
   const { t } = useTranslation()
@@ -45,6 +46,11 @@ export function AdminTabsPage() {
           <TabButton active={tab === 'cuentas'} onClick={() => setTab('cuentas')}>
             {t('adminTabs.cuentasTab')}
           </TabButton>
+          {isAdmin && (
+            <TabButton active={tab === 'plano'} onClick={() => setTab('plano')}>
+              {t('adminTabs.floorPlanTab')}
+            </TabButton>
+          )}
           <TabButton active={tab === 'historico'} onClick={() => setTab('historico')}>
             {t('adminTabs.historyTab')}
           </TabButton>
@@ -61,6 +67,7 @@ export function AdminTabsPage() {
             onCashSessionChange={reloadCashSession}
           />
         )}
+        {tab === 'plano' && isAdmin && <FloorPlanEditorTab />}
         {tab === 'historico' && <TabHistoryTab />}
         {tab === 'metodos' && isAdmin && <TabPaymentMethodsTab />}
       </div>

@@ -557,6 +557,7 @@ export function deleteTabPaymentMethod(token: string | undefined, id: number) {
 
 export type TabStatus = 'open' | 'paid'
 export type TabSourceType = 'menu_item' | 'product'
+export type TabAccountType = 'dine_in' | 'takeaway' | 'custom'
 
 export interface TabItem {
   id: number
@@ -566,12 +567,19 @@ export interface TabItem {
   name: LocalizedText
   unit_price_cop: number
   quantity: number
+  description: string | null
   subtotal_cop: number
+}
+
+export interface TabTableInfo {
+  id: number
+  name: string
 }
 
 export interface Tab {
   id: number
-  table_number: string | null
+  account_type: TabAccountType
+  table: TabTableInfo | null
   reference_note: string | null
   status: TabStatus
   payment_method: TabPaymentMethod | null
@@ -582,7 +590,12 @@ export interface Tab {
 }
 
 export interface TabCreate {
-  table_number: string | null
+  account_type: TabAccountType
+  table_id: number | null
+  reference_note: string | null
+}
+
+export interface TabUpdate {
   reference_note: string | null
 }
 
@@ -597,7 +610,7 @@ export function createTab(token: string | undefined, body: TabCreate) {
   })
 }
 
-export function updateTab(token: string | undefined, id: number, body: TabCreate) {
+export function updateTab(token: string | undefined, id: number, body: TabUpdate) {
   return adminFetch<Tab>(`/api/tabs/${id}`, token, {
     method: 'PATCH',
     body: JSON.stringify(body),
@@ -611,7 +624,13 @@ export function deleteTab(token: string | undefined, id: number) {
 export function addTabItem(
   token: string | undefined,
   tabId: number,
-  body: { source_type: TabSourceType; source_id: number; quantity: number },
+  body: {
+    source_type: TabSourceType
+    source_id: number
+    quantity: number
+    unit_price_cop?: number
+    description?: string
+  },
 ) {
   return adminFetch<Tab>(`/api/tabs/${tabId}/items`, token, {
     method: 'POST',
@@ -678,4 +697,59 @@ export function openCashSession(token: string | undefined) {
 
 export function closeCashSession(token: string | undefined) {
   return adminFetch<CashSession>('/api/cash-sessions/close', token, { method: 'POST' })
+}
+
+export type TableShape = 'circle' | 'rect'
+export type TableKind = 'table' | 'entrance' | 'bar' | 'cashier'
+
+export interface OpenTabSummary {
+  tab_id: number
+  total_cop: number
+  opened_at: string
+}
+
+export interface Table {
+  id: number
+  name: string
+  kind: TableKind
+  shape: TableShape
+  pos_x: number
+  pos_y: number
+  width: number
+  height: number
+  capacity: number | null
+  open_tab: OpenTabSummary | null
+}
+
+export interface TableWrite {
+  name: string
+  kind: TableKind
+  shape: TableShape
+  pos_x: number
+  pos_y: number
+  width: number
+  height: number
+  capacity: number | null
+}
+
+export function fetchTables(token: string | undefined) {
+  return adminFetch<Table[]>('/api/tables', token)
+}
+
+export function createTable(token: string | undefined, body: TableWrite) {
+  return adminFetch<Table>('/api/tables', token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateTable(token: string | undefined, id: number, body: TableWrite) {
+  return adminFetch<Table>(`/api/tables/${id}`, token, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+}
+
+export function deleteTable(token: string | undefined, id: number) {
+  return adminFetch<void>(`/api/tables/${id}`, token, { method: 'DELETE' })
 }
