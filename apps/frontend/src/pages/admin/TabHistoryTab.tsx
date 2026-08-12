@@ -2,11 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { fetchTabHistory, type Tab } from '../../lib/adminApi'
-import { formatDuration, tabTitle } from './TabCard'
-
-function toIsoDate(d: Date): string {
-  return d.toISOString().slice(0, 10)
-}
+import { formatDuration, PaymentsSummary, tabTitle } from './TabCard'
 
 export function TabHistoryTab() {
   const { t } = useTranslation()
@@ -41,23 +37,6 @@ export function TabHistoryTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const applyPreset = (preset: 'today' | 'month' | 'year') => {
-    const now = new Date()
-    let start: Date
-    if (preset === 'today') {
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    } else if (preset === 'month') {
-      start = new Date(now.getFullYear(), now.getMonth(), 1)
-    } else {
-      start = new Date(now.getFullYear(), 0, 1)
-    }
-    const startIso = toIsoDate(start)
-    const endIso = toIsoDate(now)
-    setStartDate(startIso)
-    setEndDate(endIso)
-    load(startIso, endIso)
-  }
-
   const applyManualFilter = (e: React.FormEvent) => {
     e.preventDefault()
     load(startDate, endDate)
@@ -65,31 +44,7 @@ export function TabHistoryTab() {
 
   return (
     <div className="mt-6">
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => applyPreset('today')}
-          className="rounded-full border border-lavender px-4 py-1.5 text-xs font-semibold text-lavender-dark hover:bg-lavender hover:text-white"
-        >
-          {t('adminTabs.historyFilterToday')}
-        </button>
-        <button
-          type="button"
-          onClick={() => applyPreset('month')}
-          className="rounded-full border border-lavender px-4 py-1.5 text-xs font-semibold text-lavender-dark hover:bg-lavender hover:text-white"
-        >
-          {t('adminTabs.historyFilterThisMonth')}
-        </button>
-        <button
-          type="button"
-          onClick={() => applyPreset('year')}
-          className="rounded-full border border-lavender px-4 py-1.5 text-xs font-semibold text-lavender-dark hover:bg-lavender hover:text-white"
-        >
-          {t('adminTabs.historyFilterThisYear')}
-        </button>
-      </div>
-
-      <form onSubmit={applyManualFilter} className="mt-4 flex flex-wrap items-end gap-3">
+      <form onSubmit={applyManualFilter} className="flex flex-wrap items-end gap-3">
         <label className="block text-sm">
           <span className="mb-1 block font-semibold text-lavender-dark">
             {t('adminTabs.historyStartDate')}
@@ -170,11 +125,7 @@ export function TabHistoryTab() {
                 <span>${tab.total_cop.toLocaleString('es-CO')}</span>
               </div>
 
-              {tab.payment_method && (
-                <p className="mt-2 text-xs text-gray-500">
-                  {t('adminTabs.fields.paymentMethod')}: {tab.payment_method.name}
-                </p>
-              )}
+              <PaymentsSummary tab={tab} />
             </div>
           ))}
         </div>

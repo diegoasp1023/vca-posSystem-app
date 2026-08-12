@@ -33,9 +33,6 @@ class Tab(Base):
     )
     reference_note: Mapped[str | None] = mapped_column(String(200), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="open")
-    payment_method_id: Mapped[int | None] = mapped_column(
-        ForeignKey("tab_payment_methods.id", ondelete="RESTRICT"), nullable=True
-    )
     cash_session_id: Mapped[int | None] = mapped_column(
         ForeignKey("cash_sessions.id"), nullable=True
     )
@@ -43,9 +40,11 @@ class Tab(Base):
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     table: Mapped[Table | None] = relationship()
-    payment_method: Mapped[TabPaymentMethod | None] = relationship()
     items: Mapped[list["TabItem"]] = relationship(
         back_populates="tab", cascade="all, delete-orphan", order_by="TabItem.id"
+    )
+    payments: Mapped[list["TabPayment"]] = relationship(
+        back_populates="tab", cascade="all, delete-orphan", order_by="TabPayment.id"
     )
 
 
@@ -70,3 +69,42 @@ class TabItem(Base):
     description: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
     tab: Mapped[Tab] = relationship(back_populates="items")
+
+
+class TabPayment(Base):
+    """One split/part of a tab's payment — covers an amount, its own tip and method."""
+
+    __tablename__ = "tab_payments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    tab_id: Mapped[int] = mapped_column(ForeignKey("tabs.id", ondelete="CASCADE"), nullable=False)
+    payment_method_id: Mapped[int] = mapped_column(
+        ForeignKey("tab_payment_methods.id", ondelete="RESTRICT"), nullable=False
+    )
+    amount_cop: Mapped[int] = mapped_column(Integer, nullable=False)
+    tip_cop: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    tab: Mapped[Tab] = relationship(back_populates="payments")
+    payment_method: Mapped[TabPaymentMethod] = relationship()
+    item_allocations: Mapped[list["TabPaymentItemAllocation"]] = relationship(
+        back_populates="payment", cascade="all, delete-orphan"
+    )
+
+
+class TabPaymentItemAllocation(Base):
+    """How much of a TabItem's quantity was covered by a given TabPayment split."""
+
+    __tablename__ = "tab_payment_item_allocations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    tab_payment_id: Mapped[int] = mapped_column(
+        ForeignKey("tab_payments.id", ondelete="CASCADE"), nullable=False
+    )
+    tab_item_id: Mapped[int] = mapped_column(
+        ForeignKey("tab_items.id", ondelete="CASCADE"), nullable=False
+    )
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    payment: Mapped[TabPayment] = relationship(back_populates="item_allocations")
+    item: Mapped[TabItem] = relationship()

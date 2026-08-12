@@ -576,17 +576,32 @@ export interface TabTableInfo {
   name: string
 }
 
+export interface TabPaymentItemAllocation {
+  item_id: number
+  quantity: number
+}
+
+export interface TabPaymentRecord {
+  id: number
+  payment_method: TabPaymentMethod
+  amount_cop: number
+  tip_cop: number
+  item_allocations: TabPaymentItemAllocation[]
+}
+
 export interface Tab {
   id: number
   account_type: TabAccountType
   table: TabTableInfo | null
   reference_note: string | null
   status: TabStatus
-  payment_method: TabPaymentMethod | null
+  payments: TabPaymentRecord[]
   opened_at: string
   paid_at: string | null
   items: TabItem[]
   total_cop: number
+  tip_total_cop: number
+  grand_total_cop: number
 }
 
 export interface TabCreate {
@@ -654,10 +669,17 @@ export function removeTabItem(token: string | undefined, tabId: number, itemId: 
   return adminFetch<Tab>(`/api/tabs/${tabId}/items/${itemId}`, token, { method: 'DELETE' })
 }
 
-export function payTab(token: string | undefined, tabId: number, paymentMethodId: number) {
+export interface TabPayPart {
+  payment_method_id: number
+  tip_cop: number
+  amount_cop?: number
+  item_allocations?: TabPaymentItemAllocation[]
+}
+
+export function payTab(token: string | undefined, tabId: number, parts: TabPayPart[]) {
   return adminFetch<Tab>(`/api/tabs/${tabId}/pay`, token, {
     method: 'POST',
-    body: JSON.stringify({ payment_method_id: paymentMethodId }),
+    body: JSON.stringify({ parts }),
   })
 }
 

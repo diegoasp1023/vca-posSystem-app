@@ -19,6 +19,7 @@ import {
   updateTabItem,
   type CashSession,
   type Tab,
+  type TabPayPart,
   type TabPaymentMethod,
   type TabSourceType,
   type Table as FloorTable,
@@ -26,6 +27,7 @@ import {
 import { fetchMenuItems, fetchProducts, type MenuItem, type Product } from '../../lib/api'
 import { FloorPlan } from './FloorPlan'
 import { Modal } from './Modal'
+import { PayTabModal } from './PayTabModal'
 import { TabCard } from './TabCard'
 
 interface PickerEntry {
@@ -80,7 +82,6 @@ export function CuentasTab({
   const [pricingForm, setPricingForm] = useState({ price: '', description: '' })
 
   const [payTabId, setPayTabId] = useState<number | null>(null)
-  const [payMethodId, setPayMethodId] = useState<number | ''>('')
 
   const reload = useCallback(() => {
     setStatus('loading')
@@ -264,13 +265,12 @@ export function CuentasTab({
     replaceTab(updated)
   }
 
-  const submitPay = async () => {
-    if (payTabId === null || payMethodId === '') return
+  const submitPay = async (parts: TabPayPart[]) => {
+    if (payTabId === null) return
     const token = await getToken()
-    const updated = await payTab(token, payTabId, payMethodId)
+    const updated = await payTab(token, payTabId, parts)
     replaceTab(updated)
     setPayTabId(null)
-    setPayMethodId('')
   }
 
   const reopen = async (tabId: number) => {
@@ -589,53 +589,19 @@ export function CuentasTab({
         </Modal>
       )}
 
-      {payTabId !== null && (
-        <Modal title={t('adminTabs.markPaid')} onClose={() => setPayTabId(null)}>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              submitPay()
-            }}
-            className="space-y-4"
-          >
-            <label className="block text-sm">
-              <span className="mb-1 block font-semibold text-lavender-dark">
-                {t('adminTabs.fields.paymentMethod')} *
-              </span>
-              <select
-                required
-                value={payMethodId}
-                onChange={(e) => setPayMethodId(Number(e.target.value))}
-                className="w-full rounded-lg border border-cream px-3 py-2"
-              >
-                <option value="" disabled>
-                  {t('adminTabs.fields.paymentMethod')}
-                </option>
-                {paymentMethods.map((method) => (
-                  <option key={method.id} value={method.id}>
-                    {method.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                className="rounded-full bg-coral px-6 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
-              >
-                {t('adminTabs.markPaid')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPayTabId(null)}
-                className="rounded-full border border-lavender px-6 py-2 text-sm font-semibold text-lavender-dark"
-              >
-                {t('admin.cancel')}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
+      {payTabId !== null &&
+        (() => {
+          const tabToPay = tabs.find((t) => t.id === payTabId)
+          if (!tabToPay) return null
+          return (
+            <PayTabModal
+              tab={tabToPay}
+              paymentMethods={paymentMethods}
+              onClose={() => setPayTabId(null)}
+              onConfirm={submitPay}
+            />
+          )
+        })()}
     </div>
   )
 }

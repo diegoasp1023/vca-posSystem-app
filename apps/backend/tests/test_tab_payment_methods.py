@@ -1,4 +1,4 @@
-from tests.conftest import make_tab, make_tab_payment_method
+from tests.conftest import make_tab, make_tab_payment, make_tab_payment_method
 
 
 async def test_list_tab_payment_methods_is_public(client):
@@ -53,7 +53,8 @@ async def test_delete_tab_payment_method_as_admin(db_session, admin_client):
 
 async def test_delete_tab_payment_method_in_use_is_rejected(db_session, admin_client):
     method = await make_tab_payment_method(db_session)
-    await make_tab(db_session, status="paid", payment_method_id=method.id)
+    tab = await make_tab(db_session, status="paid")
+    await make_tab_payment(db_session, tab, payment_method_id=method.id)
 
     response = await admin_client.delete(f"/api/tab-payment-methods/{method.id}")
 

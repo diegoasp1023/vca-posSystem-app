@@ -20,7 +20,7 @@ from app.models.course import Course, CourseContentModule, CourseCost, CourseObj
 from app.models.employee import Employee
 from app.models.menu_item import MenuCategory, MenuItem
 from app.models.product import Presentation, Product
-from app.models.tab import Tab, TabItem, TabPaymentMethod
+from app.models.tab import Tab, TabItem, TabPayment, TabPaymentMethod
 from app.models.table import Table
 
 
@@ -264,3 +264,12 @@ async def make_tab_item(session, tab, **overrides) -> TabItem:
     session.add(item)
     await session.commit()
     return item
+
+
+async def make_tab_payment(session, tab, **overrides) -> TabPayment:
+    defaults = {"tab_id": tab.id, "amount_cop": 9900, "tip_cop": 0}
+    defaults.update(overrides)
+    payment = TabPayment(**defaults)
+    session.add(payment)
+    await session.commit()
+    return payment

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import require_admin
 from app.core.database import get_db
-from app.models.tab import Tab, TabPaymentMethod
+from app.models.tab import TabPayment, TabPaymentMethod
 from app.schemas.tab import TabPaymentMethodOut, TabPaymentMethodWrite
 
 router = APIRouter(prefix="/api/tab-payment-methods", tags=["tab-payment-methods"])
@@ -55,7 +55,9 @@ async def delete_tab_payment_method(method_id: int, db: AsyncSession = Depends(g
     if method is None:
         raise HTTPException(status_code=404, detail="Tab payment method not found")
 
-    in_use = await db.scalar(select(Tab.id).where(Tab.payment_method_id == method_id).limit(1))
+    in_use = await db.scalar(
+        select(TabPayment.id).where(TabPayment.payment_method_id == method_id).limit(1)
+    )
     if in_use is not None:
         raise HTTPException(
             status_code=400, detail="Cannot delete a payment method still used by tabs"

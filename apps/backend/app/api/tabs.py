@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.models.cash_session import CashSession
 from app.models.menu_item import MenuItem
 from app.models.product import Product
-from app.models.tab import Tab, TabItem, TabPaymentMethod
+from app.models.tab import Tab, TabItem, TabPayment, TabPaymentItemAllocation, TabPaymentMethod
 from app.models.table import Table
 from app.schemas.tab import TabCreate, TabItemAdd, TabItemUpdate, TabOut, TabPay, TabUpdate
 
@@ -20,7 +20,8 @@ router = APIRouter(
 
 TAB_LOAD_OPTIONS = (
     selectinload(Tab.items),
-    selectinload(Tab.payment_method),
+    selectinload(Tab.payments).selectinload(TabPayment.payment_method),
+    selectinload(Tab.payments).selectinload(TabPayment.item_allocations),
     selectinload(Tab.table),
 )
 
@@ -60,8 +61,7 @@ async def list_tab_history(
 ) -> list[TabOut]:
     query = (
         select(Tab)
-        .join(CashSession, Tab.cash_session_id == CashSession.id)
-        .where(CashSession.status == "closed", Tab.status == "paid")
+        .where(Tab.status == "paid")
         .options(*TAB_LOAD_OPTIONS)
         .order_by(Tab.paid_at.desc())
     )
@@ -241,12 +241,70 @@ async def pay_tab(tab_id: int, body: TabPay, db: AsyncSession = Depends(get_db))
     if not tab.items:
         raise HTTPException(status_code=400, detail="Cannot pay a tab with no items")
 
-    method = await db.get(TabPaymentMethod, body.payment_method_id)
-    if method is None:
+    method_ids = {part.payment_method_id for part in body.parts}
+    methods_result = await db.execute(
+        select(TabPaymentMethod).where(TabPaymentMethod.id.in_(method_ids))
+    )
+    if len(methods_result.scalars().all()) != len(method_ids):
         raise HTTPException(status_code=400, detail="Unknown payment_method_id")
 
+    items_by_id = {item.id: item for item in tab.items}
+    by_items = body.parts[0].item_allocations is not None
+
+    payments: list[TabPayment] = []
+
+    if by_items:
+        allocated_qty: dict[int, int] = dict.fromkeys(items_by_id, 0)
+        for part in body.parts:
+            amount = 0
+            allocations: list[TabPaymentItemAllocation] = []
+            for alloc in part.item_allocations or []:
+                item = items_by_id.get(alloc.item_id)
+                if item is None:
+                    raise HTTPException(status_code=400, detail="Unknown item_id in allocation")
+                allocated_qty[item.id] += alloc.quantity
+                if allocated_qty[item.id] > item.quantity:
+                    raise HTTPException(
+                        status_code=400, detail="Allocated quantity exceeds item quantity"
+                    )
+                amount += item.unit_price_cop * alloc.quantity
+                allocations.append(
+                    TabPaymentItemAllocation(tab_item_id=item.id, quantity=alloc.quantity)
+                )
+            payments.append(
+                TabPayment(
+                    tab_id=tab.id,
+                    payment_method_id=part.payment_method_id,
+                    amount_cop=amount,
+                    tip_cop=part.tip_cop,
+                    item_allocations=allocations,
+                )
+            )
+        if any(allocated_qty[item_id] != item.quantity for item_id, item in items_by_id.items()):
+            raise HTTPException(
+                status_code=400, detail="Every item quantity must be fully allocated"
+            )
+    else:
+        tab_total = sum(item.unit_price_cop * item.quantity for item in tab.items)
+        parts_total = sum(part.amount_cop or 0 for part in body.parts)
+        if parts_total != tab_total:
+            raise HTTPException(
+                status_code=400, detail="Sum of part amounts must equal the tab total"
+            )
+        for part in body.parts:
+            payments.append(
+                TabPayment(
+                    tab_id=tab.id,
+                    payment_method_id=part.payment_method_id,
+                    amount_cop=part.amount_cop,
+                    tip_cop=part.tip_cop,
+                )
+            )
+
+    for payment in payments:
+        db.add(payment)
+
     tab.status = "paid"
-    tab.payment_method_id = method.id
     tab.paid_at = datetime.now(timezone.utc)
     await db.commit()
     tab = await _get_tab_or_404(db, tab_id)
@@ -260,8 +318,8 @@ async def reopen_tab(tab_id: int, db: AsyncSession = Depends(get_db)) -> TabOut:
         raise HTTPException(status_code=400, detail="Tab is not paid")
 
     tab.status = "open"
-    tab.payment_method_id = None
     tab.paid_at = None
+    tab.payments.clear()
     await db.commit()
     tab = await _get_tab_or_404(db, tab_id)
     return TabOut.from_model(tab)
