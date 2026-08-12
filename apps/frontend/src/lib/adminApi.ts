@@ -648,3 +648,37 @@ export function payTab(token: string | undefined, tabId: number, paymentMethodId
 export function reopenTab(token: string | undefined, tabId: number) {
   return adminFetch<Tab>(`/api/tabs/${tabId}/reopen`, token, { method: 'POST' })
 }
+
+export function fetchTabHistory(
+  token: string | undefined,
+  params: { start_date?: string; end_date?: string } = {},
+) {
+  const query = new URLSearchParams()
+  if (params.start_date) query.set('start_date', params.start_date)
+  if (params.end_date) query.set('end_date', params.end_date)
+  const qs = query.toString()
+  return adminFetch<Tab[]>(`/api/tabs/history${qs ? `?${qs}` : ''}`, token)
+}
+
+export type CashSessionStatus = 'open' | 'closed'
+
+export interface CashSession {
+  id: number
+  status: CashSessionStatus
+  opened_at: string
+  opened_by: string
+  closed_at: string | null
+  closed_by: string | null
+}
+
+export function fetchCurrentCashSession(token: string | undefined) {
+  return adminFetch<CashSession | null>('/api/cash-sessions/current', token)
+}
+
+export function openCashSession(token: string | undefined) {
+  return adminFetch<CashSession>('/api/cash-sessions/open', token, { method: 'POST' })
+}
+
+export function closeCashSession(token: string | undefined) {
+  return adminFetch<CashSession>('/api/cash-sessions/close', token, { method: 'POST' })
+}

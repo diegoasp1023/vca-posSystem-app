@@ -37,7 +37,7 @@ async function loadAllProducts(): Promise<Product[]> {
   return [first, ...rest].flatMap((page) => page.items)
 }
 
-export function CuentasTab() {
+export function CuentasTab({ cashSessionOpen }: { cashSessionOpen: boolean }) {
   const { t } = useTranslation()
   const { getToken } = useAuth()
 
@@ -156,6 +156,12 @@ export function CuentasTab() {
     const token = await getToken()
     await deleteTab(token, tabId)
     setTabs((prev) => prev.filter((t) => t.id !== tabId))
+  }
+
+  if (!cashSessionOpen) {
+    return (
+      <p className="mt-10 text-center text-gray-500">{t('adminTabs.cashSessionClosedNotice')}</p>
+    )
   }
 
   return (
