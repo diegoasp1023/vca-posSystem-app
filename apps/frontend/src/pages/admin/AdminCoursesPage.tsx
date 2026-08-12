@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
@@ -178,6 +178,7 @@ export function AdminCoursesPage() {
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
   const [formError, setFormError] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   const reload = useCallback(() => {
     setStatus('loading')
@@ -264,6 +265,13 @@ export function AdminCoursesPage() {
       )
     } finally {
       setUploadingImage(false)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setForm((current) => ({ ...current, image_url: null }))
+    if (imageInputRef.current) {
+      imageInputRef.current.value = ''
     }
   }
 
@@ -437,12 +445,24 @@ export function AdminCoursesPage() {
                   className="h-16 w-16 rounded-lg border border-cream object-cover"
                 />
                 <input
+                  ref={imageInputRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   disabled={uploadingImage}
                   onChange={(e) => handleImageSelected(e.target.files?.[0])}
                   className="text-sm text-lavender-dark file:mr-3 file:rounded-full file:border-0 file:bg-coral file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white file:transition hover:file:bg-coral-dark disabled:opacity-50"
                 />
+                {form.image_url && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    disabled={uploadingImage}
+                    className="flex items-center gap-1 text-sm font-semibold text-lavender-dark/70 transition hover:text-coral disabled:opacity-50"
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                    {t('admin.fields.imageRemove')}
+                  </button>
+                )}
               </div>
               <p className="mt-1 text-xs text-lavender-dark/70">
                 {uploadingImage ? t('admin.fields.imageUploading') : t('admin.fields.imageHint')}
