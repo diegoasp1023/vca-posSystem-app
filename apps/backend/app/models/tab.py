@@ -12,10 +12,8 @@ class TabPaymentMethod(Base):
     __tablename__ = "tab_payment_methods"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name_es: Mapped[str] = mapped_column(String(50), nullable=False)
-    name_en: Mapped[str] = mapped_column(String(50), nullable=False)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

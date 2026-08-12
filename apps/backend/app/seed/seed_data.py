@@ -35,11 +35,11 @@ PAYMENT_METHODS = [
 ]
 
 TAB_PAYMENT_METHODS = [
-    {"name_es": "Efectivo", "name_en": "Cash"},
-    {"name_es": "Tarjeta de crédito o débito", "name_en": "Credit or debit card"},
-    {"name_es": "Nequi", "name_en": "Nequi"},
-    {"name_es": "Daviplata", "name_en": "Daviplata"},
-    {"name_es": "Transferencia", "name_en": "Bank transfer"},
+    {"name": "Efectivo"},
+    {"name": "Tarjeta de crédito o débito"},
+    {"name": "Nequi"},
+    {"name": "Daviplata"},
+    {"name": "Transferencia"},
 ]
 
 PRESENTATIONS = [
@@ -642,8 +642,8 @@ async def _seed_tab_payment_methods() -> None:
             print("Seed skipped: tab payment methods already exist.")
             return
 
-        for i, method_data in enumerate(TAB_PAYMENT_METHODS):
-            session.add(TabPaymentMethod(**method_data, sort_order=i))
+        for method_data in TAB_PAYMENT_METHODS:
+            session.add(TabPaymentMethod(**method_data))
 
         await session.commit()
         print(f"Seed complete: {len(TAB_PAYMENT_METHODS)} tab payment methods.")

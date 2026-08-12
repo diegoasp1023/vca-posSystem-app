@@ -203,7 +203,7 @@ async def make_menu_item(session, category=None, **overrides) -> MenuItem:
 
 
 async def make_tab_payment_method(session, **overrides) -> TabPaymentMethod:
-    defaults = {"name_es": "Efectivo", "name_en": "Cash", "is_active": True, "sort_order": 0}
+    defaults = {"name": "Efectivo", "is_active": True}
     defaults.update(overrides)
     method = TabPaymentMethod(**defaults)
     session.add(method)

@@ -14,9 +14,7 @@ router = APIRouter(prefix="/api/tab-payment-methods", tags=["tab-payment-methods
 async def list_tab_payment_methods(
     db: AsyncSession = Depends(get_db),
 ) -> list[TabPaymentMethodOut]:
-    result = await db.execute(
-        select(TabPaymentMethod).order_by(TabPaymentMethod.sort_order, TabPaymentMethod.id)
-    )
+    result = await db.execute(select(TabPaymentMethod).order_by(TabPaymentMethod.name))
     return [TabPaymentMethodOut.from_model(m) for m in result.scalars().all()]
 
 
