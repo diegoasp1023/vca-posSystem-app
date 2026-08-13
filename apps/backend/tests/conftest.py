@@ -10,16 +10,18 @@ from app.core.auth import (
     AuthenticatedUser,
     get_current_user,
     require_admin,
-    require_gerente_or_admin,
+    require_cajero_or_admin,
 )
 from app.core.config import settings
 from app.core.database import Base, get_db
 from app.main import app
+from app.models.cash_session import CashSession
 from app.models.course import Course, CourseContentModule, CourseCost, CourseObjective
 from app.models.employee import Employee
 from app.models.menu_item import MenuCategory, MenuItem
 from app.models.product import Presentation, Product
-from app.models.tab import Tab, TabItem, TabPaymentMethod
+from app.models.tab import Tab, TabItem, TabPayment, TabPaymentMethod
+from app.models.table import Table
 
 
 @pytest.fixture(autouse=True)
@@ -66,18 +68,18 @@ async def admin_client(db_session) -> AsyncGenerator[AsyncClient]:
         subject="test-admin", username="admin@example.com", roles=["Administrador"]
     )
     app.dependency_overrides[require_admin] = lambda: admin_user
-    app.dependency_overrides[require_gerente_or_admin] = lambda: admin_user
+    app.dependency_overrides[require_cajero_or_admin] = lambda: admin_user
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     del app.dependency_overrides[require_admin]
-    del app.dependency_overrides[require_gerente_or_admin]
+    del app.dependency_overrides[require_cajero_or_admin]
 
 
 @pytest.fixture
-async def gerente_client(db_session) -> AsyncGenerator[AsyncClient]:
+async def cajero_client(db_session) -> AsyncGenerator[AsyncClient]:
     app.dependency_overrides[get_current_user] = lambda: AuthenticatedUser(
-        subject="test-gerente", username="gerente@example.com", roles=["Gerente"]
+        subject="test-cajero", username="cajero@example.com", roles=["Cajero"]
     )
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
@@ -202,8 +204,17 @@ async def make_menu_item(session, category=None, **overrides) -> MenuItem:
     return item
 
 
+async def make_cash_session(session, **overrides) -> CashSession:
+    defaults = {"status": "open", "opened_by": "cajero@example.com"}
+    defaults.update(overrides)
+    cash_session = CashSession(**defaults)
+    session.add(cash_session)
+    await session.commit()
+    return cash_session
+
+
 async def make_tab_payment_method(session, **overrides) -> TabPaymentMethod:
-    defaults = {"name_es": "Efectivo", "name_en": "Cash", "is_active": True, "sort_order": 0}
+    defaults = {"name": "Efectivo", "is_active": True}
     defaults.update(overrides)
     method = TabPaymentMethod(**defaults)
     session.add(method)
@@ -211,8 +222,25 @@ async def make_tab_payment_method(session, **overrides) -> TabPaymentMethod:
     return method
 
 
+async def make_table(session, **overrides) -> Table:
+    defaults = {
+        "name": "Mesa 1",
+        "shape": "circle",
+        "pos_x": 0.0,
+        "pos_y": 0.0,
+        "width": 70.0,
+        "height": 70.0,
+        "capacity": None,
+    }
+    defaults.update(overrides)
+    table = Table(**defaults)
+    session.add(table)
+    await session.commit()
+    return table
+
+
 async def make_tab(session, **overrides) -> Tab:
-    defaults = {"table_number": None, "reference_note": None, "status": "open"}
+    defaults = {"account_type": "custom", "table_id": None, "reference_note": None, "status": "open"}
     defaults.update(overrides)
     tab = Tab(**defaults)
     session.add(tab)
@@ -236,3 +264,12 @@ async def make_tab_item(session, tab, **overrides) -> TabItem:
     session.add(item)
     await session.commit()
     return item
+
+
+async def make_tab_payment(session, tab, **overrides) -> TabPayment:
+    defaults = {"tab_id": tab.id, "amount_cop": 9900, "tip_cop": 0}
+    defaults.update(overrides)
+    payment = TabPayment(**defaults)
+    session.add(payment)
+    await session.commit()
+    return payment

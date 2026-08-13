@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
@@ -9,19 +9,15 @@ import {
   deleteCourse,
   fetchAdminCourse,
   fetchAdminCourses,
-  fetchPaymentMethods,
   updateCourse,
   uploadCourseImage,
   type CourseWrite,
-  type Lookup,
 } from '../../lib/adminApi'
 import { getCourseImageUrl, type CourseSummary } from '../../lib/api'
 import { Pagination } from '../../components/Pagination'
 import { BackToPanelLink } from './BackToPanelLink'
 import { Modal } from './Modal'
-import { MultiSelectDropdown } from './PayrollShared'
 
-const FORCED_PAYMENT_METHOD_NAME_ES = 'Pago 100% por adelantado al inscribirte'
 const FIXED_COST_NOTE_ES = 'Incluyen materiales y certificado de asistencia'
 const FIXED_COST_NOTE_EN = 'Both include materials and a completion certificate'
 
@@ -147,7 +143,6 @@ interface CourseFormState {
   content: ContentRow[]
   costRows: CostRow[]
   rescheduleFeeAmount: number | ''
-  payment_method_ids: number[]
 }
 
 const EMPTY_FORM: CourseFormState = {
@@ -160,7 +155,6 @@ const EMPTY_FORM: CourseFormState = {
   content: [],
   costRows: [],
   rescheduleFeeAmount: DEFAULT_RESCHEDULE_FEE,
-  payment_method_ids: [],
 }
 
 export function AdminCoursesPage() {
@@ -171,13 +165,13 @@ export function AdminCoursesPage() {
   const [pageSize, setPageSize] = useState<10 | 20 | 50>(10)
   const [totalPages, setTotalPages] = useState(1)
   const [courses, setCourses] = useState<CourseSummary[]>([])
-  const [paymentMethods, setPaymentMethods] = useState<Lookup[]>([])
   const [editingId, setEditingId] = useState<number | 'new' | null>(null)
   const [editingSlug, setEditingSlug] = useState<string | null>(null)
   const [form, setForm] = useState<CourseFormState>(EMPTY_FORM)
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
   const [formError, setFormError] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   const reload = useCallback(() => {
     setStatus('loading')
@@ -192,17 +186,6 @@ export function AdminCoursesPage() {
   }, [page, pageSize, getToken])
 
   useEffect(reload, [reload])
-  useEffect(() => {
-    fetchPaymentMethods().then(setPaymentMethods)
-  }, [])
-
-  const forcedPaymentMethodId = paymentMethods.find(
-    (method) => method.name.es === FORCED_PAYMENT_METHOD_NAME_ES,
-  )?.id
-
-  const selectablePaymentMethods = paymentMethods.filter(
-    (method) => method.id !== forcedPaymentMethodId,
-  )
 
   const startCreate = () => {
     setForm(EMPTY_FORM)
@@ -214,13 +197,6 @@ export function AdminCoursesPage() {
   const startEdit = async (course: CourseSummary) => {
     const token = await getToken()
     const detail = await fetchAdminCourse(token, course.id)
-    const selectedMethodIds = paymentMethods
-      .filter(
-        (method) =>
-          method.id !== forcedPaymentMethodId &&
-          detail.methods.some((m) => m.es === method.name.es),
-      )
-      .map((method) => method.id)
 
     setForm({
       title_es: detail.title.es,
@@ -241,7 +217,6 @@ export function AdminCoursesPage() {
         const parsed = parseRescheduleFee(detail.duration.es)
         return parsed !== '' ? parsed : parseRescheduleFee(detail.duration.en)
       })(),
-      payment_method_ids: selectedMethodIds,
     })
     setEditingSlug(detail.slug)
     setFormError(null)
@@ -264,6 +239,13 @@ export function AdminCoursesPage() {
       )
     } finally {
       setUploadingImage(false)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setForm((current) => ({ ...current, image_url: null }))
+    if (imageInputRef.current) {
+      imageInputRef.current.value = ''
     }
   }
 
@@ -297,9 +279,6 @@ export function AdminCoursesPage() {
         })),
         { es: FIXED_COST_NOTE_ES, en: FIXED_COST_NOTE_EN },
       ],
-      payment_method_ids: forcedPaymentMethodId
-        ? [...form.payment_method_ids, forcedPaymentMethodId]
-        : form.payment_method_ids,
     }
 
     const token = await getToken()
@@ -437,12 +416,24 @@ export function AdminCoursesPage() {
                   className="h-16 w-16 rounded-lg border border-cream object-cover"
                 />
                 <input
+                  ref={imageInputRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   disabled={uploadingImage}
                   onChange={(e) => handleImageSelected(e.target.files?.[0])}
                   className="text-sm text-lavender-dark file:mr-3 file:rounded-full file:border-0 file:bg-coral file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white file:transition hover:file:bg-coral-dark disabled:opacity-50"
                 />
+                {form.image_url && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    disabled={uploadingImage}
+                    className="flex items-center gap-1 text-sm font-semibold text-lavender-dark/70 transition hover:text-coral disabled:opacity-50"
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                    {t('admin.fields.imageRemove')}
+                  </button>
+                )}
               </div>
               <p className="mt-1 text-xs text-lavender-dark/70">
                 {uploadingImage ? t('admin.fields.imageUploading') : t('admin.fields.imageHint')}
@@ -711,24 +702,6 @@ export function AdminCoursesPage() {
                 className="w-full rounded-lg border border-cream px-3 py-2"
               />
             </label>
-
-            <div>
-              <p className="mb-1 text-sm font-semibold text-lavender-dark">
-                {t('coursePage.methods')}
-              </p>
-              <MultiSelectDropdown
-                options={selectablePaymentMethods.map((method) => ({
-                  id: method.id,
-                  label: method.name.es,
-                }))}
-                selected={new Set(form.payment_method_ids)}
-                onChange={(selected) =>
-                  setForm({ ...form, payment_method_ids: [...selected] })
-                }
-                placeholder={t('coursePage.methods')}
-              />
-              <p className="mt-2 text-sm text-gray-600">{t('admin.paymentIncludesNote')}</p>
-            </div>
 
             {formError && (
               <p className="text-sm font-semibold text-coral-dark">{formError}</p>

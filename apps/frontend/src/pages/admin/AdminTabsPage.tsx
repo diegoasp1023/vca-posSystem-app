@@ -1,17 +1,38 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
+import { fetchCurrentCashSession, type CashSession } from '../../lib/adminApi'
 import { BackToPanelLink } from './BackToPanelLink'
 import { CuentasTab } from './CuentasTab'
+import { FloorPlanEditorTab } from './FloorPlanEditorTab'
+import { TabHistoryTab } from './TabHistoryTab'
 import { TabPaymentMethodsTab } from './TabPaymentMethodsTab'
 
-type PageTab = 'cuentas' | 'metodos'
+type PageTab = 'cuentas' | 'plano' | 'metodos' | 'historico'
 
 export function AdminTabsPage() {
   const { t } = useTranslation()
-  const { roles } = useAuth()
+  const { roles, getToken } = useAuth()
   const isAdmin = roles.includes('Administrador')
   const [tab, setTab] = useState<PageTab>('cuentas')
+
+  const [cashSession, setCashSession] = useState<CashSession | null>(null)
+  const [cashSessionStatus, setCashSessionStatus] = useState<'loading' | 'error' | 'ready'>(
+    'loading',
+  )
+
+  const reloadCashSession = useCallback(() => {
+    setCashSessionStatus('loading')
+    getToken()
+      .then(fetchCurrentCashSession)
+      .then((session) => {
+        setCashSession(session)
+        setCashSessionStatus('ready')
+      })
+      .catch(() => setCashSessionStatus('error'))
+  }, [getToken])
+
+  useEffect(reloadCashSession, [reloadCashSession])
 
   return (
     <section className="px-6 py-16">
@@ -21,19 +42,36 @@ export function AdminTabsPage() {
         <h1 className="mt-4 font-serif text-3xl text-lavender-dark">{t('adminTabs.title')}</h1>
         <p className="mt-1 text-sm text-gray-600">{t('adminTabs.description')}</p>
 
-        {isAdmin && (
-          <div className="mt-6 flex flex-wrap gap-2 border-b border-cream">
-            <TabButton active={tab === 'cuentas'} onClick={() => setTab('cuentas')}>
-              {t('adminTabs.cuentasTab')}
+        <div className="mt-6 flex flex-wrap gap-2 border-b border-cream">
+          <TabButton active={tab === 'cuentas'} onClick={() => setTab('cuentas')}>
+            {t('adminTabs.cuentasTab')}
+          </TabButton>
+          {isAdmin && (
+            <TabButton active={tab === 'plano'} onClick={() => setTab('plano')}>
+              {t('adminTabs.floorPlanTab')}
             </TabButton>
+          )}
+          {isAdmin && (
             <TabButton active={tab === 'metodos'} onClick={() => setTab('metodos')}>
               {t('adminTabs.paymentMethodsTab')}
             </TabButton>
-          </div>
-        )}
+          )}
+          {isAdmin && (
+            <TabButton active={tab === 'historico'} onClick={() => setTab('historico')}>
+              {t('adminTabs.historyTab')}
+            </TabButton>
+          )}
+        </div>
 
-        {tab === 'cuentas' && <CuentasTab />}
+        {tab === 'cuentas' && (
+          <CuentasTab
+            cashSession={cashSessionStatus === 'ready' ? cashSession : undefined}
+            onCashSessionChange={reloadCashSession}
+          />
+        )}
+        {tab === 'plano' && isAdmin && <FloorPlanEditorTab />}
         {tab === 'metodos' && isAdmin && <TabPaymentMethodsTab />}
+        {tab === 'historico' && isAdmin && <TabHistoryTab />}
       </div>
     </section>
   )

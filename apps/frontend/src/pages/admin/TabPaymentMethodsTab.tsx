@@ -15,10 +15,8 @@ import {
 import { Modal } from './Modal'
 
 const EMPTY_FORM: TabPaymentMethodWrite = {
-  name_es: '',
-  name_en: '',
+  name: '',
   is_active: true,
-  sort_order: 0,
 }
 
 export function TabPaymentMethodsTab() {
@@ -51,10 +49,8 @@ export function TabPaymentMethodsTab() {
 
   const startEdit = (method: TabPaymentMethod) => {
     setForm({
-      name_es: method.name.es,
-      name_en: method.name.en,
+      name: method.name,
       is_active: method.is_active,
-      sort_order: method.sort_order,
     })
     setFormError(null)
     setEditingId(method.id)
@@ -91,7 +87,7 @@ export function TabPaymentMethodsTab() {
     }
   }
 
-  const sorted = [...methods].sort((a, b) => a.sort_order - b.sort_order)
+  const sorted = [...methods].sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <div className="mt-6">
@@ -123,35 +119,12 @@ export function TabPaymentMethodsTab() {
           >
             <label className="block text-sm">
               <span className="mb-1 block font-semibold text-lavender-dark">
-                {t('admin.fields.nameEs')} *
+                {t('admin.fields.name')} *
               </span>
               <input
                 required
-                value={form.name_es}
-                onChange={(e) => setForm({ ...form, name_es: e.target.value })}
-                className="w-full rounded-lg border border-cream px-3 py-2"
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block font-semibold text-lavender-dark">
-                {t('admin.fields.nameEn')} *
-              </span>
-              <input
-                required
-                value={form.name_en}
-                onChange={(e) => setForm({ ...form, name_en: e.target.value })}
-                className="w-full rounded-lg border border-cream px-3 py-2"
-              />
-            </label>
-            <label className="block text-sm sm:max-w-[10rem]">
-              <span className="mb-1 block font-semibold text-lavender-dark">
-                {t('adminMenu.fields.sortOrder')}
-              </span>
-              <input
-                required
-                type="number"
-                value={form.sort_order}
-                onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })}
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="w-full rounded-lg border border-cream px-3 py-2"
               />
             </label>
@@ -194,7 +167,6 @@ export function TabPaymentMethodsTab() {
           <thead>
             <tr className="border-b border-cream text-lavender">
               <th className="py-2">{t('admin.fields.name')}</th>
-              <th className="py-2">{t('adminMenu.fields.sortOrder')}</th>
               <th className="py-2">{t('adminTabs.fields.isActive')}</th>
               <th className="py-2" />
             </tr>
@@ -202,8 +174,7 @@ export function TabPaymentMethodsTab() {
           <tbody>
             {sorted.map((method) => (
               <tr key={method.id} className="border-b border-cream">
-                <td className="py-3">{method.name.es}</td>
-                <td className="py-3">{method.sort_order}</td>
+                <td className="py-3">{method.name}</td>
                 <td className="py-3">
                   {method.is_active ? t('admin.statusActive') : t('admin.statusInactive')}
                 </td>

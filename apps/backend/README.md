@@ -20,12 +20,12 @@ válido con el rol de realm `Administrador`.
 ## Desarrollo (dev)
 
 El backend **no corre en Docker** — se levanta local con `uv`, igual que el
-frontend con `npm run dev`. Se conecta a la Postgres compartida (ver
+frontend con `pnpm dev`. Se conecta a la Postgres compartida (ver
 `docs/database.md`) vía `localhost:${DB_PORT}`.
 
 Requisitos:
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) instalado.
-- La base de datos de dev corriendo (`docker compose ... --profile dev up -d postgres`, ver `docs/database.md`).
+- La base de datos de dev corriendo (`docker compose -f infra/docker-compose.db.yml --env-file .env.dev up -d`, ver `docs/database.md`).
 - Un archivo `.env.dev` o `.env.dev.local` en la raíz del repo (no versionado, basado en `.env.example`) con `APP_DB_HOST=localhost`, `DB_PORT`, `APP_DB_NAME`, `APP_DB_USERNAME`, `APP_DB_PASSWORD` completos. El backend lee ese archivo automáticamente (busca `.env.dev.local`, luego `.env.dev`, luego `.env` en la raíz del repo).
 
 ```bash
@@ -51,14 +51,14 @@ Keycloak ya levantado, es idempotente (se puede re-correr sin duplicar
 nada), y **no** toca `docker-compose.yml` ni activa import automático.
 
 Crea:
-- Realm `vca-pos`
-- Client `vca-pos-frontend` (público, PKCE S256, redirect URI de dev `http://localhost:5173/*`)
-- Client `vca-pos-backend` (confidential, reservado — no se usa todavía)
-- Roles de realm `Administrador` y `Gerente`
+- Realm `valiente-cafe`
+- Client `valiente-cafe-app-frontend` (público, PKCE S256, redirect URI de dev `http://localhost:5173/*`)
+- Client `valiente-cafe-app-backend` (confidential, reservado — no se usa todavía)
+- Roles de realm `Administrador` y `Cajero`
 - Opcionalmente, un usuario de prueba con rol `Administrador`
 
 ```bash
-# Con Keycloak corriendo (docker compose ... --profile dev up -d keycloak)
+# Con Keycloak corriendo (docker compose -f infra/docker-compose.yml --env-file .env.dev up -d)
 uv run python scripts/setup_keycloak.py --with-test-user
 ```
 

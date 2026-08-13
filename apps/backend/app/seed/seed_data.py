@@ -14,32 +14,17 @@ from app.models.course import (
     CourseContentModule,
     CourseCost,
     CourseObjective,
-    PaymentMethod,
 )
 from app.models.menu_item import MenuCategory, MenuItem
 from app.models.product import Presentation, Product
 from app.models.tab import TabPaymentMethod
 
-PAYMENT_METHODS = [
-    {
-        "name_es": "Consignación a cuenta de ahorros Bancolombia",
-        "name_en": "Bank transfer (Bancolombia savings account)",
-    },
-    {"name_es": "Tarjeta de crédito o débito", "name_en": "Credit or debit card"},
-    {"name_es": "Nequi", "name_en": "Nequi"},
-    {"name_es": "Daviplata", "name_en": "Daviplata"},
-    {
-        "name_es": "Pago 100% por adelantado al inscribirte",
-        "name_en": "100% payment required upon enrollment",
-    },
-]
-
 TAB_PAYMENT_METHODS = [
-    {"name_es": "Efectivo", "name_en": "Cash"},
-    {"name_es": "Tarjeta de crédito o débito", "name_en": "Credit or debit card"},
-    {"name_es": "Nequi", "name_en": "Nequi"},
-    {"name_es": "Daviplata", "name_en": "Daviplata"},
-    {"name_es": "Transferencia", "name_en": "Bank transfer"},
+    {"name": "Efectivo"},
+    {"name": "Tarjeta de crédito o débito"},
+    {"name": "Nequi"},
+    {"name": "Daviplata"},
+    {"name": "Transferencia"},
 ]
 
 PRESENTATIONS = [
@@ -566,9 +551,6 @@ async def _seed_products_and_courses() -> None:
         presentations = [Presentation(**p) for p in PRESENTATIONS]
         session.add_all(presentations)
 
-        payment_methods = [PaymentMethod(**m) for m in PAYMENT_METHODS]
-        session.add_all(payment_methods)
-
         for product_data in PRODUCTS:
             session.add(Product(**product_data, presentations=presentations))
 
@@ -582,7 +564,6 @@ async def _seed_products_and_courses() -> None:
                 image_url=course_data["image_url"],
                 duration_text_es=course_data["duration_text_es"],
                 duration_text_en=course_data["duration_text_en"],
-                payment_methods=payment_methods,
             )
             course.objectives = [
                 CourseObjective(sort_order=i, text_es=es, text_en=en)
@@ -642,8 +623,8 @@ async def _seed_tab_payment_methods() -> None:
             print("Seed skipped: tab payment methods already exist.")
             return
 
-        for i, method_data in enumerate(TAB_PAYMENT_METHODS):
-            session.add(TabPaymentMethod(**method_data, sort_order=i))
+        for method_data in TAB_PAYMENT_METHODS:
+            session.add(TabPaymentMethod(**method_data))
 
         await session.commit()
         print(f"Seed complete: {len(TAB_PAYMENT_METHODS)} tab payment methods.")

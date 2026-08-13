@@ -1,0 +1,154 @@
+/*
+ * Valiente Café brand skin for the Keycloak login flow.
+ * Layered on top of the stock keycloak.v2 theme (see theme.properties) —
+ * only overrides colors/type/shape via PatternFly's own CSS custom
+ * properties where possible, so upstream layout/accessibility behavior is
+ * untouched. Palette and font stacks are kept in sync with
+ * apps/frontend/src/index.css (@theme block) by hand; there is no shared
+ * source of truth between the two since Keycloak themes can't consume the
+ * frontend's Tailwind build.
+ */
+
+:root {
+  --vca-coral: #e8836a;
+  --vca-coral-dark: #d76a4f;
+  --vca-lavender: #7b7fc4;
+  --vca-lavender-dark: #5c5fa0;
+  --vca-cream: #f7f5f2;
+  --vca-font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --vca-font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
+  /* Base theme paints the dark polygon background via this var (see
+   * keycloak.v2/login/resources/css/styles.css, ".login-pf body") and the
+   * blue accent stripe atop the card via --keycloak-card-top-color. */
+  --keycloak-bg-logo-url: none;
+  --keycloak-card-top-color: var(--vca-coral);
+}
+
+body {
+  font-family: var(--vca-font-sans);
+}
+
+.login-pf body {
+  background-color: var(--vca-cream);
+}
+
+/* ===== Header brand mark =====
+ * The stock template renders the realm display name as text in a header
+ * bar above the card (#kc-header-wrapper) — moved out of the way in favor
+ * of a logo inside the card itself (.pf-v5-c-login__main-header::before,
+ * below), which reads as one cohesive unit instead of two disconnected
+ * pieces floating on the page background.
+ */
+#kc-header {
+  display: none;
+}
+
+/* ===== Card + page title ===== */
+.pf-v5-c-login__main {
+  --pf-v5-c-login__main--BackgroundColor: #ffffff;
+  --pf-v5-c-login__main--BoxShadow: 0 1px 2px rgba(92, 95, 160, 0.06),
+    0 12px 32px rgba(92, 95, 160, 0.12);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.pf-v5-c-login__main-header {
+  /* Base theme lays this out as a 2-column grid (title | language switcher)
+   * so our ::before logo below lands as its own grid item beside the
+   * title instead of stacking above it — force a single column. */
+  grid-template-columns: 1fr;
+  text-align: center;
+}
+
+.pf-v5-c-login__main-header::before {
+  content: "";
+  display: block;
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 1rem;
+  background-image: url("../img/logo.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.pf-v5-c-title {
+  --pf-v5-c-title--FontFamily: var(--vca-font-serif);
+  color: var(--vca-lavender-dark);
+}
+
+/* ===== Links ===== */
+a,
+a:visited {
+  --pf-v5-global--link--Color: var(--vca-coral);
+  --pf-v5-global--link--Color--hover: var(--vca-coral-dark);
+  color: var(--vca-coral);
+}
+
+a:hover {
+  color: var(--vca-coral-dark);
+}
+
+/* ===== Inputs ===== */
+.pf-v5-c-form-control {
+  --pf-v5-c-form-control--before--BorderTopColor: #ddd6cc;
+  --pf-v5-c-form-control--before--BorderRightColor: #ddd6cc;
+  --pf-v5-c-form-control--before--BorderLeftColor: #ddd6cc;
+  --pf-v5-c-form-control--before--BorderBottomColor: #c9c2f2;
+  --pf-v5-c-form-control--after--BorderBottomColor: var(--vca-lavender);
+  border-radius: 10px;
+}
+
+/* ===== Primary action (submit / "Ingresar") =====
+ * Matches the coral pill button used for the "Ingresa" trigger in the
+ * public site header (apps/frontend/src/components/Header.tsx).
+ */
+.pf-v5-c-button.pf-m-primary {
+  --pf-v5-c-button--m-primary--BackgroundColor: var(--vca-coral);
+  --pf-v5-c-button--m-primary--Color: #ffffff;
+  --pf-v5-c-button--m-primary--hover--BackgroundColor: var(--vca-coral-dark);
+  --pf-v5-c-button--m-primary--hover--Color: #ffffff;
+  --pf-v5-c-button--m-primary--focus--BackgroundColor: var(--vca-coral-dark);
+  --pf-v5-c-button--m-primary--focus--Color: #ffffff;
+  --pf-v5-c-button--m-primary--active--BackgroundColor: var(--vca-coral-dark);
+  --pf-v5-c-button--m-primary--active--Color: #ffffff;
+  --pf-v5-c-button--BorderRadius: 999px;
+  font-weight: 600;
+}
+
+/* ===== Secondary action + social login buttons =====
+ * "Continuar con Google/Microsoft" render through this same secondary
+ * button class (social-providers.ftl) once those identity providers are
+ * configured in the realm — styled now so they match immediately.
+ */
+.pf-v5-c-button.pf-m-secondary {
+  --pf-v5-c-button--m-secondary--BackgroundColor: #ffffff;
+  --pf-v5-c-button--m-secondary--Color: var(--vca-lavender-dark);
+  --pf-v5-c-button--m-secondary--after--BorderColor: var(--vca-lavender);
+  --pf-v5-c-button--m-secondary--hover--BackgroundColor: #f4f3fb;
+  --pf-v5-c-button--m-secondary--hover--Color: var(--vca-lavender-dark);
+  --pf-v5-c-button--m-secondary--hover--after--BorderColor: var(--vca-lavender-dark);
+  --pf-v5-c-button--m-secondary--focus--BackgroundColor: #f4f3fb;
+  --pf-v5-c-button--m-secondary--focus--Color: var(--vca-lavender-dark);
+  --pf-v5-c-button--BorderRadius: 999px;
+  font-weight: 600;
+}
+
+#kc-social-providers .pf-v5-c-button {
+  gap: 0.6rem;
+}
+
+#kc-social-providers svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Icon-less providers (default case in social-providers.ftl) fall back to
+ * plain text — give them the same pill treatment instead of the square
+ * default. */
+#kc-social-providers .pf-v5-c-button span {
+  font-weight: 600;
+}

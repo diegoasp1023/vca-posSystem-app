@@ -33,7 +33,6 @@ class CourseWrite(BaseModel):
     objectives: list[LocalizedTextWrite] = []
     content: list[CourseContentItemWrite] = []
     cost: list[LocalizedTextWrite] = []
-    payment_method_ids: list[int] = []
 
 
 class CourseSummaryOut(BaseModel):
@@ -66,7 +65,6 @@ class CourseDetailOut(BaseModel):
     content: list[CourseContentItem]
     duration: LocalizedText
     cost: list[LocalizedText]
-    methods: list[LocalizedText]
 
     @classmethod
     def from_model(cls, course: Course) -> "CourseDetailOut":
@@ -88,7 +86,4 @@ class CourseDetailOut(BaseModel):
             ],
             duration=LocalizedText(es=course.duration_text_es, en=course.duration_text_en),
             cost=[LocalizedText(es=c.text_es, en=c.text_en) for c in course.costs],
-            methods=[
-                LocalizedText(es=m.name_es, en=m.name_en) for m in course.payment_methods
-            ],
         )
