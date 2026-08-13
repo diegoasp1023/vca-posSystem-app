@@ -12,7 +12,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_HOSTNAME: ${KC_HOSTNAME}
       KC_HOSTNAME_STRICT: "false"
-      KC_PROXY: edge
+      KC_PROXY_HEADERS: xforwarded
       KC_HTTP_ENABLED: "true"
     ports:
       - "${KC_PORT}:8080"
@@ -39,6 +39,9 @@ services:
       KC_HOSTNAME: ${KC_HOSTNAME}
       KC_PORT: ${KC_PORT}
       KC_REALM: ${KC_REALM}
+      KC_ADMIN_HOSTNAME: ${KC_ADMIN_HOSTNAME}
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       CORS_ORIGINS: ${BACKEND_CORS_ORIGINS}
       UPLOAD_DIR: /data/uploads
     volumes:

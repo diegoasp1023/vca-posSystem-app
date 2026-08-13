@@ -30,10 +30,15 @@ FRONTEND_CLIENT_ID = "valiente-cafe-app-frontend"
 BACKEND_CLIENT_ID = "valiente-cafe-app-backend"
 ROLES = ["Administrador", "Cajero"]
 TEST_USER_EMAIL = "admin@valientecafe.co"
-DEV_REDIRECT_URI = "http://localhost:5173/*"
-DEV_WEB_ORIGIN = "http://localhost:5173"
 
-KC_BASE_URL = f"http://{settings.kc_hostname}:{settings.kc_port}"
+# Derived from CORS_ORIGINS (already set correctly per environment — see
+# BACKEND_CORS_ORIGINS in .env.example) rather than hardcoded to dev's
+# localhost, so the frontend client's redirect URI actually matches
+# whatever domain the frontend is really served from in each environment.
+FRONTEND_REDIRECT_URIS = [f"{origin}/*" for origin in settings.cors_origins]
+FRONTEND_WEB_ORIGINS = list(settings.cors_origins)
+
+KC_BASE_URL = f"http://{settings.kc_admin_hostname or settings.kc_hostname}:{settings.kc_port}"
 
 
 def get_admin_token(client: httpx.Client) -> str:
@@ -82,8 +87,28 @@ def find_client_uuid(client: httpx.Client, client_id: str) -> str | None:
 
 
 def ensure_frontend_client(client: httpx.Client) -> None:
-    if find_client_uuid(client, FRONTEND_CLIENT_ID):
-        print(f"Client '{FRONTEND_CLIENT_ID}' already exists, skipping.")
+    client_uuid = find_client_uuid(client, FRONTEND_CLIENT_ID)
+    if client_uuid:
+        existing = client.get(
+            f"{KC_BASE_URL}/admin/realms/{REALM}/clients/{client_uuid}"
+        )
+        existing.raise_for_status()
+        current = existing.json()
+        if (
+            current.get("redirectUris") != FRONTEND_REDIRECT_URIS
+            or current.get("webOrigins") != FRONTEND_WEB_ORIGINS
+        ):
+            client.put(
+                f"{KC_BASE_URL}/admin/realms/{REALM}/clients/{client_uuid}",
+                json={
+                    **current,
+                    "redirectUris": FRONTEND_REDIRECT_URIS,
+                    "webOrigins": FRONTEND_WEB_ORIGINS,
+                },
+            ).raise_for_status()
+            print(f"Client '{FRONTEND_CLIENT_ID}' already exists, updated redirect URIs.")
+        else:
+            print(f"Client '{FRONTEND_CLIENT_ID}' already exists, skipping.")
         return
 
     client.post(
@@ -94,8 +119,8 @@ def ensure_frontend_client(client: httpx.Client) -> None:
             "publicClient": True,
             "standardFlowEnabled": True,
             "directAccessGrantsEnabled": False,
-            "redirectUris": [DEV_REDIRECT_URI],
-            "webOrigins": [DEV_WEB_ORIGIN],
+            "redirectUris": FRONTEND_REDIRECT_URIS,
+            "webOrigins": FRONTEND_WEB_ORIGINS,
             "attributes": {"pkce.code.challenge.method": "S256"},
         },
     ).raise_for_status()
