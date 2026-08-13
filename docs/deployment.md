@@ -147,13 +147,29 @@ Crea `.env.staging` en la raíz del repo, en la VPS, a partir de
 | Variable | Valor en staging |
 |---|---|
 | `APP_ENV` | `staging` |
-| `KC_COMMAND` | `start --optimized` |
+| `KC_COMMAND` | `start` (no `start --optimized` — ver nota abajo) |
 | `KC_HOSTNAME` | `auth-staging.tudominio.com` |
+| `KC_REALM` | `valiente-cafe` (mismo valor que dev, pero hay que declararlo explícito — ver nota abajo) |
+| `KC_ADMIN_HOSTNAME` | `keycloak` (alias interno de Docker; ver nota abajo) |
 | `APP_DB_HOST` | `postgres` (el backend corre dockerizado; ver [`docs/database.md`](database.md#cómo-se-conectan-keycloak-y-el-backend)) |
 | `BACKEND_CORS_ORIGINS` | `["https://app-staging.tudominio.com"]` |
 | `VITE_API_BASE_URL` | `https://api-staging.tudominio.com` |
 | `VITE_KEYCLOAK_URL` | `https://auth-staging.tudominio.com` |
 | Todas las contraseñas (`*_PASSWORD`) | generadas con `openssl rand -base64 32`, únicas — nunca las de dev |
+
+Notas:
+- `KC_COMMAND=start --optimized` requiere una imagen de Keycloak
+  pre-compilada con `kc.sh build`; este proyecto usa la imagen stock
+  `quay.io/keycloak/keycloak`, que nunca pasa por ese paso, así que
+  `--optimized` falla en el primer arranque. Usar `start` a secas.
+- `KC_REALM` no tiene default seguro: si falta en el `.env.*`, Docker
+  Compose lo sustituye por un string vacío en vez de dejarlo sin definir,
+  rompiendo silenciosamente la validación de JWT. Declararlo siempre.
+- `KC_ADMIN_HOSTNAME=keycloak` es necesario porque `scripts/setup_keycloak.py`
+  corre dentro del contenedor del backend (`docker compose exec backend
+  ...`) en staging/prod, donde Keycloak solo es alcanzable por su alias de
+  red interno — no por `KC_HOSTNAME` (que es el dominio público). En dev se
+  deja sin definir (el script corre en el host, contra `localhost`).
 
 ```bash
 chmod 600 .env.staging
