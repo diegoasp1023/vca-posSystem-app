@@ -33,6 +33,16 @@ class Settings(BaseSettings):
     # kc_hostname, which is correct for dev (script runs on the host).
     kc_admin_hostname: str | None = None
 
+    # Full public base URL (scheme + host, no trailing slash) that ends up
+    # in issued tokens' iss claim — e.g. "https://auth-staging.example.com".
+    # Only needed in staging/prod, where Keycloak sits behind Caddy on 443
+    # with no port in the URL: without this override kc_issuer falls back
+    # to "http://{kc_hostname}:{kc_port}", which never matches a real
+    # token's issuer behind a proxy and makes every JWT fail validation
+    # with a generic 401. None => that legacy behavior, correct for dev
+    # (Keycloak reached directly at http://localhost:8080, no proxy).
+    kc_issuer_url: str | None = None
+
     upload_dir: str = "./uploads"
 
     @property
@@ -52,11 +62,18 @@ class Settings(BaseSettings):
 
     @property
     def kc_issuer(self) -> str:
-        return f"http://{self.kc_hostname}:{self.kc_port}/realms/{self.kc_realm}"
+        base = self.kc_issuer_url or f"http://{self.kc_hostname}:{self.kc_port}"
+        return f"{base}/realms/{self.kc_realm}"
 
     @property
     def kc_jwks_uri(self) -> str:
-        return f"{self.kc_issuer}/protocol/openid-connect/certs"
+        # A network-fetch target, not a string comparison like kc_issuer —
+        # always go through kc_admin_hostname (the internal Docker alias in
+        # staging/prod) rather than the public kc_issuer_url, so this never
+        # depends on the backend container being able to reach its own
+        # public domain/proxy.
+        host = self.kc_admin_hostname or self.kc_hostname
+        return f"http://{host}:{self.kc_port}/realms/{self.kc_realm}/protocol/openid-connect/certs"
 
 
 settings = Settings()
