@@ -70,20 +70,30 @@ sin reiniciar el contenedor — Keycloak no cachea temas en ese modo.
 ## Comando de arranque por ambiente
 
 - `dev` → `KC_COMMAND=start-dev` (modo relajado, HTTP permitido, solo local)
-- `staging` / `prod` → `KC_COMMAND=start --optimized` (modo producción real)
+- `staging` / `prod` → `KC_COMMAND=start` (modo producción real)
 
-Nunca cambiar `start --optimized` por `start-dev` en staging o prod, ni al
-revés en dev, salvo pedido explícito — `start-dev` no aplica los checks de
-producción y no debe quedar expuesto públicamente.
+Nunca cambiar `start`/`start --optimized` por `start-dev` en staging o prod,
+ni al revés en dev, salvo pedido explícito — `start-dev` no aplica los
+checks de producción y no debe quedar expuesto públicamente.
+
+**No usar `start --optimized`** a menos que `infra/docker-compose.yml` se
+cambie para compilar la imagen de Keycloak con `kc.sh build` primero — la
+imagen stock `quay.io/keycloak/keycloak` que usa este proyecto nunca pasa
+por ese paso, así que `--optimized` falla directo en el primer arranque en
+vez de solo advertir (ver [`docs/deployment.md`](deployment.md#4-staging--paso-a-paso)).
 
 ## Provisionar realm/clients/roles
 
 Con Keycloak ya levantado (ver [`docs/deployment.md`](deployment.md)):
 
 ```bash
+# dev — corre en el host, agrega un usuario Administrador de prueba
 cd apps/backend
-uv run python scripts/setup_keycloak.py               # staging/prod
-uv run python scripts/setup_keycloak.py --with-test-user   # dev, agrega un usuario Administrador de prueba
+uv run python scripts/setup_keycloak.py --with-test-user
+
+# staging/prod — corre dentro del contenedor del backend
+docker compose -f infra/docker-compose.yml --env-file .env.staging exec backend \
+  uv run python scripts/setup_keycloak.py
 ```
 
 Es idempotente — se puede re-correr sin duplicar realm, clients ni roles. La
