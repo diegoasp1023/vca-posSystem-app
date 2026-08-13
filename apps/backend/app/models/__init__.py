@@ -4,8 +4,6 @@ from app.models.course import (
     CourseContentModule,
     CourseCost,
     CourseObjective,
-    PaymentMethod,
-    course_payment_methods,
 )
 from app.models.employee import Employee
 from app.models.menu_item import MenuCategory, MenuItem
@@ -37,7 +35,6 @@ __all__ = [
     "Employee",
     "MenuCategory",
     "MenuItem",
-    "PaymentMethod",
     "PayrollPeriod",
     "PayrollSnapshot",
     "Shift",
@@ -49,7 +46,6 @@ __all__ = [
     "Table",
     "TipPool",
     "TipPoolParticipant",
-    "course_payment_methods",
     "Presentation",
     "Product",
     "product_presentations",

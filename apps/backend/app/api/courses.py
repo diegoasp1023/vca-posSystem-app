@@ -11,7 +11,6 @@ from app.models.course import (
     CourseContentModule,
     CourseCost,
     CourseObjective,
-    PaymentMethod,
 )
 from app.schemas.common import Page
 from app.schemas.course import CourseDetailOut, CourseSummaryOut, CourseWrite
@@ -24,7 +23,6 @@ DETAIL_OPTIONS = (
     selectinload(Course.objectives),
     selectinload(Course.content_modules),
     selectinload(Course.costs),
-    selectinload(Course.payment_methods),
 )
 
 
@@ -101,16 +99,6 @@ async def get_course(slug: str, db: AsyncSession = Depends(get_db)) -> CourseDet
     return CourseDetailOut.from_model(course)
 
 
-async def _load_payment_methods(db: AsyncSession, ids: list[int]) -> list[PaymentMethod]:
-    if not ids:
-        return []
-    result = await db.execute(select(PaymentMethod).where(PaymentMethod.id.in_(ids)))
-    methods = result.scalars().all()
-    if len(methods) != len(set(ids)):
-        raise HTTPException(status_code=400, detail="Unknown payment_method_id")
-    return list(methods)
-
-
 def _apply_children(course: Course, body: CourseWrite) -> None:
     course.objectives = [
         CourseObjective(sort_order=i, text_es=o.es, text_en=o.en)
@@ -137,13 +125,7 @@ async def create_course(body: CourseWrite, db: AsyncSession = Depends(get_db)) -
     if existing is not None:
         raise HTTPException(status_code=400, detail="A course with this slug already exists")
 
-    payment_methods = await _load_payment_methods(db, body.payment_method_ids)
-    course = Course(
-        **body.model_dump(
-            exclude={"objectives", "content", "cost", "payment_method_ids"}
-        ),
-        payment_methods=payment_methods,
-    )
+    course = Course(**body.model_dump(exclude={"objectives", "content", "cost"}))
     _apply_children(course, body)
 
     db.add(course)
@@ -175,11 +157,8 @@ async def update_course(
 
     previous_image_url = course.image_url
 
-    for field, value in body.model_dump(
-        exclude={"objectives", "content", "cost", "payment_method_ids"}
-    ).items():
+    for field, value in body.model_dump(exclude={"objectives", "content", "cost"}).items():
         setattr(course, field, value)
-    course.payment_methods = await _load_payment_methods(db, body.payment_method_ids)
     _apply_children(course, body)
 
     await db.commit()
