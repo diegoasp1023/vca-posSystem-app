@@ -8,7 +8,7 @@ import { FloorPlanEditorTab } from './FloorPlanEditorTab'
 import { TabHistoryTab } from './TabHistoryTab'
 import { TabPaymentMethodsTab } from './TabPaymentMethodsTab'
 
-type PageTab = 'cuentas' | 'plano' | 'historico' | 'metodos'
+type PageTab = 'cuentas' | 'plano' | 'metodos' | 'historico'
 
 export function AdminTabsPage() {
   const { t } = useTranslation()
@@ -51,12 +51,14 @@ export function AdminTabsPage() {
               {t('adminTabs.floorPlanTab')}
             </TabButton>
           )}
-          <TabButton active={tab === 'historico'} onClick={() => setTab('historico')}>
-            {t('adminTabs.historyTab')}
-          </TabButton>
           {isAdmin && (
             <TabButton active={tab === 'metodos'} onClick={() => setTab('metodos')}>
               {t('adminTabs.paymentMethodsTab')}
+            </TabButton>
+          )}
+          {isAdmin && (
+            <TabButton active={tab === 'historico'} onClick={() => setTab('historico')}>
+              {t('adminTabs.historyTab')}
             </TabButton>
           )}
         </div>
@@ -68,8 +70,8 @@ export function AdminTabsPage() {
           />
         )}
         {tab === 'plano' && isAdmin && <FloorPlanEditorTab />}
-        {tab === 'historico' && <TabHistoryTab />}
         {tab === 'metodos' && isAdmin && <TabPaymentMethodsTab />}
+        {tab === 'historico' && isAdmin && <TabHistoryTab />}
       </div>
     </section>
   )
