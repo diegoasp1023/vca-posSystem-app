@@ -58,10 +58,6 @@ export function fetchPresentations(): Promise<Lookup[]> {
   return adminFetch('/api/presentations', undefined)
 }
 
-export function fetchPaymentMethods(): Promise<Lookup[]> {
-  return adminFetch('/api/payment-methods', undefined)
-}
-
 export interface PresentationWrite {
   name_es: string
   name_en: string
@@ -140,7 +136,6 @@ export interface CourseWrite {
   objectives: { es: string; en: string }[]
   content: { module_es: string; module_en: string; duration_label: string }[]
   cost: { es: string; en: string }[]
-  payment_method_ids: number[]
 }
 
 export function fetchAdminCourses(

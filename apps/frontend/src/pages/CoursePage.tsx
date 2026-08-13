@@ -139,17 +139,6 @@ export function CoursePage() {
           </ul>
         </section>
 
-        <section className="mt-10">
-          <h2 className="font-serif text-2xl text-coral-dark">
-            {t('coursePage.methods')}
-          </h2>
-          <ul className="mt-3 list-disc space-y-1 pl-5 text-gray-700">
-            {course.methods.map((method) => (
-              <li key={method[lang]}>{method[lang]}</li>
-            ))}
-          </ul>
-        </section>
-
         <Link
           to="/"
           className="mt-12 inline-block rounded-full bg-coral px-8 py-3 font-semibold text-white transition hover:bg-coral-dark"
