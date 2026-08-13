@@ -33,7 +33,7 @@ TEST_USER_EMAIL = "admin@valientecafe.co"
 DEV_REDIRECT_URI = "http://localhost:5173/*"
 DEV_WEB_ORIGIN = "http://localhost:5173"
 
-KC_BASE_URL = f"http://{settings.kc_hostname}:{settings.kc_port}"
+KC_BASE_URL = f"http://{settings.kc_admin_hostname or settings.kc_hostname}:{settings.kc_port}"
 
 
 def get_admin_token(client: httpx.Client) -> str:

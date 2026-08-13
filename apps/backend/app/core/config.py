@@ -25,6 +25,14 @@ class Settings(BaseSettings):
     keycloak_admin_user: str = "admin"
     keycloak_admin_password: str = "changeme"
 
+    # Only used by scripts/setup_keycloak.py. kc_hostname is the *public*
+    # hostname (baked into issued tokens' iss claim), but in staging/prod
+    # that script runs inside the backend container via `docker compose
+    # exec`, where Keycloak is only reachable through the Docker network
+    # alias ("keycloak"), not the public hostname. None => fall back to
+    # kc_hostname, which is correct for dev (script runs on the host).
+    kc_admin_hostname: str | None = None
+
     upload_dir: str = "./uploads"
 
     @property
