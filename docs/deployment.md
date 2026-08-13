@@ -274,10 +274,12 @@ Si prefieres Nginx por familiaridad del equipo, el equivalente es Nginx +
 `certbot --nginx` con renovación vía `systemd timer` — funciona igual, con
 más piezas que mantener.
 
-`infra/docker-compose.yml` ya trae `KC_PROXY: edge` en el servicio
-`keycloak` — necesario para que Keycloak sepa que el proxy termina TLS por
-él y reescriba `redirect_uri`/`issuer` como `https://auth-staging.tudominio.com`
-aunque internamente hable HTTP.
+`infra/docker-compose.yml` ya trae `KC_PROXY_HEADERS: xforwarded` en el
+servicio `keycloak` — necesario para que Keycloak confíe en el
+`X-Forwarded-Proto` que manda Caddy y arme `redirect_uri`/`issuer` como
+`https://auth-staging.tudominio.com` en vez de `http://`, aunque
+internamente hable HTTP. (La opción vieja `KC_PROXY: edge` es de la v1 del
+sistema de hostname de Keycloak, deprecada desde Keycloak 26 — no usarla.)
 
 Restringir `/admin` de Keycloak a una IP/VPN conocida (en vez de dejarlo
 público) se documenta en [`docs/security.md`](security.md#4-keycloak).
