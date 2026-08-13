@@ -9,19 +9,15 @@ import {
   deleteCourse,
   fetchAdminCourse,
   fetchAdminCourses,
-  fetchPaymentMethods,
   updateCourse,
   uploadCourseImage,
   type CourseWrite,
-  type Lookup,
 } from '../../lib/adminApi'
 import { getCourseImageUrl, type CourseSummary } from '../../lib/api'
 import { Pagination } from '../../components/Pagination'
 import { BackToPanelLink } from './BackToPanelLink'
 import { Modal } from './Modal'
-import { MultiSelectDropdown } from './PayrollShared'
 
-const FORCED_PAYMENT_METHOD_NAME_ES = 'Pago 100% por adelantado al inscribirte'
 const FIXED_COST_NOTE_ES = 'Incluyen materiales y certificado de asistencia'
 const FIXED_COST_NOTE_EN = 'Both include materials and a completion certificate'
 
@@ -147,7 +143,6 @@ interface CourseFormState {
   content: ContentRow[]
   costRows: CostRow[]
   rescheduleFeeAmount: number | ''
-  payment_method_ids: number[]
 }
 
 const EMPTY_FORM: CourseFormState = {
@@ -160,7 +155,6 @@ const EMPTY_FORM: CourseFormState = {
   content: [],
   costRows: [],
   rescheduleFeeAmount: DEFAULT_RESCHEDULE_FEE,
-  payment_method_ids: [],
 }
 
 export function AdminCoursesPage() {
@@ -171,7 +165,6 @@ export function AdminCoursesPage() {
   const [pageSize, setPageSize] = useState<10 | 20 | 50>(10)
   const [totalPages, setTotalPages] = useState(1)
   const [courses, setCourses] = useState<CourseSummary[]>([])
-  const [paymentMethods, setPaymentMethods] = useState<Lookup[]>([])
   const [editingId, setEditingId] = useState<number | 'new' | null>(null)
   const [editingSlug, setEditingSlug] = useState<string | null>(null)
   const [form, setForm] = useState<CourseFormState>(EMPTY_FORM)
@@ -193,17 +186,6 @@ export function AdminCoursesPage() {
   }, [page, pageSize, getToken])
 
   useEffect(reload, [reload])
-  useEffect(() => {
-    fetchPaymentMethods().then(setPaymentMethods)
-  }, [])
-
-  const forcedPaymentMethodId = paymentMethods.find(
-    (method) => method.name.es === FORCED_PAYMENT_METHOD_NAME_ES,
-  )?.id
-
-  const selectablePaymentMethods = paymentMethods.filter(
-    (method) => method.id !== forcedPaymentMethodId,
-  )
 
   const startCreate = () => {
     setForm(EMPTY_FORM)
@@ -215,13 +197,6 @@ export function AdminCoursesPage() {
   const startEdit = async (course: CourseSummary) => {
     const token = await getToken()
     const detail = await fetchAdminCourse(token, course.id)
-    const selectedMethodIds = paymentMethods
-      .filter(
-        (method) =>
-          method.id !== forcedPaymentMethodId &&
-          detail.methods.some((m) => m.es === method.name.es),
-      )
-      .map((method) => method.id)
 
     setForm({
       title_es: detail.title.es,
@@ -242,7 +217,6 @@ export function AdminCoursesPage() {
         const parsed = parseRescheduleFee(detail.duration.es)
         return parsed !== '' ? parsed : parseRescheduleFee(detail.duration.en)
       })(),
-      payment_method_ids: selectedMethodIds,
     })
     setEditingSlug(detail.slug)
     setFormError(null)
@@ -305,9 +279,6 @@ export function AdminCoursesPage() {
         })),
         { es: FIXED_COST_NOTE_ES, en: FIXED_COST_NOTE_EN },
       ],
-      payment_method_ids: forcedPaymentMethodId
-        ? [...form.payment_method_ids, forcedPaymentMethodId]
-        : form.payment_method_ids,
     }
 
     const token = await getToken()
@@ -731,24 +702,6 @@ export function AdminCoursesPage() {
                 className="w-full rounded-lg border border-cream px-3 py-2"
               />
             </label>
-
-            <div>
-              <p className="mb-1 text-sm font-semibold text-lavender-dark">
-                {t('coursePage.methods')}
-              </p>
-              <MultiSelectDropdown
-                options={selectablePaymentMethods.map((method) => ({
-                  id: method.id,
-                  label: method.name.es,
-                }))}
-                selected={new Set(form.payment_method_ids)}
-                onChange={(selected) =>
-                  setForm({ ...form, payment_method_ids: [...selected] })
-                }
-                placeholder={t('coursePage.methods')}
-              />
-              <p className="mt-2 text-sm text-gray-600">{t('admin.paymentIncludesNote')}</p>
-            </div>
 
             {formError && (
               <p className="text-sm font-semibold text-coral-dark">{formError}</p>

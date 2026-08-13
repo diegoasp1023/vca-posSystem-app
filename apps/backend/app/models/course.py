@@ -2,38 +2,15 @@ from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
-    Column,
     DateTime,
     ForeignKey,
     Integer,
     String,
-    Table,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
-
-course_payment_methods = Table(
-    "course_payment_methods",
-    Base.metadata,
-    Column("course_id", ForeignKey("courses.id", ondelete="CASCADE"), primary_key=True),
-    Column(
-        "payment_method_id",
-        ForeignKey("payment_methods.id", ondelete="CASCADE"),
-        primary_key=True,
-    ),
-)
-
-
-class PaymentMethod(Base):
-    """Lookup table: payment methods shared across courses (Nequi, Daviplata, ...)."""
-
-    __tablename__ = "payment_methods"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name_es: Mapped[str] = mapped_column(String(120), nullable=False)
-    name_en: Mapped[str] = mapped_column(String(120), nullable=False)
 
 
 class Course(Base):
@@ -70,9 +47,6 @@ class Course(Base):
         back_populates="course",
         order_by="CourseCost.sort_order",
         cascade="all, delete-orphan",
-    )
-    payment_methods: Mapped[list[PaymentMethod]] = relationship(
-        secondary=course_payment_methods, order_by=PaymentMethod.id
     )
 
 

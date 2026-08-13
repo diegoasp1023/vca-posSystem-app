@@ -34,7 +34,6 @@ export interface CourseDetail extends CourseSummary {
   content: { module: LocalizedText; duration: string }[]
   duration: LocalizedText
   cost: LocalizedText[]
-  methods: LocalizedText[]
 }
 
 export interface MenuCategory {

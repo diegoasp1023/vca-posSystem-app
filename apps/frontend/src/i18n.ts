@@ -54,7 +54,6 @@ const resources = {
         content: 'Contenido del curso',
         duration: 'Duración',
         cost: 'Costo',
-        methods: 'Métodos de pago',
         back: 'Volver al inicio',
         notFound: 'No encontramos este curso.',
       },
@@ -113,8 +112,6 @@ const resources = {
         costIncludesNote:
           'Se incluye automáticamente: "Incluyen materiales y certificado de asistencia".',
         costIndividualLimitError: 'Solo se permite un costo de tipo Individual.',
-        paymentIncludesNote:
-          'Se incluye automáticamente: "Pago 100% por adelantado al inscribirte".',
         edit: 'Editar',
         delete: 'Eliminar',
         deactivate: 'Dar de baja',
@@ -438,7 +435,6 @@ const resources = {
         content: 'Course content',
         duration: 'Duration',
         cost: 'Cost',
-        methods: 'Payment methods',
         back: 'Back to home',
         notFound: "We couldn't find this course.",
       },
@@ -496,7 +492,6 @@ const resources = {
         costIncludesNote:
           'Automatically included: "Include materials and a completion certificate".',
         costIndividualLimitError: 'Only one Individual cost is allowed.',
-        paymentIncludesNote: 'Automatically included: "100% payment required upon enrollment".',
         edit: 'Edit',
         delete: 'Delete',
         deactivate: 'Deactivate',

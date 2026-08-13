@@ -53,7 +53,6 @@ COURSE_PAYLOAD = {
     "objectives": [{"es": "Objetivo", "en": "Objective"}],
     "content": [{"module_es": "Modulo 1", "module_en": "Module 1", "duration_label": "1h"}],
     "cost": [{"es": "$100.000", "en": "$100,000"}],
-    "payment_method_ids": [],
 }
 
 
