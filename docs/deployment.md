@@ -151,6 +151,7 @@ Crea `.env.staging` en la raíz del repo, en la VPS, a partir de
 | `KC_HOSTNAME` | `auth-staging.tudominio.com` |
 | `KC_REALM` | `valiente-cafe` (mismo valor que dev, pero hay que declararlo explícito — ver nota abajo) |
 | `KC_ADMIN_HOSTNAME` | `keycloak` (alias interno de Docker; ver nota abajo) |
+| `KC_ISSUER_URL` | `https://auth-staging.tudominio.com` (mismo valor que `VITE_KEYCLOAK_URL`; ver nota abajo) |
 | `APP_DB_HOST` | `postgres` (el backend corre dockerizado; ver [`docs/database.md`](database.md#cómo-se-conectan-keycloak-y-el-backend)) |
 | `BACKEND_CORS_ORIGINS` | `["https://app-staging.tudominio.com"]` |
 | `VITE_API_BASE_URL` | `https://api-staging.tudominio.com` |
@@ -170,6 +171,11 @@ Notas:
   ...`) en staging/prod, donde Keycloak solo es alcanzable por su alias de
   red interno — no por `KC_HOSTNAME` (que es el dominio público). En dev se
   deja sin definir (el script corre en el host, contra `localhost`).
+- `KC_ISSUER_URL` es obligatorio en staging/prod: sin él, el backend valida
+  los JWT contra `http://KC_HOSTNAME:KC_PORT` (el fallback de dev), que
+  nunca coincide con el `iss` real de un token emitido detrás de Caddy en
+  HTTPS sin puerto — el resultado es un 401 silencioso en **todos** los
+  endpoints protegidos, sin ningún error obvio del lado de Keycloak.
 
 ```bash
 chmod 600 .env.staging
