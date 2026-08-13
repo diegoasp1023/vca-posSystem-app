@@ -321,3 +321,99 @@ docker compose -f infra/docker-compose.db.yml --env-file .env.<ambiente> down -v
 ```
 
 Detalle por servicio en [`docs/database.md`](database.md#detener--reiniciar).
+
+## 9. Versionado y releases (staging/prod)
+
+Cada vez que se promueve código a staging (o después a prod), se etiqueta
+con un tag anotado de Git — así siempre queda trazable qué commit exacto
+está corriendo en cada ambiente, y un rollback es tan simple como volver a
+desplegar el tag anterior. No se tagea cada commit de `dev`, solo cada
+release real a staging/prod.
+
+### 9.1 Convención de versión
+
+Tags con [semver](https://semver.org/lang/es/): `vMAJOR.MINOR.PATCH`.
+
+| Tipo de cambio | Ejemplo | Bump |
+|---|---|---|
+| Fix puntual, sin cambios de esquema/API | `fix(frontend): ...` | `PATCH` (`v1.2.3` → `v1.2.4`) |
+| Feature nueva, compatible hacia atrás | `feat(backend): ...` | `MINOR` (`v1.2.3` → `v1.3.0`) |
+| Cambio incompatible (rompe API pública, requiere pasos manuales de migración, etc.) | — poco frecuente en este proyecto | `MAJOR` (`v1.2.3` → `v2.0.0`) |
+
+En la práctica, la mayoría de los releases de este proyecto son `MINOR` o
+`PATCH`. Ver el tag más reciente: `git tag -l --sort=-v:refname | head`.
+
+### 9.2 Tagear un release a staging
+
+Después de mergear el PR `dev → staging` (ver tabla de ramas en
+[`CLAUDE.md`](../CLAUDE.md)):
+
+```bash
+git checkout staging
+git pull origin staging
+
+git tag -a v1.3.0 -m "Release a staging: resumen breve de qué incluye"
+git push origin v1.3.0
+```
+
+Para armar el resumen del mensaje, `git log <tag-anterior>..staging --oneline`
+lista los commits incluidos desde el último release.
+
+### 9.3 Desplegar ese tag en la VPS
+
+En vez de `git pull origin staging` (que sigue la rama en movimiento),
+desplegá el tag exacto — así lo que corre en la VPS siempre coincide con lo
+que quedó tageado:
+
+```bash
+cd /opt/vca-posSystem-app   # o donde viva el repo en la VPS
+git fetch --tags
+git checkout v1.3.0
+
+docker compose -f infra/docker-compose.yml --env-file .env.staging --profile staging up -d --build
+docker compose -f infra/docker-compose.yml --env-file .env.staging exec backend uv run alembic upgrade head
+```
+
+### 9.4 Rollback
+
+Si algo sale mal, volvé al tag anterior y repetí el mismo `up -d --build`:
+
+```bash
+git checkout v1.2.4
+docker compose -f infra/docker-compose.yml --env-file .env.staging --profile staging up -d --build
+```
+
+Nota: si el release que se está revirtiendo incluyó una migración de
+Alembic irreversible en la práctica (por ejemplo, una que borra una
+columna/tabla con datos), el rollback de código no deshace la base de
+datos — revisar `alembic downgrade` para ese caso puntual antes de asumir
+que alcanza con volver el código atrás.
+
+### 9.5 Promoción a prod
+
+Cuando el mismo release ya validado en staging se promueve a prod (PR
+`staging → main`, ver regla de ramas en [`CLAUDE.md`](../CLAUDE.md)), se
+reutiliza el **mismo tag** — no se crea un número de versión nuevo. Eso logra
+dos cosas: (1) confirma que lo que llega a prod es exactamente el código que se
+probó en staging, sin drift entre ambientes, y (2) evita que los números de
+versión de staging y prod diverjan con el tiempo.
+
+```bash
+# en la VPS de prod
+git fetch --tags
+git checkout v1.3.0
+
+docker compose -f infra/docker-compose.yml --env-file .env.prod --profile prod up -d --build
+docker compose -f infra/docker-compose.yml --env-file .env.prod exec backend uv run alembic upgrade head
+```
+
+### 9.6 Opcional: GitHub Release
+
+Para tener el changelog visible en GitHub (no solo el mensaje del tag):
+
+```bash
+gh release create v1.3.0 --title v1.3.0 --generate-notes
+```
+
+`--generate-notes` arma la lista de PRs mergeados desde el release
+anterior automáticamente.
