@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import URL
 
 
 class Settings(BaseSettings):
@@ -28,10 +29,18 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        return (
-            f"postgresql+asyncpg://{self.app_db_username}:{self.app_db_password}"
-            f"@{self.app_db_host}:{self.db_port}/{self.app_db_name}"
-        )
+        # Built via URL.create (not an f-string) so credentials containing
+        # URL-reserved characters (@, /, :, ...) are percent-encoded instead
+        # of corrupting the parsed host/user — see incident where an "@" in
+        # APP_DB_PASSWORD made asyncpg try to resolve "<rest-of-password>@postgres".
+        return URL.create(
+            "postgresql+asyncpg",
+            username=self.app_db_username,
+            password=self.app_db_password,
+            host=self.app_db_host,
+            port=self.db_port,
+            database=self.app_db_name,
+        ).render_as_string(hide_password=False)
 
     @property
     def kc_issuer(self) -> str:
