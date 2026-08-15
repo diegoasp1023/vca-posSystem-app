@@ -684,13 +684,14 @@ export function reopenTab(token: string | undefined, tabId: number) {
 
 export function fetchTabHistory(
   token: string | undefined,
-  params: { start_date?: string; end_date?: string } = {},
+  params: { start_date?: string; end_date?: string; page?: number; page_size?: number } = {},
 ) {
   const query = new URLSearchParams()
   if (params.start_date) query.set('start_date', params.start_date)
   if (params.end_date) query.set('end_date', params.end_date)
-  const qs = query.toString()
-  return adminFetch<Tab[]>(`/api/tabs/history${qs ? `?${qs}` : ''}`, token)
+  query.set('page', String(params.page ?? 1))
+  query.set('page_size', String(params.page_size ?? 20))
+  return adminFetch<Page<Tab>>(`/api/tabs/history?${query.toString()}`, token)
 }
 
 export type CashSessionStatus = 'open' | 'closed'
