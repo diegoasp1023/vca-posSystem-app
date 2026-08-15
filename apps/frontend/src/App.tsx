@@ -12,6 +12,7 @@ import { RequireAdmin } from './pages/admin/RequireAdmin'
 import { RequireCajero } from './pages/admin/RequireCajero'
 import { AdminLayout } from './pages/admin/AdminLayout'
 import { AdminHomePage } from './pages/admin/AdminHomePage'
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 import { AdminProductsPage } from './pages/admin/AdminProductsPage'
 import { AdminCoursesPage } from './pages/admin/AdminCoursesPage'
 import { AdminEmployeesPage } from './pages/admin/AdminEmployeesPage'
@@ -37,6 +38,7 @@ function App() {
               <Route element={<AdminLayout />}>
                 <Route index element={<AdminHomePage />} />
                 <Route element={<RequireAdmin />}>
+                  <Route path="dashboard" element={<AdminDashboardPage />} />
                   <Route path="cafes" element={<AdminProductsPage />} />
                   <Route path="cursos" element={<AdminCoursesPage />} />
                   <Route path="menu" element={<AdminMenuPage />} />
