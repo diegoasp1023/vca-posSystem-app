@@ -1,6 +1,11 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
-from tests.conftest import make_employee
+from tests.conftest import (
+    make_employee,
+    make_tab,
+    make_tab_payment,
+    make_tab_payment_method,
+)
 
 _TODAY = date.today()
 YEAR, MONTH = _TODAY.year, _TODAY.month
@@ -198,6 +203,39 @@ async def test_tips_split_evenly_among_participants(db_session, admin_client):
     item1 = next(i for i in summary.json()["items"] if i["employee_id"] == e1.id)
     assert item1["propina_cop"] == 50000
     assert item1["total_cop"] == 1_050_000
+
+
+async def test_tips_calculated_amount_sums_tab_payments_in_month(db_session, admin_client):
+    method = await make_tab_payment_method(db_session)
+
+    in_range_tab = await make_tab(
+        db_session,
+        status="paid",
+        paid_at=datetime(YEAR, MONTH, 15, tzinfo=timezone.utc),
+    )
+    await make_tab_payment(
+        db_session, in_range_tab, payment_method_id=method.id, tip_cop=10000
+    )
+    await make_tab_payment(
+        db_session, in_range_tab, payment_method_id=method.id, tip_cop=5000
+    )
+
+    next_month = MONTH + 1 if MONTH < 12 else 1
+    next_month_year = YEAR if MONTH < 12 else YEAR + 1
+    out_of_range_tab = await make_tab(
+        db_session,
+        status="paid",
+        paid_at=datetime(next_month_year, next_month, 1, tzinfo=timezone.utc),
+    )
+    await make_tab_payment(
+        db_session, out_of_range_tab, payment_method_id=method.id, tip_cop=99999
+    )
+
+    response = await admin_client.get(
+        "/api/payroll/tips", params={"year": YEAR, "month": MONTH}
+    )
+    assert response.status_code == 200
+    assert response.json()["monto_calculado_cop"] == 15000
 
 
 async def test_tips_rejected_when_period_closed(db_session, admin_client):
