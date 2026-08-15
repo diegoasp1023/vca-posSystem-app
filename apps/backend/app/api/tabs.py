@@ -1,7 +1,7 @@
 from datetime import date, datetime, time, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -12,11 +12,14 @@ from app.models.menu_item import MenuItem
 from app.models.product import Product
 from app.models.tab import Tab, TabItem, TabPayment, TabPaymentItemAllocation, TabPaymentMethod
 from app.models.table import Table
+from app.schemas.common import Page
 from app.schemas.tab import TabCreate, TabItemAdd, TabItemUpdate, TabOut, TabPay, TabUpdate
 
 router = APIRouter(
     prefix="/api/tabs", tags=["tabs"], dependencies=[Depends(require_cajero_or_admin)]
 )
+
+HISTORY_PAGE_SIZES = {20, 50, 100}
 
 TAB_LOAD_OPTIONS = (
     selectinload(Tab.items),
@@ -53,25 +56,44 @@ async def list_tabs(db: AsyncSession = Depends(get_db)) -> list[TabOut]:
     return [TabOut.from_model(t) for t in result.scalars().all()]
 
 
-@router.get("/history", response_model=list[TabOut])
+@router.get("/history", response_model=Page[TabOut])
 async def list_tab_history(
     start_date: date | None = None,
     end_date: date | None = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20),
     db: AsyncSession = Depends(get_db),
-) -> list[TabOut]:
-    query = (
-        select(Tab)
-        .where(Tab.status == "paid")
-        .options(*TAB_LOAD_OPTIONS)
-        .order_by(Tab.paid_at.desc())
-    )
-    if start_date is not None:
-        query = query.where(Tab.paid_at >= datetime.combine(start_date, time.min, tzinfo=timezone.utc))
-    if end_date is not None:
-        query = query.where(Tab.paid_at <= datetime.combine(end_date, time.max, tzinfo=timezone.utc))
+) -> Page[TabOut]:
+    if page_size not in HISTORY_PAGE_SIZES:
+        raise HTTPException(status_code=422, detail="page_size must be 20, 50, or 100")
 
-    result = await db.execute(query)
-    return [TabOut.from_model(t) for t in result.scalars().all()]
+    base_query = select(Tab).where(Tab.status == "paid")
+    if start_date is not None:
+        base_query = base_query.where(
+            Tab.paid_at >= datetime.combine(start_date, time.min, tzinfo=timezone.utc)
+        )
+    if end_date is not None:
+        base_query = base_query.where(
+            Tab.paid_at <= datetime.combine(end_date, time.max, tzinfo=timezone.utc)
+        )
+
+    total = await db.scalar(select(func.count()).select_from(base_query.subquery()))
+    total = total or 0
+
+    result = await db.execute(
+        base_query.options(*TAB_LOAD_OPTIONS)
+        .order_by(Tab.paid_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+
+    return Page(
+        items=[TabOut.from_model(t) for t in result.scalars().all()],
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=max(1, -(-total // page_size)),
+    )
 
 
 @router.post("", response_model=TabOut, status_code=201)
