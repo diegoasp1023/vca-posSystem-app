@@ -1,9 +1,37 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Pagination } from '../../components/Pagination'
 import { useAuth } from '../../context/AuthContext'
 import { fetchTabHistory, type Tab } from '../../lib/adminApi'
+import { downloadCsv } from '../../lib/csv'
 import { formatDuration, PaymentsSummary, tabTitle } from './TabCard'
+
+function exportHistoryToCsv(tabs: Tab[], t: TFunction) {
+  const headers = [
+    t('adminTabs.historyCsvId'),
+    t('adminTabs.historyCsvPaidAt'),
+    t('adminTabs.historyCsvAccount'),
+    t('adminTabs.historyCsvDuration'),
+    t('adminTabs.historyCsvItemCount'),
+    t('adminTabs.historyCsvItems'),
+    t('adminTabs.total'),
+    t('admin.tips'),
+    t('adminTabs.historyCsvPaymentMethods'),
+  ]
+  const rows = tabs.map((tab) => [
+    tab.id,
+    tab.paid_at ? new Date(tab.paid_at).toLocaleString('es-CO') : '',
+    tabTitle(tab, t),
+    tab.paid_at ? formatDuration(tab.opened_at, new Date(tab.paid_at)) : '',
+    tab.items.reduce((sum, item) => sum + item.quantity, 0),
+    tab.items.map((item) => `${item.name.es} x${item.quantity}`).join('; '),
+    tab.total_cop,
+    tab.tip_total_cop,
+    tab.payments.map((p) => p.payment_method.name).join(', '),
+  ])
+  downloadCsv('historico-cuentas.csv', headers, rows)
+}
 
 export function TabHistoryTab() {
   const { t } = useTranslation()
@@ -16,6 +44,7 @@ export function TabHistoryTab() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [totalPages, setTotalPages] = useState(1)
+  const [exporting, setExporting] = useState(false)
 
   const load = useCallback(
     (start: string, end: string, targetPage: number, targetPageSize: number) => {
@@ -48,6 +77,32 @@ export function TabHistoryTab() {
     e.preventDefault()
     setPage(1)
     load(startDate, endDate, 1, pageSize)
+  }
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const token = await getToken()
+      const allTabs: Tab[] = []
+      let currentPage = 1
+      let pages = 1
+      do {
+        const result = await fetchTabHistory(token, {
+          start_date: startDate || undefined,
+          end_date: endDate || undefined,
+          page: currentPage,
+          page_size: 100,
+        })
+        allTabs.push(...result.items)
+        pages = result.total_pages
+        currentPage += 1
+      } while (currentPage <= pages)
+      exportHistoryToCsv(allTabs, t)
+    } catch {
+      setStatus('error')
+    } finally {
+      setExporting(false)
+    }
   }
 
   const pagination = (
@@ -93,6 +148,14 @@ export function TabHistoryTab() {
           className="rounded-full bg-coral px-5 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
         >
           {t('adminTabs.historyApplyFilter')}
+        </button>
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={exporting || tabs.length === 0}
+          className="rounded-full border border-lavender px-5 py-2 text-sm font-semibold text-lavender-dark transition hover:bg-cream disabled:opacity-50"
+        >
+          {exporting ? t('common.loading') : t('admin.exportCsv')}
         </button>
       </form>
 
