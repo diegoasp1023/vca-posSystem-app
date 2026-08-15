@@ -772,3 +772,73 @@ export function updateTable(token: string | undefined, id: number, body: TableWr
 export function deleteTable(token: string | undefined, id: number) {
   return adminFetch<void>(`/api/tables/${id}`, token, { method: 'DELETE' })
 }
+
+export interface DailySalesPoint {
+  date: string
+  revenue_cop: number
+  tabs_count: number
+}
+
+export interface DashboardSalesSummary {
+  total_revenue_cop: number
+  closed_tabs_count: number
+  average_ticket_cop: number
+  daily_series: DailySalesPoint[]
+}
+
+export interface DashboardTopProduct {
+  name: LocalizedText
+  quantity: number
+  revenue_cop: number
+}
+
+export interface DashboardPaymentMethodBreakdown {
+  name: string
+  revenue_cop: number
+  tips_cop: number
+  tabs_count: number
+}
+
+export interface DashboardTipsSummary {
+  calculated_total_cop: number
+  declared_total_cop: number | null
+  average_tip_per_tab_cop: number
+}
+
+export interface DashboardBusyHourPoint {
+  hour: number
+  tabs_opened_count: number
+}
+
+export interface DashboardLaborCost {
+  total_hours: number
+  total_cost_cop: number
+}
+
+export interface DashboardMetrics {
+  sales: DashboardSalesSummary
+  top_products: DashboardTopProduct[]
+  payment_methods: DashboardPaymentMethodBreakdown[]
+  tips: DashboardTipsSummary
+  busy_hours: DashboardBusyHourPoint[]
+  average_tab_duration_minutes: number
+  labor_cost: DashboardLaborCost
+}
+
+export interface DashboardFilters {
+  start_date?: string
+  end_date?: string
+  payment_method_id?: number
+  account_type?: TabAccountType
+}
+
+export function fetchDashboardMetrics(token: string | undefined, filters: DashboardFilters = {}) {
+  const query = new URLSearchParams()
+  if (filters.start_date) query.set('start_date', filters.start_date)
+  if (filters.end_date) query.set('end_date', filters.end_date)
+  if (filters.payment_method_id !== undefined) {
+    query.set('payment_method_id', String(filters.payment_method_id))
+  }
+  if (filters.account_type) query.set('account_type', filters.account_type)
+  return adminFetch<DashboardMetrics>(`/api/dashboard/metrics?${query.toString()}`, token)
+}

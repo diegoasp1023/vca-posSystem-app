@@ -31,6 +31,17 @@ export function AdminHomePage() {
             {isAdmin && (
               <>
                 <Link
+                  to="/admin/dashboard"
+                  className="rounded-2xl border border-cream bg-white p-8 text-left shadow-sm transition hover:shadow-md"
+                >
+                  <h2 className="text-lg font-semibold text-lavender-dark">
+                    {t('admin.dashboard.title')}
+                  </h2>
+                  <p className="mt-2 text-sm text-gray-600">
+                    {t('admin.dashboard.description')}
+                  </p>
+                </Link>
+                <Link
                   to="/admin/cafes"
                   className="rounded-2xl border border-cream bg-white p-8 text-left shadow-sm transition hover:shadow-md"
                 >
