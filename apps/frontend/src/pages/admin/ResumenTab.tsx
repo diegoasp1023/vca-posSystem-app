@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { fetchPayrollSummary, type PayrollSummary } from '../../lib/adminApi'
+import { downloadCsv } from '../../lib/csv'
 import {
   MonthYearPicker,
   PeriodBanner,
@@ -11,7 +12,7 @@ import {
 } from './PayrollShared'
 
 function exportSummaryToCsv(summary: PayrollSummary) {
-  const header = ['Nombre', 'Apellido', 'Pago base', 'Bonos', 'Propina', 'Total']
+  const headers = ['Nombre', 'Apellido', 'Pago base', 'Bonos', 'Propina', 'Total']
   const rows = summary.items.map((item) => [
     item.nombre,
     item.apellido,
@@ -20,17 +21,7 @@ function exportSummaryToCsv(summary: PayrollSummary) {
     item.propina_cop,
     item.total_cop,
   ])
-  const csv = [header, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    .join('\n')
-
-  const blob = new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `nomina-${summary.year}-${String(summary.month).padStart(2, '0')}.csv`
-  link.click()
-  URL.revokeObjectURL(url)
+  downloadCsv(`nomina-${summary.year}-${String(summary.month).padStart(2, '0')}.csv`, headers, rows)
 }
 
 export function ResumenTab({
