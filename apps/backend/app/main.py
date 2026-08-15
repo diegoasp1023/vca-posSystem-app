@@ -10,6 +10,7 @@ from sqlalchemy import select
 from app.api import (
     cash_sessions,
     courses,
+    dashboard,
     employees,
     lookups,
     menu_categories,
@@ -62,6 +63,7 @@ app.include_router(tables.router)
 app.include_router(tabs.router)
 app.include_router(tab_payment_methods.router)
 app.include_router(cash_sessions.router)
+app.include_router(dashboard.router)
 
 
 @app.get("/api/health")
