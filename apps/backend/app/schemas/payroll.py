@@ -48,6 +48,7 @@ class TipPoolOut(BaseModel):
     year: int
     month: int
     monto_total_cop: int
+    monto_calculado_cop: int
     participant_ids: list[int]
     monto_por_persona: int
 

@@ -1,13 +1,14 @@
 import calendar
-from datetime import date
+from datetime import date, datetime, time, timezone
 
-from sqlalchemy import extract, or_, select
+from sqlalchemy import extract, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.employee import Employee
 from app.models.payroll import PayrollPeriod, PayrollSnapshot
 from app.models.shift import Shift
+from app.models.tab import Tab, TabPayment
 from app.schemas.payroll import PeriodState
 from app.schemas.shift import ShiftOut
 
@@ -111,6 +112,21 @@ async def get_indefinido_pay(
         else:
             await db.refresh(snapshot)
     return snapshot.salario_mensual_congelado
+
+
+async def sum_tips_for_month(db: AsyncSession, year: int, month: int) -> int:
+    last_day = calendar.monthrange(year, month)[1]
+    month_start = datetime.combine(date(year, month, 1), time.min, tzinfo=timezone.utc)
+    month_end = datetime.combine(date(year, month, last_day), time.max, tzinfo=timezone.utc)
+
+    total = await db.scalar(
+        select(func.coalesce(func.sum(TabPayment.tip_cop), 0))
+        .join(Tab, TabPayment.tab_id == Tab.id)
+        .where(Tab.status == "paid")
+        .where(Tab.paid_at >= month_start)
+        .where(Tab.paid_at <= month_end)
+    )
+    return total or 0
 
 
 async def get_employee_base_pay(

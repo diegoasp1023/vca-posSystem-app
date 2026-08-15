@@ -13,6 +13,7 @@ from app.core.payroll import (
     get_or_create_period,
     get_period_state,
     period_state_from_row,
+    sum_tips_for_month,
 )
 from app.models.employee import Employee
 from app.models.payroll import Bonus, TipPool, TipPoolParticipant
@@ -145,9 +146,16 @@ async def _tip_pool_out(db: AsyncSession, year: int, month: int) -> TipPoolOut:
     pool = await db.scalar(
         select(TipPool).where(TipPool.year == year, TipPool.month == month)
     )
+    monto_calculado_cop = await sum_tips_for_month(db, year, month)
+
     if pool is None:
         return TipPoolOut(
-            year=year, month=month, monto_total_cop=0, participant_ids=[], monto_por_persona=0
+            year=year,
+            month=month,
+            monto_total_cop=0,
+            monto_calculado_cop=monto_calculado_cop,
+            participant_ids=[],
+            monto_por_persona=0,
         )
 
     result = await db.execute(
@@ -163,6 +171,7 @@ async def _tip_pool_out(db: AsyncSession, year: int, month: int) -> TipPoolOut:
         year=year,
         month=month,
         monto_total_cop=pool.monto_total_cop,
+        monto_calculado_cop=monto_calculado_cop,
         participant_ids=participant_ids,
         monto_por_persona=per_person,
     )
