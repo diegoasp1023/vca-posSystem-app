@@ -419,6 +419,7 @@ export interface TipPool {
   year: number
   month: number
   monto_total_cop: number
+  monto_calculado_cop: number
   participant_ids: number[]
   monto_por_persona: number
 }

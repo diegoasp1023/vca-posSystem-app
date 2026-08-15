@@ -50,7 +50,9 @@ export function PropinasTab({
         ])
         setEmployees(nomina)
         setTips(tipPool)
-        setTipAmount(String(tipPool.monto_total_cop))
+        setTipAmount(
+          String(tipPool.monto_total_cop || tipPool.monto_calculado_cop),
+        )
         setTipParticipants(new Set(tipPool.participant_ids))
         setStatus('ready')
       })
@@ -109,19 +111,33 @@ export function PropinasTab({
             onSubmit={submitTips}
             className="mt-4 rounded-2xl border border-cream bg-white p-6"
           >
-            <label className="block max-w-xs text-sm">
-              <span className="mb-1 block font-semibold text-lavender-dark">
-                {t('admin.totalTipAmount')}
-              </span>
-              <input
-                type="number"
-                min={0}
-                disabled={!isOpen}
-                value={tipAmount}
-                onChange={(e) => setTipAmount(e.target.value)}
-                className="w-full rounded-lg border border-cream px-3 py-2 disabled:bg-cream"
-              />
-            </label>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="block max-w-xs flex-1 text-sm">
+                <span className="mb-1 block font-semibold text-lavender-dark">
+                  {t('admin.totalTipAmount')}
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  disabled={!isOpen}
+                  value={tipAmount}
+                  onChange={(e) => setTipAmount(e.target.value)}
+                  className="w-full rounded-lg border border-cream px-3 py-2 disabled:bg-cream"
+                />
+              </label>
+
+              {isOpen && tips && (
+                <button
+                  type="button"
+                  onClick={() => setTipAmount(String(tips.monto_calculado_cop))}
+                  className="rounded-full bg-coral px-4 py-2 text-sm font-semibold text-white transition hover:bg-coral-dark"
+                >
+                  {t('admin.useCalculatedTipAmount', {
+                    amount: tips.monto_calculado_cop.toLocaleString('es-CO'),
+                  })}
+                </button>
+              )}
+            </div>
 
             <div className="mt-4">
               <span className="mb-1 block text-sm font-semibold text-lavender-dark">
