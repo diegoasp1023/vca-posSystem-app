@@ -39,6 +39,7 @@ const resources = {
         previous: 'Anterior',
         next: 'Siguiente',
         pageOf: 'Página {{page}} de {{totalPages}}',
+        pageSize: 'Mostrar',
       },
       common: {
         loading: 'Cargando...',
@@ -421,6 +422,7 @@ const resources = {
         previous: 'Previous',
         next: 'Next',
         pageOf: 'Page {{page}} of {{totalPages}}',
+        pageSize: 'Show',
       },
       common: {
         loading: 'Loading...',

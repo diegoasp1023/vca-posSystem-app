@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Pagination } from '../../components/Pagination'
 import { useAuth } from '../../context/AuthContext'
 import { fetchTabHistory, type Tab } from '../../lib/adminApi'
 import { formatDuration, PaymentsSummary, tabTitle } from './TabCard'
@@ -12,19 +13,25 @@ export function TabHistoryTab() {
   const [endDate, setEndDate] = useState('')
   const [tabs, setTabs] = useState<Tab[]>([])
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const [totalPages, setTotalPages] = useState(1)
 
   const load = useCallback(
-    (start: string, end: string) => {
+    (start: string, end: string, targetPage: number, targetPageSize: number) => {
       setStatus('loading')
       getToken()
         .then((token) =>
           fetchTabHistory(token, {
             start_date: start || undefined,
             end_date: end || undefined,
+            page: targetPage,
+            page_size: targetPageSize,
           }),
         )
         .then((result) => {
-          setTabs(result)
+          setTabs(result.items)
+          setTotalPages(result.total_pages)
           setStatus('ready')
         })
         .catch(() => setStatus('error'))
@@ -33,14 +40,28 @@ export function TabHistoryTab() {
   )
 
   useEffect(() => {
-    load('', '')
+    load(startDate, endDate, page, pageSize)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [page, pageSize])
 
   const applyManualFilter = (e: React.FormEvent) => {
     e.preventDefault()
-    load(startDate, endDate)
+    setPage(1)
+    load(startDate, endDate, 1, pageSize)
   }
+
+  const pagination = (
+    <Pagination
+      page={page}
+      totalPages={totalPages}
+      onPageChange={setPage}
+      pageSize={pageSize}
+      onPageSizeChange={(size) => {
+        setPageSize(size)
+        setPage(1)
+      }}
+    />
+  )
 
   return (
     <div className="mt-6">
@@ -74,6 +95,8 @@ export function TabHistoryTab() {
           {t('adminTabs.historyApplyFilter')}
         </button>
       </form>
+
+      {status === 'ready' && pagination}
 
       {status === 'loading' && <p className="mt-10 text-gray-500">{t('common.loading')}</p>}
       {status === 'error' && <p className="mt-10 text-gray-500">{t('common.error')}</p>}
@@ -130,6 +153,8 @@ export function TabHistoryTab() {
           ))}
         </div>
       )}
+
+      {status === 'ready' && pagination}
     </div>
   )
 }
