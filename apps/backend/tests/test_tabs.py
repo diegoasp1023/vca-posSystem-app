@@ -502,7 +502,7 @@ async def test_history_includes_paid_tabs_from_open_and_closed_sessions(db_sessi
 
     response = await cajero_client.get("/api/tabs/history")
 
-    ids = {t["id"] for t in response.json()}
+    ids = {t["id"] for t in response.json()["items"]}
     assert ids == {archived_paid.id, current_paid.id}
 
 
@@ -527,5 +527,28 @@ async def test_history_filters_by_date_range(db_session, cajero_client):
         "/api/tabs/history", params={"start_date": "2026-01-01", "end_date": "2026-01-31"}
     )
 
-    ids = [t["id"] for t in response.json()]
+    ids = [t["id"] for t in response.json()["items"]]
     assert ids == [in_range.id]
+
+
+async def test_history_paginates_with_page_size(db_session, cajero_client):
+    closed_session = await make_cash_session(db_session, status="closed")
+    for _ in range(3):
+        await make_tab(db_session, status="paid", cash_session_id=closed_session.id)
+
+    response = await cajero_client.get(
+        "/api/tabs/history", params={"page": 1, "page_size": 20}
+    )
+
+    body = response.json()
+    assert body["page"] == 1
+    assert body["page_size"] == 20
+    assert body["total"] == 3
+    assert body["total_pages"] == 1
+    assert len(body["items"]) == 3
+
+
+async def test_history_rejects_invalid_page_size(cajero_client):
+    response = await cajero_client.get("/api/tabs/history", params={"page_size": 30})
+
+    assert response.status_code == 422
