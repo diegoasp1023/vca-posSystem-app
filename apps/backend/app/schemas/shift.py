@@ -33,7 +33,7 @@ class ShiftOut(BaseModel):
 
     @classmethod
     def from_model(cls, shift: Shift) -> "ShiftOut":
-        horas = _horas_trabajadas(shift.hora_inicio, shift.hora_fin)
+        horas = horas_trabajadas(shift.hora_inicio, shift.hora_fin)
         return cls(
             id=shift.id,
             employee_id=shift.employee_id,
@@ -55,7 +55,7 @@ class MonthlyShiftSummary(BaseModel):
     total_cop: int
 
 
-def _horas_trabajadas(hora_inicio: time, hora_fin: time) -> float:
+def horas_trabajadas(hora_inicio: time, hora_fin: time) -> float:
     inicio_minutos = hora_inicio.hour * 60 + hora_inicio.minute
     fin_minutos = hora_fin.hour * 60 + hora_fin.minute
     return round((fin_minutos - inicio_minutos) / 60, 2)
